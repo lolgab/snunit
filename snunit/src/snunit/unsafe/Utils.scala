@@ -3,7 +3,7 @@ package snunit.unsafe
 import scala.scalanative.unsafe._
 import java.nio.charset.Charset
 
-private [snunit] object Utils {
+private[snunit] object Utils {
   def fromCStringAndSize(cstr: CString, size: Int, charset: Charset = Charset.defaultCharset()): String = {
     val bytes = new Array[Byte](size)
 

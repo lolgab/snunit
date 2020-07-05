@@ -8,18 +8,19 @@ import snunit.unsafe.nxt_unit_sptr._
 import scala.scalanative.runtime.ByteArray
 
 class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) extends AnyVal {
-  def method: Method = fromCStringAndSize(req.request.method, req.request.method_length) match {
-    case "GET"     => Method.GET
-    case "HEAD"    => Method.HEAD
-    case "POST"    => Method.POST
-    case "PUT"     => Method.PUT
-    case "DELETE"  => Method.DELETE
-    case "CONNECT" => Method.CONNECT
-    case "OPTIONS" => Method.OPTIONS
-    case "TRACE"   => Method.TRACE
-    case "PATCH"   => Method.PATCH
-    case other     => new Method(other)
-  }
+  def method: Method =
+    fromCStringAndSize(req.request.method, req.request.method_length) match {
+      case "GET"     => Method.GET
+      case "HEAD"    => Method.HEAD
+      case "POST"    => Method.POST
+      case "PUT"     => Method.PUT
+      case "DELETE"  => Method.DELETE
+      case "CONNECT" => Method.CONNECT
+      case "OPTIONS" => Method.OPTIONS
+      case "TRACE"   => Method.TRACE
+      case "PATCH"   => Method.PATCH
+      case other     => new Method(other)
+    }
 
   def content: String = {
     val contentLength = req.request.content_length

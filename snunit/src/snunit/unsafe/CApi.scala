@@ -197,8 +197,13 @@ object CApi {
 
   def nxt_unit_websocket_read(ws: Ptr[nxt_unit_websocket_frame_t], dest: Ptr[Byte], size: CSize): CSize = extern
 
-  def nxt_unit_websocket_send(req: Ptr[nxt_unit_request_info_t], opcode: Byte,
-    last: Byte, start: Ptr[Byte], size: CSize): CInt = extern
+  def nxt_unit_websocket_send(
+      req: Ptr[nxt_unit_request_info_t],
+      opcode: Byte,
+      last: Byte,
+      start: Ptr[Byte],
+      size: CSize
+  ): CInt = extern
 
   def nxt_unit_websocket_done(ws: Ptr[nxt_unit_websocket_frame_t]): Unit = extern
 }
@@ -318,7 +323,8 @@ object CApiOps {
 
     def local: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 60).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def server_name: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 64).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def server_name: Ptr[Byte] =
+      nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 64).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
     def target: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 68).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
@@ -326,7 +332,8 @@ object CApiOps {
 
     def query: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 76).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def preread_content: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 80).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def preread_content: Ptr[Byte] =
+      nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 80).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
     def fields: Ptr[nxt_unit_field_t] = (ptr.asInstanceOf[Ptr[Byte]] + 84).asInstanceOf[Ptr[nxt_unit_field_t]]
   }

@@ -5,16 +5,16 @@ import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
 import scala.scalanative.runtime.ByteArray
 
-
 class WSFrame(val frame: Ptr[nxt_unit_websocket_frame_t]) extends AnyVal {
-  def opcode = frame.header.opcode match {
-    case 0x00 => Opcode.Cont
-    case 0x01 => Opcode.Text
-    case 0x02 => Opcode.Binary
-    case 0x08 => Opcode.Close
-    case 0x09 => Opcode.Ping
-    case 0x0A => Opcode.Pong
-  }
+  def opcode =
+    frame.header.opcode match {
+      case 0x00 => Opcode.Cont
+      case 0x01 => Opcode.Text
+      case 0x02 => Opcode.Binary
+      case 0x08 => Opcode.Close
+      case 0x09 => Opcode.Ping
+      case 0x0a => Opcode.Pong
+    }
 
   def read(): Array[Byte] = {
     val length = frame.content_length

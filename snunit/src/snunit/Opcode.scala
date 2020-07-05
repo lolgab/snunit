@@ -10,5 +10,5 @@ object Opcode {
   case object Binary extends Opcode { val value: Byte = 0x02 }
   case object Close extends Opcode { val value: Byte = 0x08 }
   case object Ping extends Opcode { val value: Byte = 0x09 }
-  case object Pong extends Opcode { val value: Byte = 0x0A }
+  case object Pong extends Opcode { val value: Byte = 0x0a }
 }

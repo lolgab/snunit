@@ -1,2 +1,4 @@
-out
-lowered.hnir
+/out
+/lowered.hnir
+/.bloop
+/.metals
