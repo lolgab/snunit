@@ -78,13 +78,13 @@ object CApi {
 
   type request_handler_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
   type websocket_handler_t = CFuncPtr1[Ptr[nxt_unit_websocket_frame_t], Unit]
+  type add_port_t = CFuncPtr2[Ptr[nxt_unit_ctx_t], Ptr[nxt_unit_port_t], CInt]
+  type remove_port_t = CFuncPtr2[Ptr[nxt_unit_ctx_t], Ptr[nxt_unit_port_id_t], Unit]
+  type quit_t = CFuncPtr1[Ptr[nxt_unit_ctx_t], Unit]
 
   // TODO Implement properly
   type close_handler_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
-  type add_port_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
-  type remove_port_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
   type remove_pid_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
-  type quit_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
   type shm_ack_handler_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
   type port_send_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
   type port_recv_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
@@ -162,6 +162,10 @@ object CApi {
   def nxt_unit_run_once(ctx: Ptr[nxt_unit_ctx_t]): CInt = extern
 
   def nxt_unit_done(ctx: Ptr[nxt_unit_ctx_t]): CInt = extern
+
+  def nxt_unit_add_port(ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]): CInt = extern
+
+  def nxt_unit_remove_port(ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_id_t]): Unit = extern
 
   /*
    * Allocate response structure capable to store limited numer of fields.
@@ -419,6 +423,15 @@ object CApiOps {
 
     def websocket_handler: websocket_handler_t = ptr._2
     def websocket_handler_=(v: websocket_handler_t): Unit = ptr._2 = v
+
+    def add_port: add_port_t = ptr._4
+    def add_port_=(v: add_port_t): Unit = ptr._4 = v
+
+    def remove_port: remove_port_t = ptr._5
+    def remove_port_=(v: remove_port_t): Unit = ptr._5 = v
+
+    def quit: quit_t = ptr._7
+    def quit_=(v: quit_t): Unit = ptr._7 = v
   }
 
   implicit class nxt_unit_init_t_ops(val ptr: Ptr[nxt_unit_init_t]) extends AnyVal {
