@@ -18,6 +18,12 @@ object ServerBuilder {
     }
   }
 
+  private val quit: quit_t = new quit_t {
+    def apply(ctx: Ptr[nxt_unit_ctx_t]): Unit = {
+      nxt_unit_done(ctx)
+    }
+  }
+
   private var requestHandler: Request => Unit = null
   private var websocketHandler: WSFrame => Unit = null
 
@@ -34,6 +40,7 @@ object ServerBuilder {
     val init: Ptr[nxt_unit_init_t] = malloc(sizeof[nxt_unit_init_t]).asInstanceOf[Ptr[nxt_unit_init_t]]
     init.callbacks.request_handler = request_handler
     init.callbacks.websocket_handler = websocket_handler
+    init.callbacks.quit = quit
     val ctx: Ptr[nxt_unit_ctx_t] = nxt_unit_init(init)
     assert(ctx != null, "nxt_unit_init fail")
     new Server(ctx)
