@@ -1,8 +1,9 @@
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import $ivy.`com.lihaoyi::mill-contrib-bsp:$MILL_VERSION`
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
+import mill.scalalib.scalafmt.ScalafmtModule
 
-trait Common extends ScalaNativeModule {
+trait Common extends ScalaNativeModule with ScalafmtModule {
   def organization = "com.github.lolgab"
   def name = "snunit"
 

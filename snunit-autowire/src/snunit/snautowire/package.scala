@@ -13,8 +13,11 @@ object UpickleAutowireServer extends autowire.Server[ujson.Value, Reader, Writer
 }
 
 package object snautowire {
-  def createServer[T](router: autowire.Server[ujson.Value, Reader, Writer]#Router): AsyncServer = {
-    AsyncServerBuilder
+  def createServer[T](
+      builder: ServerBuilder,
+      router: autowire.Server[ujson.Value, Reader, Writer]#Router
+  ): Server = {
+    builder
       .withRequestHandler(req => {
         req.method match {
           case Method.POST =>

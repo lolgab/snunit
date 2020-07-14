@@ -1,6 +1,8 @@
 package snunit.examples
 
 import snunit.snautowire._
+import snunit.AsyncServerBuilder
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -16,6 +18,6 @@ object MyApiImpl extends MyApi {
 
 object AutowireExample {
   def main(args: Array[String]): Unit = {
-    snautowire.createServer(UpickleAutowireServer.route[MyApi](MyApiImpl))
+    snautowire.createServer(AsyncServerBuilder, UpickleAutowireServer.route[MyApi](MyApiImpl))
   }
 }

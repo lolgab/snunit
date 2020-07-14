@@ -5,7 +5,7 @@ import snunit._
 object HelloWorldExample {
   def main(args: Array[String]): Unit = {
     val server =
-      ServerBuilder
+      SyncServerBuilder
         .withRequestHandler(req => {
           req.method match {
             case Method.GET =>

@@ -8,7 +8,7 @@ import snunit.unsafe.CApi
 import scala.scalanative.loop.Poll
 import scala.scalanative.posix.fcntl.{fcntl, F_SETFL, O_NONBLOCK}
 
-object AsyncServerBuilder {
+object AsyncServerBuilder extends ServerBuilder {
   private val request_handler: request_handler_t = new request_handler_t {
     def apply(req: Ptr[nxt_unit_request_info_t]): Unit = {
       requestHandler(new Request(req))
@@ -22,14 +22,14 @@ object AsyncServerBuilder {
   }
 
   private val quit: quit_t = new quit_t {
-    def apply(ctx: Ptr[CApi.nxt_unit_ctx_t]): Unit = {
+    def apply(ctx: Ptr[nxt_unit_ctx_t]): Unit = {
       nxt_unit_done(ctx)
     }
   }
 
   private val add_port: add_port_t = new add_port_t {
-    def apply(ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]): CInt = { 
-      if(port.in_fd != -1) {
+    def apply(ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]): CInt = {
+      if (port.in_fd != -1) {
         assert(fcntl(port.in_fd, F_SETFL, O_NONBLOCK) != -1, s"fcntl(${port.in_fd}, F_SETFL, O_NONBLOCK) failed")
         val poll = Poll(port.in_fd)
         poll.start(in = true, out = false) { (status, readable, writable) =>
@@ -42,7 +42,7 @@ object AsyncServerBuilder {
   }
 
   private val remove_port: remove_port_t = new remove_port_t {
-    def apply(ctx: Ptr[nxt_unit_ctx_t], port_id: Ptr[nxt_unit_port_id_t]): Unit = {      
+    def apply(ctx: Ptr[nxt_unit_ctx_t], port_id: Ptr[nxt_unit_port_id_t]): Unit = {
       val poll = new Poll(ctx.data)
       poll.stop()
       nxt_unit_remove_port(ctx, port_id)
