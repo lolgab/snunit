@@ -70,21 +70,22 @@ trait UsesCore extends ScalaModule {
   def moduleDeps: Seq[ScalaModule] = Seq(snunit)
 }
 
-object `snunit-autowire` extends Common with UsesCore {
-  def ivyDeps =
-    T {
-      super.ivyDeps() ++ Agg(
-        ivy"com.lihaoyi::autowire::0.2.7",
-        ivy"com.lihaoyi::upickle::1.1.0"
-      )
-    }
-}
-
 object `snunit-scala-native-loop` extends Common with UsesCore {
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
         ivy"dev.whaling::native-loop-core::0.1.1-SNAPSHOT"
+      )
+    }
+}
+
+object `snunit-autowire` extends Common with UsesCore {
+  def moduleDeps: Seq[ScalaModule] = Seq(`snunit-scala-native-loop`)
+  def ivyDeps =
+    T {
+      super.ivyDeps() ++ Agg(
+        ivy"com.lihaoyi::autowire::0.2.7",
+        ivy"com.lihaoyi::upickle::1.1.0"
       )
     }
 }
