@@ -1,7 +1,6 @@
 package snunit.snautowire
 
 import snunit._
-import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 import upickle.default._
 import autowire.Serializers
@@ -14,8 +13,8 @@ object UpickleAutowireServer extends autowire.Server[ujson.Value, Reader, Writer
 }
 
 package object snautowire {
-  def createServer[T](router: autowire.Server[ujson.Value, Reader, Writer]#Router): Server = {
-    ServerBuilder
+  def createServer[T](router: autowire.Server[ujson.Value, Reader, Writer]#Router): AsyncServer = {
+    AsyncServerBuilder
       .withRequestHandler(req => {
         req.method match {
           case Method.POST =>
