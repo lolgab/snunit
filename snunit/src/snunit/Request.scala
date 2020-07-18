@@ -36,7 +36,7 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
 
   // def target: String = fromCStringAndSize(req.request.target, req.request.target_length)
 
-  def send(statusCode: Int, content: String, headers: Seq[(String, String)]): Unit = {
+  def send(statusCode: Int, content: String, headers: Seq[(String, String)]): Boolean = {
     val fieldsSize: Int = {
       var res = 0
       for ((key, value) <- headers) {
@@ -59,5 +59,7 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     nxt_unit_response_send(req)
 
     nxt_unit_request_done(req, 0)
+
+    true
   }
 }

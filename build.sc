@@ -94,6 +94,7 @@ object `snunit-autowire` extends Common with UsesCore {
 object examples extends Module {
   object `low-level` extends Common with UsesCore
   object `hello-world` extends Common with UsesCore
+  object `multiple-handlers` extends Common with UsesCore
   object autowire extends Common with UsesCore {
     def moduleDeps = super.moduleDeps :+ `snunit-autowire`
   }

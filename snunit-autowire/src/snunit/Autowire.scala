@@ -1,26 +1,21 @@
-package snunit.snautowire
+package snunit
 
-import snunit._
 import scala.concurrent.ExecutionContext.Implicits.global
 import upickle.default._
 import autowire.Serializers
 import upickle.Api
 import scala.concurrent.Future
 
-object UpickleAutowireServer extends autowire.Server[ujson.Value, Reader, Writer] {
-  override def write[Result: Writer](r: Result): ujson.Value = upickle.default.write(r)
-  override def read[Result: Reader](p: ujson.Value): Result = upickle.default.read[Result](p)
-}
-
-package object snautowire {
-  def createServer[T](
-      builder: ServerBuilder,
-      router: autowire.Server[ujson.Value, Reader, Writer]#Router
-  ): Server = {
-    builder
-      .withRequestHandler(req => {
-        req.method match {
-          case Method.POST =>
+object Autowire {
+  object UpickleAutowireServer extends autowire.Server[ujson.Value, Reader, Writer] {
+    override def write[Result: Writer](r: Result): ujson.Value = upickle.default.write(r)
+    override def read[Result: Reader](p: ujson.Value): Result = upickle.default.read[Result](p)
+  }
+  implicit class ServerBuilderAutowireOps(val builder: ServerBuilder) extends AnyVal {
+    def withAutowireRouter(router: autowire.Server[ujson.Value, Reader, Writer]#Router): ServerBuilder = {
+      builder
+        .withRequestHandler(req => {
+          if (req.method == Method.POST) {
             req.path.split("/").toList match {
               case "" :: segments =>
                 val content = req.content
@@ -40,13 +35,12 @@ package object snautowire {
                   case scala.util.Failure(error) =>
                     req.send(500, s"Got error: $error", Seq.empty)
                 }
+                true
               case _ =>
-                req.send(404, "Not found", Seq.empty)
+                false
             }
-          case _ =>
-            req.send(404, "Not found", Seq.empty)
-        }
-      })
-      .build()
+          } else false
+        })
+    }
   }
 }
