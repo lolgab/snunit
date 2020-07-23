@@ -400,21 +400,6 @@ object CApiOps {
 
     def data: Ptr[Byte] = ptr._13
     def data_=(v: Ptr[Byte]): Unit = ptr._13 = v
-
-    def addField(name: String, value: String): Unit = {
-      import scala.scalanative.runtime._
-      val n = name.getBytes().asInstanceOf[ByteArray]
-      val v = value.getBytes().asInstanceOf[ByteArray]
-      val res = nxt_unit_response_add_field(ptr, n.at(0), n.length.toByte, v.at(0), v.length)
-      if (res != 0) throw new Exception()
-    }
-
-    def addContent(content: String): Unit = {
-      import scala.scalanative.runtime._
-      val v = content.getBytes().asInstanceOf[ByteArray]
-      val res = nxt_unit_response_add_content(ptr, v.at(0), v.length)
-      if (res != 0) throw new Exception()
-    }
   }
 
   implicit class nxt_unit_callbacks_t_ops(val ptr: Ptr[nxt_unit_callbacks_t]) extends AnyVal {

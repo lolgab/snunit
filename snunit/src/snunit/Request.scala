@@ -36,6 +36,19 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
 
   // def target: String = fromCStringAndSize(req.request.target, req.request.target_length)
 
+  private def addField(name: String, value: String): Unit = {
+    val n = name.getBytes().asInstanceOf[ByteArray]
+    val v = value.getBytes().asInstanceOf[ByteArray]
+    val res = nxt_unit_response_add_field(req, n.at(0), n.length.toByte, v.at(0), v.length)
+    if (res != 0) throw new Exception()
+  }
+
+  private def addContent(content: String): Unit = {
+    val v = content.getBytes().asInstanceOf[ByteArray]
+    val res = nxt_unit_response_add_content(req, v.at(0), v.length)
+    if (res != 0) throw new Exception()
+  }
+
   def send(statusCode: Int, content: String, headers: Seq[(String, String)]): Boolean = {
     val fieldsSize: Int = {
       var res = 0
@@ -52,9 +65,9 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     )
 
     for ((key, value) <- headers) {
-      req.addField(key, value)
+      addField(key, value)
     }
-    req.addContent(content)
+    addContent(content)
 
     nxt_unit_response_send(req)
 
