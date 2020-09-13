@@ -60,11 +60,10 @@ object CApi {
     nxt_unit_field_t
   ]
 
-  type nxt_unit_request_info_t = CStruct13[
+  type nxt_unit_request_info_t = CStruct12[
     Ptr[nxt_unit_t],
     Ptr[nxt_unit_ctx_t],
-    nxt_unit_port_id_t,
-    nxt_unit_port_id_t,
+    Ptr[nxt_unit_port_t],
     Ptr[Byte], // nxt_unit_request_t
     Ptr[nxt_unit_buf_t],
     Ptr[nxt_unit_response_t],
@@ -77,9 +76,10 @@ object CApi {
   ]
 
   type request_handler_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
+  type data_handler_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
   type websocket_handler_t = CFuncPtr1[Ptr[nxt_unit_websocket_frame_t], Unit]
   type add_port_t = CFuncPtr2[Ptr[nxt_unit_ctx_t], Ptr[nxt_unit_port_t], CInt]
-  type remove_port_t = CFuncPtr2[Ptr[nxt_unit_ctx_t], Ptr[nxt_unit_port_id_t], Unit]
+  type remove_port_t = CFuncPtr2[Ptr[nxt_unit_t], Ptr[nxt_unit_port_t], Unit]
   type quit_t = CFuncPtr1[Ptr[nxt_unit_ctx_t], Unit]
 
   // TODO Implement properly
@@ -94,8 +94,9 @@ object CApi {
    * Set of application-specific callbacks. Application may leave all optional
    * callbacks as NULL.
    */
-  type nxt_unit_callbacks_t = CStruct10[
+  type nxt_unit_callbacks_t = CStruct11[
     request_handler_t,
+    data_handler_t,
     websocket_handler_t,
     close_handler_t,
     add_port_t,
@@ -107,7 +108,7 @@ object CApi {
     port_recv_t
   ]
 
-  type nxt_unit_init_t = CStruct10[
+  type nxt_unit_init_t = CStruct11[
     Ptr[Byte],
     Ptr[Byte],
     CInt,
@@ -116,6 +117,7 @@ object CApi {
     nxt_unit_callbacks_t,
     nxt_unit_port_t,
     CInt,
+    nxt_unit_port_t,
     nxt_unit_port_t,
     CInt
   ]
@@ -161,11 +163,9 @@ object CApi {
 
   def nxt_unit_run_once(ctx: Ptr[nxt_unit_ctx_t]): CInt = extern
 
+  def nxt_unit_process_port_msg(ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]): CInt = extern
+
   def nxt_unit_done(ctx: Ptr[nxt_unit_ctx_t]): CInt = extern
-
-  def nxt_unit_add_port(ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]): CInt = extern
-
-  def nxt_unit_remove_port(ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_id_t]): Unit = extern
 
   /*
    * Allocate response structure capable to store limited numer of fields.
@@ -213,6 +213,12 @@ object CApi {
 }
 object CApiOps {
   import CApi._
+
+  final val NXT_UNIT_OK = 0
+  final val NXT_UNIT_ERROR = 1
+  final val NXT_UNIT_AGAIN = 2
+  final val NXT_UNIT_CANCELLED = 3
+
   implicit class nxt_unit_t_ops(val ptr: Ptr[nxt_unit_t]) extends AnyVal {
     def data: Ptr[Byte] = ptr._1
     def data_=(v: Ptr[Byte]): Unit = ptr._1 = v
@@ -368,55 +374,55 @@ object CApiOps {
     def ctx: Ptr[nxt_unit_ctx_t] = ptr._2
     def ctx_=(v: Ptr[nxt_unit_ctx_t]): Unit = ptr._2 = v
 
-    def request_port: Ptr[nxt_unit_port_id_t] = ptr.at3
-    def request_port_=(v: Ptr[nxt_unit_port_id_t]): Unit = ptr._3 = v
+    def response_port: Ptr[nxt_unit_port_t] = ptr._3
+    def response_port_=(v: Ptr[nxt_unit_port_t]): Unit = ptr._3 = v
 
-    def response_port: Ptr[nxt_unit_port_id_t] = ptr.at4
-    def response_port_=(v: Ptr[nxt_unit_port_id_t]): Unit = ptr._4 = v
+    def request: Ptr[nxt_unit_request_t] = ptr._4.asInstanceOf[Ptr[nxt_unit_request_t]]
+    def request_=(v: Ptr[nxt_unit_request_t]): Unit = ptr._4 = v.asInstanceOf[Ptr[Byte]]
 
-    def request: Ptr[nxt_unit_request_t] = ptr._5.asInstanceOf[Ptr[nxt_unit_request_t]]
-    def request_=(v: Ptr[nxt_unit_request_t]): Unit = ptr._5 = v.asInstanceOf[Ptr[Byte]]
+    def request_buf: Ptr[nxt_unit_buf_t] = ptr._5
+    def request_buf_=(v: Ptr[nxt_unit_buf_t]): Unit = ptr._5 = v
 
-    def request_buf: Ptr[nxt_unit_buf_t] = ptr._6
-    def request_buf_=(v: Ptr[nxt_unit_buf_t]): Unit = ptr._6 = v
+    def response: Ptr[nxt_unit_response_t] = ptr._6
+    def response_=(v: Ptr[nxt_unit_response_t]): Unit = ptr._6 = v
 
-    def response: Ptr[nxt_unit_response_t] = ptr._7
-    def response_=(v: Ptr[nxt_unit_response_t]): Unit = ptr._7 = v
+    def response_buf: Ptr[nxt_unit_buf_t] = ptr._7
+    def response_buf_=(v: Ptr[nxt_unit_buf_t]): Unit = ptr._7 = v
 
-    def response_buf: Ptr[nxt_unit_buf_t] = ptr._8
-    def response_buf_=(v: Ptr[nxt_unit_buf_t]): Unit = ptr._8 = v
+    def response_max_fields: CInt = ptr._8
+    def response_max_fields_=(v: CInt): Unit = ptr._8 = v
 
-    def response_max_fields: CInt = ptr._9
-    def response_max_fields_=(v: CInt): Unit = ptr._9 = v
+    def content_buf: Ptr[nxt_unit_buf_t] = ptr._9
+    def content_buf_=(v: Ptr[nxt_unit_buf_t]): Unit = ptr._9 = v
 
-    def content_buf: Ptr[nxt_unit_buf_t] = ptr._10
-    def content_buf_=(v: Ptr[nxt_unit_buf_t]): Unit = ptr._10 = v
+    def content_length: CLongInt = ptr._10
+    def content_length_=(v: CLongInt): Unit = ptr._10 = v
 
-    def content_length: CLongInt = ptr._11
-    def content_length_=(v: CLongInt): Unit = ptr._11 = v
+    def content_fd: CInt = ptr._11
+    def content_fd_=(v: CInt): Unit = ptr._11 = v
 
-    def content_fd: CInt = ptr._12
-    def content_fd_=(v: CInt): Unit = ptr._12 = v
-
-    def data: Ptr[Byte] = ptr._13
-    def data_=(v: Ptr[Byte]): Unit = ptr._13 = v
+    def data: Ptr[Byte] = ptr._12
+    def data_=(v: Ptr[Byte]): Unit = ptr._12 = v
   }
 
   implicit class nxt_unit_callbacks_t_ops(val ptr: Ptr[nxt_unit_callbacks_t]) extends AnyVal {
     def request_handler: request_handler_t = ptr._1
     def request_handler_=(v: request_handler_t): Unit = ptr._1 = v
 
-    def websocket_handler: websocket_handler_t = ptr._2
-    def websocket_handler_=(v: websocket_handler_t): Unit = ptr._2 = v
+    def data_handler: data_handler_t = ptr._2
+    def data_handler_=(v: data_handler_t): Unit = ptr._2 = v
 
-    def add_port: add_port_t = ptr._4
-    def add_port_=(v: add_port_t): Unit = ptr._4 = v
+    def websocket_handler: websocket_handler_t = ptr._3
+    def websocket_handler_=(v: websocket_handler_t): Unit = ptr._3 = v
 
-    def remove_port: remove_port_t = ptr._5
-    def remove_port_=(v: remove_port_t): Unit = ptr._5 = v
+    def add_port: add_port_t = ptr._5
+    def add_port_=(v: add_port_t): Unit = ptr._5 = v
 
-    def quit: quit_t = ptr._7
-    def quit_=(v: quit_t): Unit = ptr._7 = v
+    def remove_port: remove_port_t = ptr._6
+    def remove_port_=(v: remove_port_t): Unit = ptr._6 = v
+
+    def quit: quit_t = ptr._8
+    def quit_=(v: quit_t): Unit = ptr._8 = v
   }
 
   implicit class nxt_unit_init_t_ops(val ptr: Ptr[nxt_unit_init_t]) extends AnyVal {
@@ -444,11 +450,14 @@ object CApiOps {
     def ready_stream: CInt = ptr._8
     def ready_stream_=(v: CInt): Unit = ptr._8 = v
 
-    def read_port: Ptr[nxt_unit_port_t] = ptr.at9
-    def read_port_=(v: Ptr[nxt_unit_port_t]): Unit = ptr._9 = v
+    def router_port: Ptr[nxt_unit_port_t] = ptr.at9
+    def router_port_=(v: Ptr[nxt_unit_port_t]): Unit = ptr._9 = v
 
-    def log_fd: CInt = ptr._10
-    def log_fd_=(v: CInt): Unit = ptr._10 = v
+    def read_port: Ptr[nxt_unit_port_t] = ptr.at10
+    def read_port_=(v: Ptr[nxt_unit_port_t]): Unit = ptr._10 = v
+
+    def log_fd: CInt = ptr._11
+    def log_fd_=(v: CInt): Unit = ptr._11 = v
   }
 
   implicit class nxt_websocket_header_t_ops(val ptr: Ptr[nxt_websocket_header_t]) extends AnyVal {

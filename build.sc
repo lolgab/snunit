@@ -1,5 +1,4 @@
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
-import $ivy.`com.lihaoyi::mill-contrib-bsp:$MILL_VERSION`
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import mill.scalalib.scalafmt.ScalafmtModule
 
@@ -35,7 +34,7 @@ trait Common extends ScalaNativeModule with ScalafmtModule {
     )
 
   def deployTestApp() = {
-    def doCurl(data: String) = {
+    def doCurl(json: ujson.Value) = {
       import scala.sys.process._
       assert(
         Seq(
@@ -43,18 +42,17 @@ trait Common extends ScalaNativeModule with ScalafmtModule {
           "-X",
           "PUT",
           "--data-binary",
-          data,
+          json.toString,
           "--unix-socket",
           "/usr/local/var/run/unit/control.sock",
           "http://localhost/config"
         ).! == 0
       )
     }
-
     T.command {
       val binary = nativeLink()
-      doCurl(baseTestConfig(binary = binary, numProcesses = 0).toString)
-      doCurl(baseTestConfig(binary = binary, numProcesses = 1).toString)
+      doCurl(baseTestConfig(binary = binary, numProcesses = 0))
+      doCurl(baseTestConfig(binary = binary, numProcesses = 8))
     }
   }
 
@@ -92,13 +90,25 @@ object `snunit-autowire` extends Common with UsesCore {
 }
 
 object examples extends Module {
-  object `low-level` extends Common with UsesCore
   object `hello-world` extends Common with UsesCore
   object `multiple-handlers` extends Common with UsesCore
   object autowire extends Common with UsesCore {
     def moduleDeps = super.moduleDeps :+ `snunit-autowire`
   }
-  object `async` extends Common with UsesCore {
+  object async extends Common with UsesCore {
     def moduleDeps = super.moduleDeps :+ `snunit-scala-native-loop`
+  }
+}
+
+object integration extends ScalaModule {
+  def scalaVersion = "2.13.3"
+  object test extends Tests {
+    def testFrameworks = Seq("utest.runner.Framework")
+    def ivyDeps =
+      Agg(
+        ivy"com.lihaoyi::utest:0.7.2",
+        ivy"com.lihaoyi::os-lib:0.7.1",
+        ivy"com.lihaoyi::requests:0.6.5"
+      )
   }
 }

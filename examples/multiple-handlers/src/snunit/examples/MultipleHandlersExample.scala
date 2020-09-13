@@ -10,7 +10,7 @@ object MultipleHandlersExample {
           if (req.method == Method.GET)
             req.send(
               statusCode = 200,
-              content = s"Hello world!\n",
+              content = s"Hello world multiple handlers!\n",
               headers = Seq("Content-Type" -> "text/plain")
             )
           else false

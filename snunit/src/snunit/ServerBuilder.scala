@@ -18,7 +18,8 @@ abstract class ServerBuilder protected (
   private def copy(
       requestHandlers: Seq[Request => Boolean] = requestHandlers,
       websocketHandlers: Seq[WSFrame => Boolean] = websocketHandlers
-  ): this.type = create(
+  ): this.type =
+    create(
       requestHandlers = requestHandlers,
       websocketHandlers = websocketHandlers
     ).asInstanceOf[this.type]
@@ -41,7 +42,7 @@ object ServerBuilder {
       val builder = DataUtils.getData[ServerBuilder](req)
       val it = builder.requestHandlers.iterator
       var handled = false
-      while(!handled && it.hasNext) {
+      while (!handled && it.hasNext) {
         handled = it.next().apply(new Request(req))
       }
     }
@@ -52,7 +53,7 @@ object ServerBuilder {
       val builder = DataUtils.getData[ServerBuilder](frame.req)
       val it = builder.websocketHandlers.iterator
       var handled = false
-      while(!handled && it.hasNext) {
+      while (!handled && it.hasNext) {
         handled = it.next().apply(new WSFrame(frame))
       }
     }
