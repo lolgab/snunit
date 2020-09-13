@@ -19,7 +19,6 @@ object Autowire {
             req.path.split("/").toList match {
               case "" :: segments =>
                 val content = req.content
-                System.err.println(content)
                 val resultFuture = router(
                   autowire.Core.Request(
                     segments,

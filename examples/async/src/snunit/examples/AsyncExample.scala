@@ -12,7 +12,7 @@ object AsyncExample {
         req.method match {
           case Method.GET =>
             var t: Timer = null.asInstanceOf[Timer]
-            t = Timer.timeout(500) { () =>
+            t = Timer.timeout(500.millis) { () =>
               req.send(
                 statusCode = 200,
                 content = s"Hello world async!\n",
