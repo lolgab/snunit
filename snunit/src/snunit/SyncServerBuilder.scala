@@ -24,5 +24,8 @@ class SyncServerBuilder private (
     new SyncServer(ctx)
   }
 
-  protected override def create(requestHandlers: Seq[Request => Boolean], websocketHandlers: Seq[WSFrame => Boolean]): this.type = new SyncServerBuilder(requestHandlers, websocketHandlers).asInstanceOf[this.type]
+  protected override def create(
+      requestHandlers: Seq[Request => Boolean],
+      websocketHandlers: Seq[WSFrame => Boolean]
+  ): this.type = new SyncServerBuilder(requestHandlers, websocketHandlers).asInstanceOf[this.type]
 }

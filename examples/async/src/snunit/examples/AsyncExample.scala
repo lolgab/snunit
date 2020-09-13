@@ -3,6 +3,7 @@ package snunit.examples
 import snunit._
 import scala.scalanative.loop.Timer
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 object AsyncExample {
   def main(args: Array[String]): Unit = {
@@ -14,7 +15,7 @@ object AsyncExample {
             t = Timer.timeout(500) { () =>
               req.send(
                 statusCode = 200,
-                content = s"Hello world!\n",
+                content = s"Hello world async!\n",
                 headers = Seq("Content-Type" -> "text/plain")
               )
               t.clear()

@@ -14,19 +14,19 @@ object AsyncServerBuilder {
         assert(fcntl(port.in_fd, F_SETFL, O_NONBLOCK) != -1, s"fcntl(${port.in_fd}, F_SETFL, O_NONBLOCK) failed")
         val poll = Poll(port.in_fd)
         poll.start(in = true, out = false) { (status, readable, writable) =>
-          nxt_unit_run_once(ctx)
+          nxt_unit_process_port_msg(ctx, port)
         }
         ctx.data = poll.ptr
       }
-      nxt_unit_add_port(ctx, port)
+
+      NXT_UNIT_OK
     }
   }
 
   private val remove_port: remove_port_t = new remove_port_t {
-    def apply(ctx: Ptr[nxt_unit_ctx_t], port_id: Ptr[nxt_unit_port_id_t]): Unit = {
-      val poll = new Poll(ctx.data)
+    def apply(ctx: Ptr[nxt_unit_t], port: Ptr[nxt_unit_port_t]): Unit = {
+      val poll = new Poll(port.data)
       poll.stop()
-      nxt_unit_remove_port(ctx, port_id)
     }
   }
 
@@ -38,7 +38,7 @@ class AsyncServerBuilder(
     private val websocketHandlers: Seq[WSFrame => Boolean]
 ) extends ServerBuilder(requestHandlers, websocketHandlers) {
   def this() = this(Seq.empty, Seq.empty)
-  
+
   def build(): AsyncServer = {
     val init: Ptr[nxt_unit_init_t] = malloc(sizeof[nxt_unit_init_t]).asInstanceOf[Ptr[nxt_unit_init_t]]
     setBaseHandlers(init)
