@@ -1,0 +1,42 @@
+os: linux
+dist: bionic
+language: scala
+branches:
+  only:
+    - master
+scala:
+  - 2.11.12
+jdk:
+  - openjdk8
+before_install:
+  - curl -sL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
+  - echo "deb https://packages.nginx.org/unit/ubuntu/ bionic unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
+  - echo "deb-src https://packages.nginx.org/unit/ubuntu/ bionic unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
+  - sudo apt-get update
+  - sudo apt-get install -y libuv1-dev unit-dev
+  - sudo unitd --control unix:$HOME/unit-control.sock
+script:
+  - |
+    if [ ! -d $HOME/.ivy2/local/com.lihaoyi/autowire_native0.4.0-M2_2.11/0.3.2 ]; then
+      (
+        git clone https://github.com/lihaoyi/autowire
+        cd autowire
+        patch < ../autowire.patch
+        ./mill -j $(nproc) autowire.native[_].publishLocal
+      )
+    fi
+  - |
+    if [ ! -d $HOME/.ivy2/local/dev.whaling/native-loop-core_native0.4.0-M2_2.11/0.1.1-SNAPSHOT ]; then
+      (
+        git clone https://github.com/scala-native/scala-native-loop
+        cd scala-native-loop
+        sbt core/publishLocal
+      )
+    fi
+  - ./mill -j $(nproc) __.compile
+cache:
+  directories:
+    - $HOME/.cache/coursier
+    - $HOME/.ivy2/local
+    - $HOME/.mill
+    - $HOME/.sbt
