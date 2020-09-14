@@ -1,9 +1,6 @@
 os: linux
 dist: bionic
 language: scala
-branches:
-  only:
-    - master
 scala:
   - 2.11.12
 jdk:
