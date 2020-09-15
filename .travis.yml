@@ -5,13 +5,14 @@ scala:
   - 2.11.12
 jdk:
   - openjdk8
+env:
+  - UNIT_CONTROL_SOCKET_PATH=~/unit/unit-control.sock
 before_install:
   - curl -sL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
   - echo "deb https://packages.nginx.org/unit/ubuntu/ bionic unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
   - echo "deb-src https://packages.nginx.org/unit/ubuntu/ bionic unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
   - sudo apt-get update
   - sudo apt-get install -y libuv1-dev unit-dev
-  - sudo unitd --control unix:$HOME/unit-control.sock
 script:
   - |
     if [ ! -d $HOME/.ivy2/local/com.lihaoyi/autowire_native0.4.0-M2_2.11/0.3.2 ]; then
@@ -30,6 +31,9 @@ script:
       )
     fi
   - ./mill -j $(nproc) __.compile
+  - mkdir -p ~/unit
+  - unitd --control unix:"$UNIT_CONTROL_SOCKET_PATH" --log ~/unit/unit.log --pid ~/unit/unit.pid --state ~/unit/state
+  - ./mill -j $(nproc) integration.test
 cache:
   directories:
     - $HOME/.cache/coursier
