@@ -34,8 +34,8 @@ object AsyncServerBuilder {
 }
 
 class AsyncServerBuilder(
-    private val requestHandlers: Seq[Request => Boolean],
-    private val websocketHandlers: Seq[WSFrame => Boolean]
+    private val requestHandlers: Seq[Request => Unit],
+    private val websocketHandlers: Seq[WSFrame => Unit]
 ) extends ServerBuilder(requestHandlers, websocketHandlers) {
   def this() = this(Seq.empty, Seq.empty)
 
@@ -50,8 +50,8 @@ class AsyncServerBuilder(
   }
 
   protected override def create(
-      requestHandlers: Seq[Request => Boolean],
-      websocketHandlers: Seq[WSFrame => Boolean]
+      requestHandlers: Seq[Request => Unit],
+      websocketHandlers: Seq[WSFrame => Unit]
   ): this.type =
     new AsyncServerBuilder(requestHandlers, websocketHandlers).asInstanceOf[this.type]
 }

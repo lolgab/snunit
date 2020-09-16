@@ -7,13 +7,14 @@ object MultipleHandlersExample {
     val server =
       SyncServerBuilder()
         .withRequestHandler(req => {
-          if (req.method == Method.GET)
+          if (req.method == Method.GET) {
             req.send(
               statusCode = 200,
               content = s"Hello world multiple handlers!\n",
               headers = Seq("Content-Type" -> "text/plain")
             )
-          else false
+          }
+          else req.next()
         })
         .withRequestHandler(req => {
           req.send(
@@ -21,7 +22,6 @@ object MultipleHandlersExample {
             content = s"Not found\n",
             headers = Seq("Content-Type" -> "text/plain")
           )
-          false
         })
         .build()
 

@@ -31,6 +31,19 @@ object ExamplesTest extends TestSuite {
         assert(postResultResponse.statusCode == 404)
       }
     }
+    test("async-multiple-handlers") {
+      withDeployedExample("async-multiple-handlers") {
+        val getResult = requests.get(baseUrl).text()
+        val expectedGetResult = "Hello world async multiple handlers!\n"
+        assert(getResult == expectedGetResult)
+
+        val postResultResponse = requests.post(baseUrl, check = false)
+        val postResult = postResultResponse.text()
+        val expectedPostResult = "Not found\n"
+        assert(postResult == postResult)
+        assert(postResultResponse.statusCode == 404)
+      }
+    }
     test("autowire") {
       withDeployedExample("autowire") {
         val name = "A-Name"
