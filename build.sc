@@ -114,6 +114,9 @@ object examples extends Module {
   object async extends Common with UsesCore {
     def moduleDeps = super.moduleDeps :+ `snunit-scala-native-loop`
   }
+  object `async-multiple-handlers` extends Common with UsesCore {
+    def moduleDeps = super.moduleDeps :+ `snunit-scala-native-loop`
+  }
 }
 
 object integration extends ScalaModule {

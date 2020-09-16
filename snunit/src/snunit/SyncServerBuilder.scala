@@ -3,7 +3,7 @@ package snunit
 import scala.collection.mutable
 import scala.scalanative.unsafe._
 import scala.scalanative.libc.stdlib.malloc
-import snunit.unsafe.DataUtils
+import snunit.unsafe.PtrUtils
 import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
 
@@ -11,8 +11,8 @@ object SyncServerBuilder {
   def apply(): SyncServerBuilder = new SyncServerBuilder()
 }
 class SyncServerBuilder private (
-    private val requestHandlers: Seq[Request => Boolean],
-    private val websocketHandlers: Seq[WSFrame => Boolean]
+    private val requestHandlers: Seq[Request => Unit],
+    private val websocketHandlers: Seq[WSFrame => Unit]
 ) extends ServerBuilder(requestHandlers, websocketHandlers) {
   def this() = this(requestHandlers = Seq.empty, websocketHandlers = Seq.empty)
 
@@ -25,7 +25,7 @@ class SyncServerBuilder private (
   }
 
   protected override def create(
-      requestHandlers: Seq[Request => Boolean],
-      websocketHandlers: Seq[WSFrame => Boolean]
+      requestHandlers: Seq[Request => Unit],
+      websocketHandlers: Seq[WSFrame => Unit]
   ): this.type = new SyncServerBuilder(requestHandlers, websocketHandlers).asInstanceOf[this.type]
 }

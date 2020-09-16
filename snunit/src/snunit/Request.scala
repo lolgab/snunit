@@ -49,6 +49,19 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     if (res != 0) throw new Exception()
   }
 
+  @inline
+  private[snunit] def runHandler(handlers: Seq[Request => Unit]) = {
+    if (handlers.nonEmpty) {
+      req.data = unsafe.PtrUtils.toPtr(handlers.tail)
+      handlers.head(new Request(req))
+    }
+  }
+
+  def next(): Unit = {
+    val handlers = unsafe.PtrUtils.fromPtr[Seq[Request => Unit]](req.data)
+    runHandler(handlers)
+  }
+
   def send(statusCode: Int, content: String, headers: Seq[(String, String)]): Boolean = {
     val fieldsSize: Int = {
       var res = 0

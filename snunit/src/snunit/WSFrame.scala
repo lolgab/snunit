@@ -32,4 +32,17 @@ class WSFrame(val frame: Ptr[nxt_unit_websocket_frame_t]) extends AnyVal {
   def done(): Unit = nxt_unit_websocket_done(frame)
 
   def close(): Unit = nxt_unit_request_done(frame.req, 0)
+
+  @inline
+  private[snunit] def runHandler(handlers: Seq[WSFrame => Unit]) = {
+    if (handlers.nonEmpty) {
+      frame.req.data = unsafe.PtrUtils.toPtr(handlers.tail)
+      handlers.head(new WSFrame(frame))
+    }
+  }
+
+  def next(): Unit = {
+    val handlers = unsafe.PtrUtils.fromPtr[Seq[WSFrame => Unit]](frame.req.data)
+    runHandler(handlers)
+  }
 }
