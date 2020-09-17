@@ -1,8 +1,9 @@
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
-import mill.scalalib.scalafmt.ScalafmtModule
+import $ivy.`com.goyeau::mill-scalafix:0.1.5`
+import com.goyeau.mill.scalafix.ScalafixModule
 
-trait Common extends ScalaNativeModule with ScalafmtModule {
+trait Common extends ScalaNativeModule with ScalafixModule {
   def organization = "com.github.lolgab"
   def name = "snunit"
 
@@ -71,6 +72,12 @@ trait Common extends ScalaNativeModule with ScalafmtModule {
       doCurl(baseTestConfig(binary = binary, numProcesses = 8))
     }
   }
+
+  def scalacOptions = Seq(
+    "-Ywarn-unused"
+  )
+
+  def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.4.0")
 
   object test extends Tests {
     def testFrameworks = Seq.empty[String]

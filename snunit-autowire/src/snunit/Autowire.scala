@@ -1,17 +1,18 @@
 package snunit
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import upickle.default._
+import scala.concurrent.Future
+
 import autowire.Serializers
 import upickle.Api
-import scala.concurrent.Future
+import upickle.default._
 
 object Autowire {
   object UpickleAutowireServer extends autowire.Server[ujson.Value, Reader, Writer] {
     override def write[Result: Writer](r: Result): ujson.Value = upickle.default.write(r)
     override def read[Result: Reader](p: ujson.Value): Result = upickle.default.read[Result](p)
   }
-  implicit class ServerBuilderAutowireOps(val builder: ServerBuilder) extends AnyVal {
+  implicit class ServerBuilderAutowireOps(private val builder: ServerBuilder) extends AnyVal {
     def withAutowireRouter(router: autowire.Server[ujson.Value, Reader, Writer]#Router): ServerBuilder = {
       builder
         .withRequestHandler(req => {
@@ -35,11 +36,9 @@ object Autowire {
                   case scala.util.Failure(error) =>
                     req.send(500, s"Got error: $error", Seq.empty)
                 }
-                true
-              case _ =>
-                false
+              case _ => req.next()
             }
-          } else false
+          } else req.next()
         })
     }
   }

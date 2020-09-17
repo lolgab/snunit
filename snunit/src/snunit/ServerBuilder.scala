@@ -1,9 +1,10 @@
 package snunit
 
 import scala.scalanative.unsafe._
-import snunit.unsafe.PtrUtils
+
 import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
+import snunit.unsafe.PtrUtils
 
 abstract class ServerBuilder protected (
     private val requestHandlers: Seq[Request => Unit],

@@ -1,7 +1,8 @@
 package snunit.examples
 
-import snunit._
 import scala.concurrent.ExecutionContext.Implicits.global
+
+import snunit._
 
 object MultipleHandlersExample {
   def main(args: Array[String]): Unit = {
