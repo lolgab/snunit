@@ -1,9 +1,10 @@
 package snunit.examples
 
-import snunit._
-import scala.scalanative.loop.Timer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.scalanative.loop.Timer
+
+import snunit._
 
 object AsyncExample {
   def main(args: Array[String]): Unit = {
@@ -20,7 +21,6 @@ object AsyncExample {
               )
               t.clear()
             }
-            true
           case _ =>
             req.send(
               statusCode = 404,

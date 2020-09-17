@@ -1,11 +1,12 @@
 package snunit
 
+import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsafe._
+
 import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
 import snunit.unsafe.Utils._
 import snunit.unsafe.nxt_unit_sptr._
-import scala.scalanative.runtime.ByteArray
 
 class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) extends AnyVal {
   def method: Method =
@@ -62,7 +63,7 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     runHandler(handlers)
   }
 
-  def send(statusCode: Int, content: String, headers: Seq[(String, String)]): Boolean = {
+  def send(statusCode: Int, content: String, headers: Seq[(String, String)]): Unit = {
     val fieldsSize: Int = {
       var res = 0
       for ((key, value) <- headers) {
@@ -72,20 +73,21 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
       res
     }
 
-    assert(
-      nxt_unit_response_init(req, statusCode.toShort, headers.length, fieldsSize) == 0,
-      "nxt_unit_response_init fail"
-    )
+    locally {
+      val res = nxt_unit_response_init(req, statusCode.toShort, headers.length, fieldsSize)
+      if (res != NXT_UNIT_OK) throw new Exception("Failed to create response")
+    }
 
     for ((key, value) <- headers) {
       addField(key, value)
     }
     addContent(content)
 
-    nxt_unit_response_send(req)
+    locally {
+      val res = nxt_unit_response_send(req)
+      if (res != NXT_UNIT_OK) throw new Exception("Failed to send response")
+    }
 
     nxt_unit_request_done(req, 0)
-
-    true
   }
 }

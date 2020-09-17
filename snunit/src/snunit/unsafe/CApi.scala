@@ -1,10 +1,10 @@
 package snunit.unsafe
 
-import scala.scalanative.unsafe._
 import scala.scalanative.posix.sys.types.pid_t
+import scala.scalanative.unsafe.Nat._8
+import scala.scalanative.unsafe._
 
 import snunit.unsafe.nxt_unit_sptr._
-import scala.scalanative.unsafe.Nat._8
 
 @extern
 object CApi {
@@ -210,6 +210,8 @@ object CApi {
   ): CInt = extern
 
   def nxt_unit_websocket_done(ws: Ptr[nxt_unit_websocket_frame_t]): Unit = extern
+
+  def nxt_unit_log(ctx: Ptr[nxt_unit_ctx_t], level: Int, fmt: CString): Unit = extern
 }
 object CApiOps {
   import CApi._
@@ -219,12 +221,24 @@ object CApiOps {
   final val NXT_UNIT_AGAIN = 2
   final val NXT_UNIT_CANCELLED = 3
 
-  implicit class nxt_unit_t_ops(val ptr: Ptr[nxt_unit_t]) extends AnyVal {
+  final val NXT_UNIT_LOG_ALERT = 0
+  final val NXT_UNIT_LOG_ERR = 1
+  final val NXT_UNIT_LOG_WARN = 2
+  final val NXT_UNIT_LOG_NOTICE = 3
+  final val NXT_UNIT_LOG_INFO = 4
+  final val NXT_UNIT_LOG_DEBUG = 5
+
+  def nxt_unit_warn(ctx: Ptr[nxt_unit_ctx_t], message: String): Unit =
+    Zone { implicit z =>
+      nxt_unit_log(ctx, NXT_UNIT_LOG_WARN, toCString(message))
+    }
+
+  implicit class nxt_unit_t_ops(private val ptr: Ptr[nxt_unit_t]) extends AnyVal {
     def data: Ptr[Byte] = ptr._1
     def data_=(v: Ptr[Byte]): Unit = ptr._1 = v
   }
 
-  implicit class nxt_unit_ctx_t_ops(val ptr: Ptr[nxt_unit_ctx_t]) extends AnyVal {
+  implicit class nxt_unit_ctx_t_ops(private val ptr: Ptr[nxt_unit_ctx_t]) extends AnyVal {
     def data: Ptr[Byte] = ptr._1
     def data_=(v: Ptr[Byte]): Unit = ptr._1 = v
 
@@ -232,7 +246,7 @@ object CApiOps {
     def unit_=(v: Ptr[nxt_unit_t]): Unit = ptr._2 = v
   }
 
-  implicit class nxt_unit_port_id_t_ops(val ptr: Ptr[nxt_unit_port_id_t]) extends AnyVal {
+  implicit class nxt_unit_port_id_t_ops(private val ptr: Ptr[nxt_unit_port_id_t]) extends AnyVal {
     def pid: pid_t = ptr._1
     def pid_=(v: pid_t): Unit = ptr._1 = v
 
@@ -243,7 +257,7 @@ object CApiOps {
     def id_=(v: CShort): Unit = ptr._3 = v
   }
 
-  implicit class nxt_unit_port_t_ops(val ptr: Ptr[nxt_unit_port_t]) extends AnyVal {
+  implicit class nxt_unit_port_t_ops(private val ptr: Ptr[nxt_unit_port_t]) extends AnyVal {
     def id: Ptr[nxt_unit_port_id_t] = ptr.at1
     def id_=(v: Ptr[nxt_unit_port_id_t]): Unit = ptr._1 = v
 
@@ -257,7 +271,7 @@ object CApiOps {
     def data_=(v: Ptr[Byte]): Unit = ptr._4 = v
   }
 
-  implicit class nxt_unit_buf_t_ops(val ptr: Ptr[nxt_unit_buf_t]) extends AnyVal {
+  implicit class nxt_unit_buf_t_ops(private val ptr: Ptr[nxt_unit_buf_t]) extends AnyVal {
     def start: Ptr[CChar] = ptr._1
     def start_=(v: Ptr[CChar]): Unit = ptr._1 = v
 
@@ -268,7 +282,7 @@ object CApiOps {
     def end_=(v: Ptr[CChar]): Unit = ptr._2 = v
   }
 
-  implicit class nxt_unit_field_t_ops(val ptr: Ptr[nxt_unit_field_t]) extends AnyVal {
+  implicit class nxt_unit_field_t_ops(private val ptr: Ptr[nxt_unit_field_t]) extends AnyVal {
     def hash: CShort = ptr._1
     def hash_=(v: CShort): Unit = ptr._1 = v
 
@@ -292,7 +306,7 @@ object CApiOps {
   }
 
   trait nxt_unit_request_t
-  implicit class nxt_unit_request_t_ops(val ptr: Ptr[nxt_unit_request_t]) extends AnyVal {
+  implicit class nxt_unit_request_t_ops(private val ptr: Ptr[nxt_unit_request_t]) extends AnyVal {
     def method_length: Byte = !ptr.asInstanceOf[Ptr[Byte]]
 
     def version_length: Byte = !(ptr.asInstanceOf[Ptr[Byte]] + 1).asInstanceOf[Ptr[Byte]]
@@ -348,7 +362,7 @@ object CApiOps {
     def fields: Ptr[nxt_unit_field_t] = (ptr.asInstanceOf[Ptr[Byte]] + 84).asInstanceOf[Ptr[nxt_unit_field_t]]
   }
 
-  implicit class nxt_unit_response_t_ops(val ptr: Ptr[nxt_unit_response_t]) extends AnyVal {
+  implicit class nxt_unit_response_t_ops(private val ptr: Ptr[nxt_unit_response_t]) extends AnyVal {
     def content_length: CLongInt = ptr._1
     def content_length_=(v: CLongInt): Unit = ptr._1 = v
 
@@ -367,7 +381,7 @@ object CApiOps {
     def fields: Ptr[nxt_unit_field_t] = ptr.at6
   }
 
-  implicit class nxt_unit_request_info_t_ops(val ptr: Ptr[nxt_unit_request_info_t]) extends AnyVal {
+  implicit class nxt_unit_request_info_t_ops(private val ptr: Ptr[nxt_unit_request_info_t]) extends AnyVal {
     def unit: Ptr[nxt_unit_t] = ptr._1
     def unit_=(v: Ptr[nxt_unit_t]): Unit = ptr._1 = v
 
@@ -405,7 +419,7 @@ object CApiOps {
     def data_=(v: Ptr[Byte]): Unit = ptr._12 = v
   }
 
-  implicit class nxt_unit_callbacks_t_ops(val ptr: Ptr[nxt_unit_callbacks_t]) extends AnyVal {
+  implicit class nxt_unit_callbacks_t_ops(private val ptr: Ptr[nxt_unit_callbacks_t]) extends AnyVal {
     def request_handler: request_handler_t = ptr._1
     def request_handler_=(v: request_handler_t): Unit = ptr._1 = v
 
@@ -425,7 +439,7 @@ object CApiOps {
     def quit_=(v: quit_t): Unit = ptr._8 = v
   }
 
-  implicit class nxt_unit_init_t_ops(val ptr: Ptr[nxt_unit_init_t]) extends AnyVal {
+  implicit class nxt_unit_init_t_ops(private val ptr: Ptr[nxt_unit_init_t]) extends AnyVal {
     def data: Ptr[Byte] = ptr._1
     def data_=(v: Ptr[Byte]): Unit = ptr._1 = v
 
@@ -460,7 +474,7 @@ object CApiOps {
     def log_fd_=(v: CInt): Unit = ptr._11 = v
   }
 
-  implicit class nxt_websocket_header_t_ops(val ptr: Ptr[nxt_websocket_header_t]) extends AnyVal {
+  implicit class nxt_websocket_header_t_ops(private val ptr: Ptr[nxt_websocket_header_t]) extends AnyVal {
     def opcode: Byte = ptr._1
     def rsv3: Byte = ptr._2
     def rsv2: Byte = ptr._3
@@ -471,7 +485,7 @@ object CApiOps {
     def payload_len_ : Ptr[CArray[Byte, _8]] = ptr.at8
   }
 
-  implicit class nxt_unit_websocket_frame_t_ops(val ptr: Ptr[nxt_unit_websocket_frame_t]) extends AnyVal {
+  implicit class nxt_unit_websocket_frame_t_ops(private val ptr: Ptr[nxt_unit_websocket_frame_t]) extends AnyVal {
     def req: Ptr[nxt_unit_request_info_t] = ptr._1
     def payload_len: CLongInt = ptr._2
     def header: Ptr[nxt_websocket_header_t] = ptr._3

@@ -1,6 +1,7 @@
 package snunit
 
 import scala.scalanative.unsafe._
+
 import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
 

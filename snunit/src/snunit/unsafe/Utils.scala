@@ -1,7 +1,8 @@
 package snunit.unsafe
 
-import scala.scalanative.unsafe._
 import java.nio.charset.Charset
+
+import scala.scalanative.unsafe._
 
 private[snunit] object Utils {
   def fromCStringAndSize(cstr: CString, size: Int, charset: Charset = Charset.defaultCharset()): String = {

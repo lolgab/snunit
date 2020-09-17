@@ -1,9 +1,10 @@
 package snunit
 
+import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsafe._
+
 import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
-import scala.scalanative.runtime.ByteArray
 
 class WSFrame(val frame: Ptr[nxt_unit_websocket_frame_t]) extends AnyVal {
   def opcode =

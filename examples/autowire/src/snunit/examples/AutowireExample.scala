@@ -1,10 +1,10 @@
 package snunit.examples
 
-import snunit.AsyncServerBuilder
-import snunit.Autowire._
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
+import snunit.AsyncServerBuilder
+import snunit.Autowire._
 
 trait MyApi {
   def helloAsync(name: String): Future[String]

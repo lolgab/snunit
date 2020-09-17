@@ -47,7 +47,8 @@ object ExamplesTest extends TestSuite {
     test("autowire") {
       withDeployedExample("autowire") {
         val name = "A-Name"
-        val asyncResult = requests.post(s"$baseUrl/snunit/examples/MyApi/helloAsync", data = s"""{"name": "$name"}""").text()
+        val asyncResult =
+          requests.post(s"$baseUrl/snunit/examples/MyApi/helloAsync", data = s"""{"name": "$name"}""").text()
         assert(asyncResult.contains("Hello "))
         assert(asyncResult.contains(name))
       }

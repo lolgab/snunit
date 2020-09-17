@@ -1,22 +1,40 @@
 package snunit
 
-import scala.scalanative.unsafe._
+import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.stdlib.malloc
+import scala.scalanative.libc.string.strerror
+import scala.scalanative.loop.Poll
+import scala.scalanative.posix.fcntl.F_SETFL
+import scala.scalanative.posix.fcntl.O_NONBLOCK
+import scala.scalanative.posix.fcntl.fcntl
+import scala.scalanative.unsafe._
+import scala.util.control.NonFatal
+
 import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
-import scala.scalanative.loop.Poll
-import scala.scalanative.posix.fcntl.{fcntl, F_SETFL, O_NONBLOCK}
 
 object AsyncServerBuilder {
   private val add_port: add_port_t = new add_port_t {
     def apply(ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]): CInt = {
       if (port.in_fd != -1) {
-        assert(fcntl(port.in_fd, F_SETFL, O_NONBLOCK) != -1, s"fcntl(${port.in_fd}, F_SETFL, O_NONBLOCK) failed")
-        val poll = Poll(port.in_fd)
-        poll.start(in = true, out = false) { (status, readable, writable) =>
-          nxt_unit_process_port_msg(ctx, port)
+        locally {
+          val res = fcntl(port.in_fd, F_SETFL, O_NONBLOCK)
+          if (res == -1) {
+            nxt_unit_warn(ctx, s"fcntl(${port.in_fd}, O_NONBLOCK) failed: ${fromCString(strerror(errno))}, $errno)")
+            return -1
+          }
         }
-        ctx.data = poll.ptr
+        try {
+          val poll = Poll(port.in_fd)
+          poll.start(in = true, out = false) { (status, readable, writable) =>
+            nxt_unit_process_port_msg(ctx, port)
+          }
+          ctx.data = poll.ptr
+        } catch {
+          case NonFatal(e) =>
+            nxt_unit_warn(ctx, s"Polling failed: ${fromCString(strerror(errno))}, $errno)")
+            NXT_UNIT_ERROR
+        }
       }
 
       NXT_UNIT_OK
@@ -45,7 +63,9 @@ class AsyncServerBuilder(
     init.callbacks.add_port = AsyncServerBuilder.add_port
     init.callbacks.remove_port = AsyncServerBuilder.remove_port
     val ctx: Ptr[nxt_unit_ctx_t] = nxt_unit_init(init)
-    assert(ctx != null, "nxt_unit_init fail")
+    if (ctx == null) {
+      throw new Exception("Failed to create Unit object")
+    }
     new AsyncServer(ctx)
   }
 

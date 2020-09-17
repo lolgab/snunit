@@ -13,8 +13,7 @@ object MultipleHandlersExample {
               content = s"Hello world multiple handlers!\n",
               headers = Seq("Content-Type" -> "text/plain")
             )
-          }
-          else req.next()
+          } else req.next()
         })
         .withRequestHandler(req => {
           req.send(
