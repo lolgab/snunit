@@ -31,6 +31,7 @@ script:
       )
     fi
   - ./mill -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+  - ./mill -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll buildSources
   - ./mill -j $(nproc) __.fix --check
   - ./mill -j $(nproc) __.compile
   - mkdir -p ~/unit
