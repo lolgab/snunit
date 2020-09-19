@@ -89,25 +89,26 @@ trait Common extends ScalaNativeModule with ScalafixModule {
 }
 
 trait Publish extends PublishModule {
-  def pomSettings = PomSettings(
-    description = "Scala Native server using NGINX Unit",
-    organization = "com.github.lolgab",
-    url = "https://github.com/lolgab/snunit",
-    licenses = Seq(License.MIT),
-    scm = SCM(
-      "git://github.com/lolgab/snunit.git",
-      "scm:git://github.com/lolgab/snunit.git"
-    ),
-    developers = Seq(
-      Developer("lolgab", "Lorenzo Gabriele","https://github.com/lihaoyi")
+  def pomSettings =
+    PomSettings(
+      description = "Scala Native server using NGINX Unit",
+      organization = "com.github.lolgab",
+      url = "https://github.com/lolgab/snunit",
+      licenses = Seq(License.MIT),
+      scm = SCM(
+        "git://github.com/lolgab/snunit.git",
+        "scm:git://github.com/lolgab/snunit.git"
+      ),
+      developers = Seq(
+        Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lihaoyi")
+      )
     )
-  )
   def publishVersion = "0.0.1-SNAPSHOT"
 }
 
 object snunit extends Common with Publish
 
-object `snunit-async` extends Common with Publish  {
+object `snunit-async` extends Common with Publish {
   def moduleDeps = Seq(snunit)
 
   def ivyDeps =
@@ -160,3 +161,8 @@ object integration extends ScalaModule {
       )
   }
 }
+
+def buildSources =
+  T {
+    Seq(PathRef(os.pwd / "build.sc"))
+  }
