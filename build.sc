@@ -1,4 +1,5 @@
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
+import mill.scalalib.publish._
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import $ivy.`com.goyeau::mill-scalafix:0.1.5`
 import com.goyeau.mill.scalafix.ScalafixModule
@@ -73,9 +74,10 @@ trait Common extends ScalaNativeModule with ScalafixModule {
     }
   }
 
-  def scalacOptions = Seq(
-    "-Ywarn-unused"
-  )
+  def scalacOptions =
+    Seq(
+      "-Ywarn-unused"
+    )
 
   def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.4.0")
 
@@ -86,13 +88,28 @@ trait Common extends ScalaNativeModule with ScalafixModule {
   }
 }
 
-object snunit extends Common
-
-trait UsesCore extends ScalaModule {
-  def moduleDeps: Seq[ScalaModule] = Seq(snunit)
+trait Publish extends PublishModule {
+  def pomSettings = PomSettings(
+    description = "Scala Native server using NGINX Unit",
+    organization = "com.github.lolgab",
+    url = "https://github.com/lolgab/snunit",
+    licenses = Seq(License.MIT),
+    scm = SCM(
+      "git://github.com/lolgab/snunit.git",
+      "scm:git://github.com/lolgab/snunit.git"
+    ),
+    developers = Seq(
+      Developer("lolgab", "Lorenzo Gabriele","https://github.com/lihaoyi")
+    )
+  )
+  def publishVersion = "0.0.1-SNAPSHOT"
 }
 
-object `snunit-scala-native-loop` extends Common with UsesCore {
+object snunit extends Common with Publish
+
+object `snunit-scala-native-loop` extends Common with Publish  {
+  def moduleDeps = Seq(snunit)
+
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
@@ -101,8 +118,8 @@ object `snunit-scala-native-loop` extends Common with UsesCore {
     }
 }
 
-object `snunit-autowire` extends Common with UsesCore {
-  def moduleDeps: Seq[ScalaModule] = Seq(`snunit-scala-native-loop`)
+object `snunit-autowire` extends Common with Publish {
+  def moduleDeps = Seq(`snunit-scala-native-loop`)
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
@@ -113,16 +130,21 @@ object `snunit-autowire` extends Common with UsesCore {
 }
 
 object examples extends Module {
-  object `hello-world` extends Common with UsesCore
-  object `multiple-handlers` extends Common with UsesCore
-  object autowire extends Common with UsesCore {
-    def moduleDeps = super.moduleDeps :+ `snunit-autowire`
+  object `hello-world` extends Common {
+    def moduleDeps = Seq(snunit)
+    // def releaseMode = ReleaseMode.ReleaseFull
   }
-  object async extends Common with UsesCore {
-    def moduleDeps = super.moduleDeps :+ `snunit-scala-native-loop`
+  object `multiple-handlers` extends Common {
+    def moduleDeps = Seq(snunit)
   }
-  object `async-multiple-handlers` extends Common with UsesCore {
-    def moduleDeps = super.moduleDeps :+ `snunit-scala-native-loop`
+  object autowire extends Common {
+    def moduleDeps = Seq(`snunit-autowire`)
+  }
+  object async extends Common {
+    def moduleDeps = Seq(`snunit-scala-native-loop`)
+  }
+  object `async-multiple-handlers` extends Common {
+    def moduleDeps = Seq(`snunit-scala-native-loop`)
   }
 }
 
