@@ -107,7 +107,7 @@ trait Publish extends PublishModule {
 
 object snunit extends Common with Publish
 
-object `snunit-scala-native-loop` extends Common with Publish  {
+object `snunit-async` extends Common with Publish  {
   def moduleDeps = Seq(snunit)
 
   def ivyDeps =
@@ -119,7 +119,7 @@ object `snunit-scala-native-loop` extends Common with Publish  {
 }
 
 object `snunit-autowire` extends Common with Publish {
-  def moduleDeps = Seq(`snunit-scala-native-loop`)
+  def moduleDeps = Seq(`snunit-async`)
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
@@ -141,10 +141,10 @@ object examples extends Module {
     def moduleDeps = Seq(`snunit-autowire`)
   }
   object async extends Common {
-    def moduleDeps = Seq(`snunit-scala-native-loop`)
+    def moduleDeps = Seq(`snunit-async`)
   }
   object `async-multiple-handlers` extends Common {
-    def moduleDeps = Seq(`snunit-scala-native-loop`)
+    def moduleDeps = Seq(`snunit-async`)
   }
 }
 
