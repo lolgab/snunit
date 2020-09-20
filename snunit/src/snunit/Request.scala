@@ -23,6 +23,17 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
       case other     => new Method(other)
     }
 
+  def headers: Map[String, String] = {
+    val builder = Map.newBuilder[String, String]
+    for (i <- 0 until req.request.fields_count) {
+      val field = req.request.fields + i
+      val fieldName = fromCStringAndSize(field.name, field.name_length)
+      val fieldValue = fromCStringAndSize(field.value, field.value_length)
+      builder += fieldName -> fieldValue
+    }
+    builder.result()
+  }
+
   def content: String = {
     val contentLength = req.request.content_length
     if (contentLength > 0) {
