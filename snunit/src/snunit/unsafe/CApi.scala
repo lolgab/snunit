@@ -41,9 +41,8 @@ object CApi {
 
   type nxt_unit_buf_t = CStruct3[Ptr[CChar], Ptr[CChar], Ptr[CChar]]
 
-  type nxt_unit_field_t = CStruct7[
+  type nxt_unit_field_t = CStruct6[
     CShort,
-    Byte,
     Byte,
     Byte,
     CInt,
@@ -284,25 +283,18 @@ object CApiOps {
 
   implicit class nxt_unit_field_t_ops(private val ptr: Ptr[nxt_unit_field_t]) extends AnyVal {
     def hash: CShort = ptr._1
-    def hash_=(v: CShort): Unit = ptr._1 = v
 
-    def skip: Byte = ptr._2
-    def skip_=(v: Byte): Unit = ptr._2 = v
+    def skip: Byte = (ptr._2 & 1.toByte).toByte
 
-    def hopbyhop: Byte = ptr._3
-    def hopbyhop_=(v: Byte): Unit = ptr._3 = v
+    def hopbyhop: Byte = ((ptr._2 >> 1) & 1.toByte).toByte
 
-    def name_length: Byte = ptr._4
-    def name_length_=(v: Byte): Unit = ptr._4 = v
+    def name_length: Byte = ptr._3
 
-    def value_length: CInt = ptr._5
-    def value_length_=(v: CInt): Unit = ptr._5 = v
+    def value_length: CInt = ptr._4
 
-    def name: CInt = ptr._6
-    def name_=(v: CInt): Unit = ptr._6 = v
+    def name: Ptr[Byte] = nxt_unit_sptr_get(ptr.at5)
 
-    def v: CInt = ptr._6
-    def value_=(v: CInt): Unit = ptr._6 = v
+    def value: Ptr[Byte] = nxt_unit_sptr_get(ptr.at6)
   }
 
   trait nxt_unit_request_t
