@@ -3,10 +3,10 @@ import scala.util.control.NonFatal
 object TestUtils {
   def withDeployedExample(projectName: String)(f: => Unit) = {
     os.proc(
-      Seq(
-        "./mill",
-        s"examples.$projectName.deployTestApp"
-      )
+      "./mill",
+      "-j",
+      sys.runtime.availableProcessors,
+      s"examples.$projectName.deployTestApp"
     ).call()
     f
   }
