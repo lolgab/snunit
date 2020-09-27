@@ -4,6 +4,8 @@ import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import $ivy.`com.goyeau::mill-scalafix:0.1.5`
 import com.goyeau.mill.scalafix.ScalafixModule
 
+val upickle = ivy"com.lihaoyi::upickle::1.2.0"
+
 trait Common extends ScalaNativeModule with ScalafixModule {
   def organization = "com.github.lolgab"
   def name = "snunit"
@@ -74,10 +76,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
     }
   }
 
-  def scalacOptions =
-    Seq(
-      "-Ywarn-unused"
-    )
+  def scalacOptions = Seq("-Ywarn-unused")
 
   def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.4.0")
 
@@ -106,7 +105,9 @@ trait Publish extends PublishModule {
   def publishVersion = "0.0.1-SNAPSHOT"
 }
 
-object snunit extends Common with Publish
+object snunit extends Common with Publish {
+  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.2") }
+}
 
 object `snunit-async` extends Common with Publish {
   def moduleDeps = Seq(snunit)
@@ -125,7 +126,7 @@ object `snunit-autowire` extends Common with Publish {
     T {
       super.ivyDeps() ++ Agg(
         ivy"com.lihaoyi::autowire::0.3.2",
-        ivy"com.lihaoyi::upickle::1.1.0"
+        upickle
       )
     }
 }
@@ -147,6 +148,10 @@ object examples extends Module {
   object `async-multiple-handlers` extends Common {
     def moduleDeps = Seq(`snunit-async`)
   }
+  object stream extends Common {
+    def moduleDeps = Seq(snunit)
+    def ivyDeps = T { super.ivyDeps() ++ Seq(upickle) }
+  }
 }
 
 object integration extends ScalaModule {
@@ -155,14 +160,11 @@ object integration extends ScalaModule {
     def testFrameworks = Seq("utest.runner.Framework")
     def ivyDeps =
       Agg(
-        ivy"com.lihaoyi::utest:0.7.2",
+        ivy"com.lihaoyi::utest:0.7.5",
         ivy"com.lihaoyi::os-lib:0.7.1",
         ivy"com.lihaoyi::requests:0.6.5"
       )
   }
 }
 
-def buildSources =
-  T {
-    Seq(PathRef(os.pwd / "build.sc"))
-  }
+def buildSources = T(Seq(PathRef(os.pwd / "build.sc")))
