@@ -8,7 +8,7 @@ import snunit.unsafe.CApiOps._
 import snunit.unsafe.Utils._
 import snunit.unsafe.nxt_unit_sptr._
 
-class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) extends AnyVal {
+class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) extends geny.Readable {
   def method: Method =
     fromCStringAndSize(req.request.method, req.request.method_length) match {
       case "GET"     => Method.GET
@@ -23,7 +23,7 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
       case other     => new Method(other)
     }
 
-  def headers: Map[String, String] = {
+  lazy val headers: Map[String, String] = {
     val builder = Map.newBuilder[String, String]
     for (i <- 0 until req.request.fields_count) {
       val field = req.request.fields + i
@@ -34,31 +34,25 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     builder.result()
   }
 
-  def content: String = {
+  def content: String = new String(contentRaw)
+
+  lazy val contentRaw: Array[Byte] = {
     val contentLength = req.request.content_length
     if (contentLength > 0) {
       val array = new Array[Byte](contentLength.toInt)
 
       nxt_unit_request_read(req, array.asInstanceOf[ByteArray].at(0), contentLength)
-      new String(array)
-    } else ""
+      array
+    } else Array.emptyByteArray
   }
 
   def path: String = fromCStringAndSize(req.request.path, req.request.path_length)
 
-  // def target: String = fromCStringAndSize(req.request.target, req.request.target_length)
-
-  private def addField(name: String, value: String): Unit = {
+  private def addHeader(name: String, value: String): Unit = {
     val n = name.getBytes().asInstanceOf[ByteArray]
     val v = value.getBytes().asInstanceOf[ByteArray]
     val res = nxt_unit_response_add_field(req, n.at(0), n.length.toByte, v.at(0), v.length)
-    if (res != 0) throw new Exception()
-  }
-
-  private def addContent(content: String): Unit = {
-    val v = content.getBytes().asInstanceOf[ByteArray]
-    val res = nxt_unit_response_add_content(req, v.at(0), v.length)
-    if (res != 0) throw new Exception()
+    if (res != 0) throw new Exception("Failed to add field")
   }
 
   @inline
@@ -73,14 +67,12 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     val handlers = unsafe.PtrUtils.fromPtr[Seq[Request => Unit]](req.data)
     runHandler(handlers)
   }
-
-  def send(statusCode: Int, content: String, headers: Seq[(String, String)]): Unit = {
+  private[snunit] def startSend(statusCode: Int, headers: Seq[(String, String)]): Unit = {
     val fieldsSize: Int = {
       var res = 0
       for ((key, value) <- headers) {
         res += key.length + value.length
       }
-      res += content.length
       res
     }
 
@@ -90,15 +82,40 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     }
 
     for ((key, value) <- headers) {
-      addField(key, value)
+      addHeader(key, value)
     }
-    addContent(content)
-
-    locally {
-      val res = nxt_unit_response_send(req)
-      if (res != NXT_UNIT_OK) throw new Exception("Failed to send response")
+  }
+  private def sendBatch(data: Array[Byte]): Unit = {
+    val res = nxt_unit_response_write_nb(req, data.asInstanceOf[ByteArray].at(0), data.length, 0L)
+    if (res < 0) {
+      throw new Exception("Failed to send batch")
     }
-
-    nxt_unit_request_done(req, 0)
+  }
+  private def sendDone(): Unit = {
+    nxt_unit_request_done(req, NXT_UNIT_OK)
+  }
+  def sendRaw(statusCode: Int, contentRaw: Array[Byte], headers: Seq[(String, String)]): Unit = {
+    startSend(statusCode, headers)
+    sendBatch(contentRaw)
+    sendDone()
+  }
+  def send(statusCode: Int, content: String, headers: Seq[(String, String)]): Unit = {
+    sendRaw(statusCode, content.getBytes(), headers)
+  }
+  def readBytesThrough[T](f: java.io.InputStream => T) = f(new java.io.ByteArrayInputStream(contentRaw))
+  override def httpContentType: Option[String] = headers.get("Content-Type")
+  override def contentLength: Option[Long] = Some(req.request.content_length.toLong)
+  def send(statusCode: Int, content: geny.Writable, headers: Seq[(String, String)]): Unit = {
+    val outputStream = new java.io.ByteArrayOutputStream()
+    content.writeBytesTo(outputStream)
+    sendRaw(
+      statusCode,
+      outputStream.toByteArray(),
+      headers ++
+        content.contentLength.map("Content-Length" -> _.toString) ++
+        content.httpContentType.map(
+          "Content-Type" -> _
+        )
+    )
   }
 }

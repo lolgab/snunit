@@ -27,7 +27,7 @@ object ExamplesTest extends TestSuite {
         val postResultResponse = requests.post(baseUrl, check = false)
         val postResult = postResultResponse.text()
         val expectedPostResult = "Not found\n"
-        assert(postResult == postResult)
+        assert(postResult == expectedPostResult)
         assert(postResultResponse.statusCode == 404)
       }
     }
@@ -40,7 +40,7 @@ object ExamplesTest extends TestSuite {
         val postResultResponse = requests.post(baseUrl, check = false)
         val postResult = postResultResponse.text()
         val expectedPostResult = "Not found\n"
-        assert(postResult == postResult)
+        assert(postResult == expectedPostResult)
         assert(postResultResponse.statusCode == 404)
       }
     }
@@ -51,6 +51,13 @@ object ExamplesTest extends TestSuite {
           requests.post(s"$baseUrl/snunit/examples/MyApi/helloAsync", data = s"""{"name": "$name"}""").text()
         assert(asyncResult.contains("Hello "))
         assert(asyncResult.contains(name))
+      }
+    }
+    test("stream") {
+      withDeployedExample("stream") {
+        val json = """{"message":"Hello world!"}"""
+        val asyncResult = requests.post(s"$baseUrl", data = json).text()
+        assert(asyncResult == json)
       }
     }
   }

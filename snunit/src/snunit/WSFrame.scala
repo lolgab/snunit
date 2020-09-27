@@ -32,7 +32,7 @@ class WSFrame(val frame: Ptr[nxt_unit_websocket_frame_t]) extends AnyVal {
 
   def done(): Unit = nxt_unit_websocket_done(frame)
 
-  def close(): Unit = nxt_unit_request_done(frame.req, 0)
+  def close(): Unit = nxt_unit_request_done(frame.req, NXT_UNIT_OK)
 
   @inline
   private[snunit] def runHandler(handlers: Seq[WSFrame => Unit]) = {

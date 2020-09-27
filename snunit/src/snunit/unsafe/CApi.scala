@@ -192,6 +192,13 @@ object CApi {
 
   def nxt_unit_response_buf_alloc(req: Ptr[nxt_unit_request_info_t], size: CInt): Ptr[nxt_unit_buf_t] = extern
 
+  def nxt_unit_response_write_nb(
+      req: Ptr[nxt_unit_request_info_t],
+      start: CString,
+      size: CSize,
+      min_size: CSize
+  ): CSize = extern
+
   def nxt_unit_buf_send(buf: Ptr[nxt_unit_buf_t]): CInt = extern
 
   def nxt_unit_request_read(req: Ptr[nxt_unit_request_info_t], dst: Ptr[Byte], size: CSize): CSize = extern
