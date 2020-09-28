@@ -12,8 +12,8 @@ object Autowire {
     override def write[Result: Writer](r: Result): ujson.Value = upickle.default.write(r)
     override def read[Result: Reader](p: ujson.Value): Result = upickle.default.read[Result](p)
   }
-  implicit class ServerBuilderAutowireOps(private val builder: ServerBuilder) extends AnyVal {
-    def withAutowireRouter(router: autowire.Server[ujson.Value, Reader, Writer]#Router): ServerBuilder = {
+  implicit class ServerBuilderAutowireOps(private val builder: AsyncServerBuilder) extends AnyVal {
+    def withAutowireRouter(router: autowire.Server[ujson.Value, Reader, Writer]#Router): AsyncServerBuilder = {
       builder
         .withRequestHandler(req => {
           if (req.method == Method.POST) {

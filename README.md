@@ -62,7 +62,7 @@ AsyncServerBuilder()
 Since ServerBuilders are immutable you can implement middlewares as functions:
 
 ```scala
-def myMiddleware(builder: ServerBuilder): ServerBuilder = builder.
+def myMiddleware[T <: ServerBuilder](builder: T): T = builder.
   withRequestHandler(req => {
     if(req.method == Method.PUT && headers.get("Content-Type").contains("application/json")) {
       // handle only PUTs with json content
@@ -71,15 +71,14 @@ def myMiddleware(builder: ServerBuilder): ServerBuilder = builder.
     }
   })
 
-
 myMiddleware(AsyncServerBuilder()).build()
 ```
 
 You can even implement them as extension methods:
 
 ```scala
-implicit class ServerBuilderOps(private val builder: ServerBuilder) extends AnyVal {
-  def with404: ServerBuilder = builder.withRequestHandler(req => {
+implicit class ServerBuilderOps[T <: ServerBuilder](private val builder: T) extends AnyVal {
+  def with404: T = builder.withRequestHandler(req => {
     req.send(404, "Not found", Seq.empty)
   })
 }
