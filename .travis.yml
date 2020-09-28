@@ -17,7 +17,7 @@ script:
   - |
     if [ ! -d $HOME/.ivy2/local/com.lihaoyi/autowire_native0.4.0-M2_2.11/0.3.2 ]; then
       (
-        git clone https://github.com/lihaoyi/autowire
+        git clone https://github.com/lihaoyi/autowire --depth 1
         cd autowire
         ./mill -j $(nproc) autowire.native[_].publishLocal
       )
@@ -25,9 +25,17 @@ script:
   - |
     if [ ! -d $HOME/.ivy2/local/dev.whaling/native-loop-core_native0.4.0-M2_2.11/0.1.1-SNAPSHOT ]; then
       (
-        git clone https://github.com/scala-native/scala-native-loop
+        git clone https://github.com/scala-native/scala-native-loop --depth 1
         cd scala-native-loop
         sbt core/publishLocal
+      )
+    fi
+  - |
+    if [ ! -d $HOME/.ivy2/local/tech.sparse/trail_native0.4.0-M2_2.11/0.3.0-SNAPSHOT ]; then
+      (
+        git clone https://github.com/lolgab/trail --depth 1 --branch update-scala-native
+        cd trail
+        sbt trailNative/publishLocal
       )
     fi
   - ./mill -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
