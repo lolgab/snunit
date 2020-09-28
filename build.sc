@@ -120,6 +120,17 @@ object `snunit-async` extends Common with Publish {
     }
 }
 
+object `snunit-routes` extends Common with Publish {
+  def moduleDeps = Seq(snunit)
+
+  def ivyDeps =
+    T {
+      super.ivyDeps() ++ Agg(
+        ivy"tech.sparse::trail::0.3.0-SNAPSHOT"
+      )
+    }
+}
+
 object `snunit-autowire` extends Common with Publish {
   def moduleDeps = Seq(`snunit-async`)
   def ivyDeps =
@@ -150,6 +161,10 @@ object integration extends ScalaModule {
     }
     object stream extends Common {
       def moduleDeps = Seq(snunit)
+      def ivyDeps = T { super.ivyDeps() ++ Seq(upickle) }
+    }
+    object routes extends Common {
+      def moduleDeps = Seq(`snunit-routes`)
       def ivyDeps = T { super.ivyDeps() ++ Seq(upickle) }
     }
   }
