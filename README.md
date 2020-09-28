@@ -92,3 +92,26 @@ AsyncServerBuilder()
   .with404
   .build()
 ```
+
+## Routes support
+
+SNUnit supports routes using the [trail](https://github.com/sparsetech/trail) Scala library.
+You need to import the `snunit-routes` module and you can write handlers for specific routes:
+
+```scala
+import snunit._
+import snunit.routes._
+import trail._
+
+val details  = Root / "details" / Arg[Int]
+val userInfo = Root / "user" / Arg[String] & Param[Boolean]("show")
+
+AsyncServerBuilder()
+  .withRoute(details) { case (req, details) =>
+    req.send(200, details, Seq.empty)
+  }
+  .withRoute(userInfo) { case (req, (user, show)) =>
+    req.send(200, s"User: $user, show: $show", Seq.empty)
+  }
+  .build()
+```
