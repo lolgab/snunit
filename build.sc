@@ -131,30 +131,28 @@ object `snunit-autowire` extends Common with Publish {
     }
 }
 
-object examples extends Module {
-  object `hello-world` extends Common {
-    def moduleDeps = Seq(snunit)
-    // def releaseMode = ReleaseMode.ReleaseFull
-  }
-  object `multiple-handlers` extends Common {
-    def moduleDeps = Seq(snunit)
-  }
-  object autowire extends Common {
-    def moduleDeps = Seq(`snunit-autowire`)
-  }
-  object async extends Common {
-    def moduleDeps = Seq(`snunit-async`)
-  }
-  object `async-multiple-handlers` extends Common {
-    def moduleDeps = Seq(`snunit-async`)
-  }
-  object stream extends Common {
-    def moduleDeps = Seq(snunit)
-    def ivyDeps = T { super.ivyDeps() ++ Seq(upickle) }
-  }
-}
-
 object integration extends ScalaModule {
+  object tests extends Module {
+    object `hello-world` extends Common {
+      def moduleDeps = Seq(snunit)
+    }
+    object `multiple-handlers` extends Common {
+      def moduleDeps = Seq(snunit)
+    }
+    object autowire extends Common {
+      def moduleDeps = Seq(`snunit-autowire`)
+    }
+    object async extends Common {
+      def moduleDeps = Seq(`snunit-async`)
+    }
+    object `async-multiple-handlers` extends Common {
+      def moduleDeps = Seq(`snunit-async`)
+    }
+    object stream extends Common {
+      def moduleDeps = Seq(snunit)
+      def ivyDeps = T { super.ivyDeps() ++ Seq(upickle) }
+    }
+  }
   def scalaVersion = "2.13.3"
   object test extends Tests {
     def testFrameworks = Seq("utest.runner.Framework")

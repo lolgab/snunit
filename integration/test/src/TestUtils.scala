@@ -6,7 +6,7 @@ object TestUtils {
       "./mill",
       "-j",
       sys.runtime.availableProcessors,
-      s"examples.$projectName.deployTestApp"
+      s"integration.tests.$projectName.deployTestApp"
     ).call()
     f
   }
