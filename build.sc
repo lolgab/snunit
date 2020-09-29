@@ -126,7 +126,7 @@ object `snunit-routes` extends Common with Publish {
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"tech.sparse::trail::0.3.0-SNAPSHOT"
+        ivy"tech.sparse::trail::0.3.0"
       )
     }
 }

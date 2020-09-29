@@ -30,14 +30,6 @@ script:
         sbt core/publishLocal
       )
     fi
-  - |
-    if [ ! -d $HOME/.ivy2/local/tech.sparse/trail_native0.4.0-M2_2.11/0.3.0-SNAPSHOT ]; then
-      (
-        git clone https://github.com/lolgab/trail --depth 1 --branch update-scala-native
-        cd trail
-        sbt trailNative/publishLocal
-      )
-    fi
   - ./mill -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
   - ./mill -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll buildSources
   - ./mill -j $(nproc) __.fix --check
