@@ -30,14 +30,13 @@ object AsyncServerBuilder {
             nxt_unit_process_port_msg(ctx, port)
           }
           ctx.data = poll.ptr
+          NXT_UNIT_OK
         } catch {
           case NonFatal(e) =>
             nxt_unit_warn(ctx, s"Polling failed: ${fromCString(strerror(errno))}, $errno)")
             NXT_UNIT_ERROR
         }
-      }
-
-      NXT_UNIT_OK
+      } else NXT_UNIT_OK
     }
   }
 
