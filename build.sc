@@ -13,28 +13,14 @@ trait Common extends ScalaNativeModule with ScalafixModule {
   def scalaVersion = "2.11.12"
   def scalaNativeVersion = "0.4.0-M2"
 
-  def valueForOs(linux: String, macos: String, envVariable: Option[String] = None): String =
-    envVariable
-      .flatMap(sys.env.get)
-      .getOrElse(
-        sys.props("os.name") match {
-          case "Linux"    => linux
-          case "Mac OS X" => macos
-        }
-      )
-
-  val libunitPath = valueForOs(
-    linux = "/usr/lib/x86_64-linux-gnu/libunit.a",
-    macos = "/usr/local/lib/libunit.a"
-  )
-
-  val unitSocketPath = valueForOs(
-    linux = "/var/run/control.unit.sock",
-    macos = "/usr/local/var/run/unit/control.sock",
-    envVariable = Some("UNIT_CONTROL_SOCKET_PATH")
-  )
-
-  def nativeLinkingOptions = T(libunitPath +: super.nativeLinkingOptions())
+  val unitSocketPath = sys.env
+    .getOrElse(
+      "UNIT_CONTROL_SOCKET_PATH",
+      sys.props("os.name") match {
+        case "Linux"    => "/var/run/control.unit.sock"
+        case "Mac OS X" => "/usr/local/var/run/unit/control.sock"
+      }
+    )
 
   def baseTestConfig(binary: os.Path, numProcesses: Int = 1, appName: String = "test_app", port: Int = 8081) =
     ujson.Obj(
