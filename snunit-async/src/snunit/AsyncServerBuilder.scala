@@ -26,7 +26,7 @@ object AsyncServerBuilder {
         }
         try {
           val poll = Poll(port.in_fd)
-          poll.start(in = true, out = false) { (status, readable, writable) =>
+          poll.startRead { status =>
             nxt_unit_process_port_msg(ctx, port)
           }
           ctx.data = poll.ptr

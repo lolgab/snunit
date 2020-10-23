@@ -115,7 +115,7 @@ object `snunit-async` extends Common with Publish {
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"dev.whaling::native-loop-core::0.1.1-SNAPSHOT"
+        ivy"com.github.lolgab::native-loop-core::0.1.1"
       )
     }
 }
@@ -136,7 +136,7 @@ object `snunit-autowire` extends Common with Publish {
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"com.lihaoyi::autowire::0.3.2",
+        ivy"com.github.lolgab::autowire::0.3.2",
         upickle
       )
     }
