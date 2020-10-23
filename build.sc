@@ -99,7 +99,7 @@ trait Publish extends PublishModule {
         "scm:git://github.com/lolgab/snunit.git"
       ),
       developers = Seq(
-        Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lihaoyi")
+        Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lolgab")
       )
     )
   def publishVersion = "0.0.1-SNAPSHOT"
