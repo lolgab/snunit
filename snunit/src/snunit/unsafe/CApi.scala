@@ -6,6 +6,7 @@ import scala.scalanative.unsafe._
 
 import snunit.unsafe.nxt_unit_sptr._
 
+@link("unit")
 @extern
 object CApi {
   /*
