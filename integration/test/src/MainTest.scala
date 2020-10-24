@@ -53,6 +53,12 @@ object MainTest extends TestSuite {
         assert(asyncResult.contains(name))
       }
     }
+    test("autowire-int") {
+      withDeployedExample("autowire-int") {
+        val asyncResult = requests.post(s"$baseUrl/snunit/tests/MyApi/addOne", data = s"""{"i": 1}""").text()
+        assert(asyncResult == "2")
+      }
+    }
     test("stream") {
       withDeployedExample("stream") {
         val json = """{"message":"Hello world!"}"""

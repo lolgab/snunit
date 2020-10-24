@@ -139,6 +139,9 @@ object integration extends ScalaModule {
     object autowire extends Common {
       def moduleDeps = Seq(`snunit-autowire`)
     }
+    object `autowire-int` extends Common {
+      def moduleDeps = Seq(`snunit-autowire`)
+    }
     object async extends Common {
       def moduleDeps = Seq(`snunit-async`)
     }
