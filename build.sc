@@ -4,7 +4,7 @@ import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import $ivy.`com.goyeau::mill-scalafix:0.1.5`
 import com.goyeau.mill.scalafix.ScalafixModule
 
-val upickle = ivy"com.lihaoyi::upickle::1.2.0"
+val upickle = ivy"com.lihaoyi::upickle::1.2.2"
 
 trait Common extends ScalaNativeModule with ScalafixModule {
   def organization = "com.github.lolgab"
@@ -64,7 +64,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
 
   def scalacOptions = Seq("-Ywarn-unused")
 
-  def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.4.0")
+  def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.4.3")
 
   object test extends Tests {
     def testFrameworks = Seq.empty[String]
