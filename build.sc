@@ -22,7 +22,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
       }
     )
 
-  def baseTestConfig(binary: os.Path, numProcesses: Int = 1, appName: String = "test_app", port: Int = 8081) =
+  def baseTestConfig(binary: os.Path, numProcesses: Int, appName: String = "test_app", port: Int = 8081) =
     ujson.Obj(
       "applications" -> ujson.Obj(
         appName -> ujson.Obj(
@@ -58,7 +58,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
     T.command {
       val binary = nativeLink()
       doCurl(baseTestConfig(binary = binary, numProcesses = 0))
-      doCurl(baseTestConfig(binary = binary, numProcesses = 8))
+      doCurl(baseTestConfig(binary = binary, numProcesses = sys.runtime.availableProcessors))
     }
   }
 
