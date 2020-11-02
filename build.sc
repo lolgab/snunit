@@ -88,7 +88,7 @@ trait Publish extends PublishModule {
         Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lolgab")
       )
     )
-  def publishVersion = "0.0.2"
+  def publishVersion = "0.0.2-SNAPSHOT"
 }
 
 object snunit extends Common with Publish {
