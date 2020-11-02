@@ -1,7 +1,9 @@
 package snunit
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.Try
 
 import upickle.default._
 
@@ -11,27 +13,44 @@ object Autowire {
     override def read[Result: Reader](p: String): Result = upickle.default.read[Result](p)
   }
   implicit class ServerBuilderAutowireOps(private val builder: AsyncServerBuilder) extends AnyVal {
-    def withAutowireRouter(router: autowire.Server[String, Reader, Writer]#Router): AsyncServerBuilder = {
+    private def onError(req: Request, e: Exception): Unit = e match {
+      case _: ujson.ParsingFailedException =>
+        req.send(
+          statusCode = 400,
+          s"Failed to parse json body: ${req.content}",
+          Seq("Content-type" -> "text/plain")
+        )
+      case e: MatchError =>
+        req.send(
+          statusCode = 400,
+          content = s"Invalid request: $e",
+          headers = Seq("Content-Type" -> "text/plain")
+        )
+      case e =>
+        req.send(statusCode = 500, content = s"Got error: $e", headers = Seq("Content-Type" -> "text/plain"))
+    }
+    def withAutowireRouter(
+        router: autowire.Server[String, Reader, Writer]#Router,
+        onError: (Request, Exception) => Unit = onError
+    ): AsyncServerBuilder = {
       builder
         .withRequestHandler(req => {
           if (req.method == Method.POST) {
             req.path.split("/").toList match {
               case "" :: segments =>
-                val resultFuture = router(
-                  autowire.Core.Request(
-                    segments,
-                    ujson.read(req.contentRaw).obj.mapValues(ujson.write(_)).toMap
-                  )
-                )
-                resultFuture.onComplete {
-                  case scala.util.Success(result) =>
-                    req.send(
-                      statusCode = 200,
-                      content = result,
-                      headers = Seq("Content-Type" -> "application/json")
+                val future = for {
+                  args <- Future.fromTry(Try(ujson.read(req.contentRaw).obj.mapValues(ujson.write(_)).toMap))
+                  result <- router(
+                    autowire.Core.Request(
+                      segments,
+                      args
                     )
-                  case scala.util.Failure(error) =>
-                    req.send(500, s"Got error: $error", Seq.empty)
+                  )
+                } yield req
+                  .send(statusCode = 200, content = result, headers = Seq("Content-Type" -> "application/json"))
+
+                future.recover { case e: Exception =>
+                  onError(req, e)
                 }
               case _ => req.next()
             }
