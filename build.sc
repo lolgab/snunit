@@ -1,7 +1,7 @@
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.publish._
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
-import $ivy.`com.goyeau::mill-scalafix:0.1.5`
+import $ivy.`com.goyeau::mill-scalafix:0.2.0`
 import com.goyeau.mill.scalafix.ScalafixModule
 
 val upickle = ivy"com.lihaoyi::upickle::1.2.2"
@@ -157,7 +157,7 @@ object integration extends ScalaModule {
       def ivyDeps = T { super.ivyDeps() ++ Seq(upickle) }
     }
   }
-  def scalaVersion = "2.13.3"
+  def scalaVersion = "2.13.4"
   object test extends Tests {
     def testFrameworks = Seq("utest.runner.Framework")
     def ivyDeps =
