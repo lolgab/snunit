@@ -67,7 +67,7 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     val handlers = unsafe.PtrUtils.fromPtr[Seq[Request => Unit]](req.data)
     runHandler(handlers)
   }
-  private[snunit] def startSend(statusCode: Int, headers: Seq[(String, String)]): Unit = {
+  private[snunit] def startSend(statusCode: StatusCode, headers: Seq[(String, String)]): Unit = {
     val fieldsSize: Int = {
       var res = 0
       for ((key, value) <- headers) {
@@ -77,7 +77,7 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     }
 
     locally {
-      val res = nxt_unit_response_init(req, statusCode.toShort, headers.length, fieldsSize)
+      val res = nxt_unit_response_init(req, statusCode.value.toShort, headers.length, fieldsSize)
       if (res != NXT_UNIT_OK) throw new Exception("Failed to create response")
     }
 
@@ -94,18 +94,18 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
   private def sendDone(): Unit = {
     nxt_unit_request_done(req, NXT_UNIT_OK)
   }
-  def sendRaw(statusCode: Int, contentRaw: Array[Byte], headers: Seq[(String, String)]): Unit = {
+  def sendRaw(statusCode: StatusCode, contentRaw: Array[Byte], headers: Seq[(String, String)]): Unit = {
     startSend(statusCode, headers)
     sendBatch(contentRaw)
     sendDone()
   }
-  def send(statusCode: Int, content: String, headers: Seq[(String, String)]): Unit = {
+  def send(statusCode: StatusCode, content: String, headers: Seq[(String, String)]): Unit = {
     sendRaw(statusCode, content.getBytes(), headers)
   }
   def readBytesThrough[T](f: java.io.InputStream => T) = f(new java.io.ByteArrayInputStream(contentRaw))
   override def httpContentType: Option[String] = headers.get("Content-Type")
   override def contentLength: Option[Long] = Some(req.request.content_length.toLong)
-  def send(statusCode: Int, content: geny.Writable, headers: Seq[(String, String)]): Unit = {
+  def send(statusCode: StatusCode, content: geny.Writable, headers: Seq[(String, String)]): Unit = {
     val outputStream = new java.io.ByteArrayOutputStream()
     content.writeBytesTo(outputStream)
     sendRaw(

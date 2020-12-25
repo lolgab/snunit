@@ -9,7 +9,7 @@ object MultipleHandlers {
         .withRequestHandler(req => {
           if (req.method == Method.GET) {
             req.send(
-              statusCode = 200,
+              statusCode = StatusCode.OK,
               content = s"Hello world multiple handlers!\n",
               headers = Seq("Content-Type" -> "text/plain")
             )
@@ -17,7 +17,7 @@ object MultipleHandlers {
         })
         .withRequestHandler(req => {
           req.send(
-            statusCode = 404,
+            statusCode = StatusCode.NotFound,
             content = s"Not found\n",
             headers = Seq("Content-Type" -> "text/plain")
           )

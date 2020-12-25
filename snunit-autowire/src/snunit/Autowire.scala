@@ -5,6 +5,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
 
+import snunit.StatusCode.NotFound
 import upickle.default._
 
 object Autowire {
@@ -16,18 +17,22 @@ object Autowire {
     private def onError(req: Request, e: Exception): Unit = e match {
       case _: ujson.ParsingFailedException =>
         req.send(
-          statusCode = 400,
+          statusCode = StatusCode.BadRequest,
           s"Failed to parse json body: ${req.content}",
           Seq("Content-type" -> "text/plain")
         )
       case e: MatchError =>
         req.send(
-          statusCode = 400,
+          statusCode = StatusCode.BadRequest,
           content = s"Invalid request: $e",
           headers = Seq("Content-Type" -> "text/plain")
         )
       case e =>
-        req.send(statusCode = 500, content = s"Got error: $e", headers = Seq("Content-Type" -> "text/plain"))
+        req.send(
+          statusCode = StatusCode.InternalServerError,
+          content = s"Got error: $e",
+          headers = Seq("Content-Type" -> "text/plain")
+        )
     }
     def withAutowireRouter(
         router: autowire.Server[String, Reader, Writer]#Router,
@@ -47,7 +52,11 @@ object Autowire {
                     )
                   )
                 } yield req
-                  .send(statusCode = 200, content = result, headers = Seq("Content-Type" -> "application/json"))
+                  .send(
+                    statusCode = StatusCode.OK,
+                    content = result,
+                    headers = Seq("Content-Type" -> "application/json")
+                  )
 
                 future.recover { case e: Exception =>
                   onError(req, e)

@@ -10,14 +10,14 @@ object Routes {
       SyncServerBuilder()
         .withRoute(Root / "test" / Arg[Int]) { case (req, i) =>
           req.send(
-            statusCode = 200,
+            statusCode = StatusCode.OK,
             content = s"Got $i",
             headers = Seq("Content-Type" -> "text/plain")
           )
         }
         .withRequestHandler(req =>
           req.send(
-            statusCode = 404,
+            statusCode = StatusCode.NotFound,
             content = s"Not found",
             headers = Seq("Content-Type" -> "text/plain")
           )
