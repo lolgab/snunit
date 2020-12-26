@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Mill cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.mill
+        key: mill-${{ hashFiles('.mill-version') }}
+    - name: Ivy cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/coursier
+        key: ivy-${{ hashFiles('build.sc') }}
+        restore-keys: |
+          ivy-${{ hashFiles('build.sc') }}
+          ivy
+    - name: Compilation cache
+      uses: actions/cache@v2
+      with:
+        path: ./out
+        key: out
+    - name: Install Dependencies
+      run: |
+        curl -sL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
+        echo "deb https://packages.nginx.org/unit/ubuntu/ bionic unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
+        echo "deb-src https://packages.nginx.org/unit/ubuntu/ bionic unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
+        sudo apt-get update
+        sudo apt-get install -y libuv1-dev unit-dev
+    - uses: actions/setup-java@v1
+      with:
+        java-version: '8'
+        architecture: x64
+    - name: Check formatting
+      run: 
+        ./mill -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+        # ./mill -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll --sources buildSources
+    - name: Check scalafix
+      run: 
+        ./mill -j $(nproc) __.fix --check
+    - name: Compile
+      run: 
+        ./mill -j $(nproc) __.compile
+    - name: Integration Test
+      run: |
+        sudo systemctl stop unit.service
+        sudo unitd --user $USER
+        sudo ./mill -j $(nproc) integration.test
