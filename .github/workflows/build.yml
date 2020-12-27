@@ -13,6 +13,9 @@ jobs:
       with:
         path: ~/.mill
         key: mill-${{ hashFiles('.mill-version') }}
+        restore-keys: |
+          mill-${{ hashFiles('.mill-version') }}
+          mill
     - name: Ivy cache
       uses: actions/cache@v2
       with:
