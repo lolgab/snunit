@@ -10,13 +10,13 @@ object HelloWorld {
           req.method match {
             case Method.GET =>
               req.send(
-                statusCode = 200,
+                statusCode = StatusCode.OK,
                 content = s"Hello world!\n",
                 headers = Seq("Content-Type" -> "text/plain")
               )
             case _ =>
               req.send(
-                statusCode = 404,
+                statusCode = StatusCode.NotFound,
                 content = s"Not found\n",
                 headers = Seq("Content-Type" -> "text/plain")
               )

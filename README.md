@@ -1,12 +1,13 @@
 # SNUnit: Scala Native HTTP server based on NGINX Unit
 
 ```scala
+import snunit._
 object HelloWorldExample {
   def main(args: Array[String]): Unit = {
     val server = SyncServerBuilder()
       .withRequestHandler(req =>
         req.send(
-          statusCode = 200,
+          statusCode = StatusCode.OK,
           content = s"Hello world!\n",
           headers = Seq("Content-Type" -> "text/plain")
         )
@@ -36,7 +37,7 @@ using `Future`s or any other asyncronous mechanism since no `Future` will run, b
 the process stuck on the `listen()` Unit event loop.
 With `AsyncServerBuilder` the server is automatically scheduled to run on the
 [scala-native-loop](https://github.com/scala-native/scala-native-loop) event loop
-\(based on the libuv library\). This allows you to complete requests asyncronously
+(based on the libuv library). This allows you to complete requests asyncronously
 using whatever mechanism you prefer. A process can accept multiple requests concurrently,
 allowing great parallelism.
 
@@ -79,7 +80,7 @@ You can even implement them as extension methods:
 ```scala
 implicit class ServerBuilderOps[T <: ServerBuilder](private val builder: T) extends AnyVal {
   def with404: T = builder.withRequestHandler(req => {
-    req.send(404, "Not found", Seq.empty)
+    req.send(StatusCode.NotFound, "Not found", Seq.empty)
   })
 }
 

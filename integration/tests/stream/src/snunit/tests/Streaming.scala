@@ -13,21 +13,21 @@ object Streaming {
               try {
                 val json = ujson.read(req)
                 req.send(
-                  statusCode = 200,
+                  statusCode = StatusCode.OK,
                   content = json,
                   headers = Seq()
                 )
               } catch {
                 case e: ujson.ParseException =>
                   req.send(
-                    statusCode = 500,
+                    statusCode = StatusCode.InternalServerError,
                     content = ujson.Obj("error" -> e.getMessage()),
                     headers = Seq()
                   )
               }
             case _ =>
               req.send(
-                statusCode = 404,
+                statusCode = StatusCode.NotFound,
                 content = s"Not found\n",
                 headers = Seq("Content-Type" -> "text/plain")
               )
