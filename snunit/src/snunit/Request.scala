@@ -10,19 +10,19 @@ import snunit.unsafe.Utils._
 import snunit.unsafe.nxt_unit_sptr._
 
 class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) extends geny.Readable {
-  private[snunit] var nextRequested: Boolean = false
+  private var nextRequested: Boolean = false
 
   def method: Method =
     fromCStringAndSize(req.request.method, req.request.method_length) match {
       case "GET"     => Method.GET
-      case "HEAD"    => Method.HEAD
       case "POST"    => Method.POST
       case "PUT"     => Method.PUT
       case "DELETE"  => Method.DELETE
+      case "PATCH"   => Method.PATCH
+      case "HEAD"    => Method.HEAD
       case "CONNECT" => Method.CONNECT
       case "OPTIONS" => Method.OPTIONS
       case "TRACE"   => Method.TRACE
-      case "PATCH"   => Method.PATCH
       case other     => new Method(other)
     }
 
