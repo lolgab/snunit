@@ -156,6 +156,9 @@ object integration extends ScalaModule {
       def moduleDeps = Seq(`snunit-routes`)
       def ivyDeps = T { super.ivyDeps() ++ Seq(upickle) }
     }
+    object `handlers-composition` extends Common {
+      def moduleDeps = Seq(snunit)
+    }
   }
   def scalaVersion = "2.13.4"
   object test extends Tests {

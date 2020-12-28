@@ -42,6 +42,7 @@ object ServerBuilder {
     def apply(req: Ptr[nxt_unit_request_info_t]): Unit = {
       val builder = PtrUtils.fromPtr[ServerBuilder](req.unit.data)
       new Request(req).runHandler(builder.requestHandlers)
+      scala.scalanative.runtime.loop()
     }
   }
 

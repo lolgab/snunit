@@ -108,11 +108,14 @@ val details  = Root / "details" / Arg[Int]
 val userInfo = Root / "user" / Arg[String] & Param[Boolean]("show")
 
 AsyncServerBuilder()
-  .withRoute(details) { case (req, details) =>
-    req.send(200, details, Seq.empty)
-  }
-  .withRoute(userInfo) { case (req, (user, show)) =>
+  .withRequestHandler(
+    _.withMethod(Method.GET)
+      .withRoute(details) { case (req, details) =>
+        req.send(200, details, Seq.empty)
+      }
+  )
+  .withRequestHandler(_.withRoute(userInfo) { case (req, (user, show)) =>
     req.send(200, s"User: $user, show: $show", Seq.empty)
-  }
+  })
   .build()
 ```
