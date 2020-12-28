@@ -1,5 +1,6 @@
 package snunit
 
+import scala.concurrent.ExecutionContext
 import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsafe._
 
@@ -9,6 +10,8 @@ import snunit.unsafe.Utils._
 import snunit.unsafe.nxt_unit_sptr._
 
 class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) extends geny.Readable {
+  private[snunit] var nextRequested: Boolean = false
+
   def method: Method =
     fromCStringAndSize(req.request.method, req.request.method_length) match {
       case "GET"     => Method.GET
@@ -64,8 +67,33 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
   }
 
   def next(): Unit = {
-    val handlers = unsafe.PtrUtils.fromPtr[Seq[Request => Unit]](req.data)
-    runHandler(handlers)
+    nextRequested = true
+    ExecutionContext.global.execute {
+      new Runnable {
+        def run(): Unit = {
+          nextRequested = false
+          val handlers = unsafe.PtrUtils.fromPtr[Seq[Request => Unit]](req.data)
+          runHandler(handlers)
+        }
+      }
+    }
+  }
+  def withFilter(f: => Unit): Request = {
+    if (!nextRequested) {
+      f
+    }
+    this
+  }
+  def withMethod(method: Method): Request = withFilter {
+    if (this.method != method) next()
+  }
+
+  def withPath(path: String): Request = withFilter {
+    if (this.path != path) next()
+  }
+
+  def apply(h: Request => Unit): Unit = withFilter {
+    h(this)
   }
   private[snunit] def startSend(statusCode: StatusCode, headers: Seq[(String, String)]): Unit = {
     val fieldsSize: Int = {

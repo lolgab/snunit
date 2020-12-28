@@ -74,5 +74,24 @@ object MainTest extends TestSuite {
         assert(getResult == expectedGetResult)
       }
     }
+    test("handlers-composition") {
+      withDeployedExample("handlers-composition") {
+        locally {
+          val result = requests.get(baseUrl).text()
+          val expectedResult = "Hello world!\n"
+          assert(result == expectedResult)
+        }
+        locally {
+          val result = requests.post(baseUrl, check = false).text()
+          val expectedResult = "Not found!\n"
+          assert(result == expectedResult)
+        }
+        locally {
+          val result = requests.post(baseUrl + "/hello", check = false).text()
+          val expectedResult = "Not found!\n"
+          assert(result == expectedResult)
+        }
+      }
+    }
   }
 }

@@ -1,30 +1,28 @@
 package snunit.tests
 
 import snunit._
-import snunit.routes._
-import trail._
 
-object Routes {
+object HandlersComposition {
   def main(args: Array[String]): Unit = {
-    val server: SyncServer =
+    val server =
       SyncServerBuilder()
         .withRequestHandler(
           _.withMethod(Method.GET)
-            .withRoute(Root / "test" / Arg[Int]) { (req, i) =>
+            .withPath("/") { req =>
               req.send(
                 statusCode = StatusCode.OK,
-                content = s"Got $i",
+                content = s"Hello world!\n",
                 headers = Seq("Content-Type" -> "text/plain")
               )
             }
         )
-        .withRequestHandler(req =>
+        .withRequestHandler { req =>
           req.send(
             statusCode = StatusCode.NotFound,
-            content = s"Not found",
+            content = s"Not found!\n",
             headers = Seq("Content-Type" -> "text/plain")
           )
-        )
+        }
         .build()
 
     server.listen()
