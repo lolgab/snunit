@@ -47,8 +47,9 @@ jobs:
     - name: Compile
       run: 
         ./mill -j $(nproc) __.compile
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
     - name: Integration Test
       run: |
-        sudo systemctl stop unit.service
-        sudo unitd --user $USER
-        sudo ./mill -j $(nproc) integration.test
+        sudo chmod 777 /var/run/control.unit.sock
+        ./mill -j $(nproc) integration.test
