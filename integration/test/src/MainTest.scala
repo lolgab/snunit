@@ -11,6 +11,13 @@ object MainTest extends TestSuite {
         assert(result == expectedResult)
       }
     }
+    test("empty-response") {
+      withDeployedExample("empty-response") {
+        val result = requests.get(baseUrl).text()
+        val expectedResult = ""
+        assert(result == expectedResult)
+      }
+    }
     test("async") {
       withDeployedExample("async") {
         val result = requests.get(baseUrl, readTimeout = 10000).text()

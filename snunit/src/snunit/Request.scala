@@ -114,7 +114,12 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     }
   }
   private def sendBatch(data: Array[Byte]): Unit = {
-    val res = nxt_unit_response_write_nb(req, data.asInstanceOf[ByteArray].at(0), data.length, 0L)
+    val res = nxt_unit_response_write_nb(
+      req,
+      if (data.length > 0) data.asInstanceOf[ByteArray].at(0) else null,
+      data.length,
+      0L
+    )
     if (res < 0) {
       throw new Exception("Failed to send batch")
     }

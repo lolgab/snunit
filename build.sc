@@ -133,6 +133,9 @@ object integration extends ScalaModule {
     object `hello-world` extends Common {
       def moduleDeps = Seq(snunit)
     }
+    object `empty-response` extends Common {
+      def moduleDeps = Seq(snunit)
+    }
     object `multiple-handlers` extends Common {
       def moduleDeps = Seq(snunit)
     }
