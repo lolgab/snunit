@@ -14,37 +14,36 @@ import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
 
 object AsyncServerBuilder {
-  private val add_port: add_port_t = new add_port_t {
-    def apply(ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]): CInt = {
-      if (port.in_fd != -1) {
-        locally {
-          val res = fcntl(port.in_fd, F_SETFL, O_NONBLOCK)
-          if (res == -1) {
-            nxt_unit_warn(ctx, s"fcntl(${port.in_fd}, O_NONBLOCK) failed: ${fromCString(strerror(errno))}, $errno)")
-            return -1
-          }
+  private val add_port: add_port_t = (ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]) => {
+    if (port.in_fd != -1) {
+      var result = NXT_UNIT_OK
+      locally {
+        val res = fcntl(port.in_fd, F_SETFL, O_NONBLOCK)
+        if (res == -1) {
+          nxt_unit_warn(ctx, s"fcntl(${port.in_fd}, O_NONBLOCK) failed: ${fromCString(strerror(errno))}, $errno)")
+          result = -1
         }
+      }
+      if(result == NXT_UNIT_OK) {
         try {
           val poll = Poll(port.in_fd)
-          poll.startRead { status =>
+          poll.startRead { _ =>
             nxt_unit_process_port_msg(ctx, port)
           }
           ctx.data = poll.ptr
           NXT_UNIT_OK
         } catch {
-          case NonFatal(e) =>
+          case NonFatal(e@_) =>
             nxt_unit_warn(ctx, s"Polling failed: ${fromCString(strerror(errno))}, $errno)")
             NXT_UNIT_ERROR
         }
-      } else NXT_UNIT_OK
-    }
+      } else result
+    } else NXT_UNIT_OK
   }
 
-  private val remove_port: remove_port_t = new remove_port_t {
-    def apply(ctx: Ptr[nxt_unit_t], port: Ptr[nxt_unit_port_t]): Unit = {
-      val poll = new Poll(port.data)
-      poll.stop()
-    }
+  private val remove_port: remove_port_t = (_: Ptr[nxt_unit_t], port: Ptr[nxt_unit_port_t]) => {
+    val poll = new Poll(port.data)
+    poll.stop()
   }
 
   def apply(): AsyncServerBuilder = new AsyncServerBuilder()

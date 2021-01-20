@@ -70,7 +70,7 @@ object CApi {
     Ptr[nxt_unit_buf_t],
     CInt,
     Ptr[nxt_unit_buf_t],
-    CLongInt,
+    CUnsignedLongLong,
     CInt,
     Ptr[Byte]
   ]
@@ -139,7 +139,7 @@ object CApi {
     Ptr[nxt_websocket_header_t],
     Ptr[Byte],
     Ptr[nxt_unit_buf_t],
-    CLongInt
+    CUnsignedLongLong
   ]
 
   /*
@@ -337,7 +337,7 @@ object CApiOps {
 
     def cookie_field: CInt = !(ptr.asInstanceOf[Ptr[Byte]] + 36).asInstanceOf[Ptr[CInt]]
 
-    def content_length: CLongInt = !(ptr.asInstanceOf[Ptr[Byte]] + 40).asInstanceOf[Ptr[CLongInt]]
+    def content_length: CUnsignedLongLong = !(ptr.asInstanceOf[Ptr[Byte]] + 40).asInstanceOf[Ptr[CUnsignedLongLong]]
 
     def method: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 48).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
@@ -409,8 +409,8 @@ object CApiOps {
     def content_buf: Ptr[nxt_unit_buf_t] = ptr._9
     def content_buf_=(v: Ptr[nxt_unit_buf_t]): Unit = ptr._9 = v
 
-    def content_length: CLongInt = ptr._10
-    def content_length_=(v: CLongInt): Unit = ptr._10 = v
+    def content_length: CUnsignedLongLong = ptr._10
+    def content_length_=(v: CUnsignedLongLong): Unit = ptr._10 = v
 
     def content_fd: CInt = ptr._11
     def content_fd_=(v: CInt): Unit = ptr._11 = v
@@ -491,6 +491,6 @@ object CApiOps {
     def header: Ptr[nxt_websocket_header_t] = ptr._3
     def mask: Ptr[Byte] = ptr._4
     def content_buf: Ptr[nxt_unit_buf_t] = ptr._5
-    def content_length: CLongInt = ptr._6
+    def content_length: CUnsignedLongLong = ptr._6
   }
 }

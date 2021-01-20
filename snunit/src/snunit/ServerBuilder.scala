@@ -38,24 +38,19 @@ abstract class ServerBuilder protected (
 }
 
 object ServerBuilder {
-  protected[snunit] val request_handler: request_handler_t = new request_handler_t {
-    def apply(req: Ptr[nxt_unit_request_info_t]): Unit = {
-      val builder = PtrUtils.fromPtr[ServerBuilder](req.unit.data)
-      new Request(req).runHandler(builder.requestHandlers)
-      scala.scalanative.runtime.loop()
-    }
+  protected[snunit] val request_handler: request_handler_t = (req: Ptr[nxt_unit_request_info_t]) => {
+    val builder = PtrUtils.fromPtr[ServerBuilder](req.unit.data)
+    new Request(req).runHandler(builder.requestHandlers)
+    scala.scalanative.runtime.loop()
   }
 
-  protected[snunit] val websocket_handler: websocket_handler_t = new websocket_handler_t {
-    def apply(frame: Ptr[nxt_unit_websocket_frame_t]): Unit = {
-      val builder = PtrUtils.fromPtr[ServerBuilder](frame.req.unit.data)
-      new WSFrame(frame).runHandler(builder.websocketHandlers)
-    }
+  protected[snunit] val websocket_handler: websocket_handler_t = (frame: Ptr[nxt_unit_websocket_frame_t]) => {
+    val builder = PtrUtils.fromPtr[ServerBuilder](frame.req.unit.data)
+    new WSFrame(frame).runHandler(builder.websocketHandlers)
   }
 
-  protected[snunit] val quit: quit_t = new quit_t {
-    def apply(ctx: Ptr[nxt_unit_ctx_t]): Unit = {
-      nxt_unit_done(ctx)
-    }
+  protected[snunit] val quit: quit_t = (ctx: Ptr[nxt_unit_ctx_t]) => {
+    nxt_unit_done(ctx)
+    ()
   }
 }

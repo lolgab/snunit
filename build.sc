@@ -1,7 +1,7 @@
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.publish._
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
-import $ivy.`com.goyeau::mill-scalafix:0.2.0`
+import $ivy.`com.goyeau::mill-scalafix:0.2.1`
 import com.goyeau.mill.scalafix.ScalafixModule
 
 val upickle = ivy"com.lihaoyi::upickle::1.2.2"
@@ -10,8 +10,8 @@ trait Common extends ScalaNativeModule with ScalafixModule {
   def organization = "com.github.lolgab"
   def name = "snunit"
 
-  def scalaVersion = "2.11.12"
-  def scalaNativeVersion = "0.4.0-M2"
+  def scalaVersion = "2.13.4"
+  def scalaNativeVersion = "0.4.0"
 
   val unitSocketPath = sys.env
     .getOrElse(
@@ -92,7 +92,7 @@ trait Publish extends PublishModule {
 }
 
 object snunit extends Common with Publish {
-  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.2") }
+  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.3") }
 }
 
 object `snunit-async` extends Common with Publish {
@@ -101,7 +101,7 @@ object `snunit-async` extends Common with Publish {
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"com.github.lolgab::native-loop-core::0.1.1"
+        ivy"com.github.lolgab::native-loop-core::0.2.0"
       )
     }
 }
@@ -132,6 +132,8 @@ object integration extends ScalaModule {
   object tests extends Module {
     object `hello-world` extends Common {
       def moduleDeps = Seq(snunit)
+      def nativeLTO = LTO.Thin
+      def releaseMode = ReleaseMode.ReleaseFast
     }
     object `empty-response` extends Common {
       def moduleDeps = Seq(snunit)

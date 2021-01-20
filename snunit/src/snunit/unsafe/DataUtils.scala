@@ -1,13 +1,9 @@
 package snunit.unsafe
 
 import scala.collection.mutable
-import scala.scalanative.libc.stdlib
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime._
 import scala.scalanative.unsafe.Ptr
-
-import snunit.unsafe.CApi._
-import snunit.unsafe.CApiOps._
 
 private[snunit] object PtrUtils {
   private val references = mutable.Set.empty[Long]

@@ -2,6 +2,7 @@ package snunit
 
 import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
@@ -27,7 +28,7 @@ class WSFrame(val frame: Ptr[nxt_unit_websocket_frame_t]) extends AnyVal {
   }
 
   def send(opcode: Opcode, data: Array[Byte]) = {
-    nxt_unit_websocket_send(frame.req, opcode.value, frame.header.fin, data.asInstanceOf[ByteArray].at(0), data.length)
+    nxt_unit_websocket_send(frame.req, opcode.value, frame.header.fin, data.asInstanceOf[ByteArray].at(0), data.length.toULong)
   }
 
   def done(): Unit = nxt_unit_websocket_done(frame)
