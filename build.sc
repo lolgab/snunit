@@ -92,7 +92,7 @@ trait Publish extends PublishModule {
 }
 
 object snunit extends Common with Publish {
-  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.3") }
+  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.4") }
 }
 
 object `snunit-async` extends Common with Publish {
@@ -170,7 +170,7 @@ object integration extends ScalaModule {
     def testFrameworks = Seq("utest.runner.Framework")
     def ivyDeps =
       Agg(
-        ivy"com.lihaoyi::utest:0.7.5",
+        ivy"com.lihaoyi::utest:0.7.6",
         ivy"com.lihaoyi::os-lib:0.7.1",
         ivy"com.lihaoyi::requests:0.6.5"
       )
