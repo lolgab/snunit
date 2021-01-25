@@ -132,8 +132,6 @@ object integration extends ScalaModule {
   object tests extends Module {
     object `hello-world` extends Common {
       def moduleDeps = Seq(snunit)
-      def nativeLTO = LTO.Thin
-      def releaseMode = ReleaseMode.ReleaseFast
     }
     object `empty-response` extends Common {
       def moduleDeps = Seq(snunit)
