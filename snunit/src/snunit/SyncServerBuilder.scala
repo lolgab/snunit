@@ -1,12 +1,9 @@
 package snunit
 
-import scala.collection.mutable
 import scala.scalanative.libc.stdlib.malloc
 import scala.scalanative.unsafe._
 
 import snunit.unsafe.CApi._
-import snunit.unsafe.CApiOps._
-import snunit.unsafe.PtrUtils
 
 object SyncServerBuilder {
   def apply(): SyncServerBuilder = new SyncServerBuilder()

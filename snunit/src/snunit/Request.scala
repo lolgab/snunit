@@ -3,11 +3,11 @@ package snunit
 import scala.concurrent.ExecutionContext
 import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
 import snunit.unsafe.Utils._
-import snunit.unsafe.nxt_unit_sptr._
 
 class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) extends geny.Readable {
   private var nextRequested: Boolean = false
@@ -41,7 +41,7 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
 
   lazy val contentRaw: Array[Byte] = {
     val contentLength = req.request.content_length
-    if (contentLength > 0) {
+    if (contentLength > 0.toULong) {
       val array = new Array[Byte](contentLength.toInt)
 
       nxt_unit_request_read(req, array.asInstanceOf[ByteArray].at(0), contentLength)
@@ -117,10 +117,10 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     val res = nxt_unit_response_write_nb(
       req,
       if (data.length > 0) data.asInstanceOf[ByteArray].at(0) else null,
-      data.length,
-      0L
+      data.length.toULong,
+      0L.toULong
     )
-    if (res < 0) {
+    if (res < 0.toULong) {
       throw new Exception("Failed to send batch")
     }
   }

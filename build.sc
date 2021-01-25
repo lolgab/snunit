@@ -1,17 +1,17 @@
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.publish._
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
-import $ivy.`com.goyeau::mill-scalafix:0.2.0`
+import $ivy.`com.goyeau::mill-scalafix:0.2.1`
 import com.goyeau.mill.scalafix.ScalafixModule
 
-val upickle = ivy"com.lihaoyi::upickle::1.2.2"
+val upickle = ivy"com.github.lolgab::upickle::1.2.2"
 
 trait Common extends ScalaNativeModule with ScalafixModule {
   def organization = "com.github.lolgab"
   def name = "snunit"
 
-  def scalaVersion = "2.11.12"
-  def scalaNativeVersion = "0.4.0-M2"
+  def scalaVersion = "2.13.4"
+  def scalaNativeVersion = "0.4.0"
 
   val unitSocketPath = sys.env
     .getOrElse(
@@ -64,7 +64,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
 
   def scalacOptions = Seq("-Ywarn-unused")
 
-  def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.4.3")
+  def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.4.4")
 
   object test extends Tests {
     def testFrameworks = Seq.empty[String]
@@ -92,7 +92,7 @@ trait Publish extends PublishModule {
 }
 
 object snunit extends Common with Publish {
-  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.2") }
+  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.5") }
 }
 
 object `snunit-async` extends Common with Publish {
@@ -101,7 +101,7 @@ object `snunit-async` extends Common with Publish {
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"com.github.lolgab::native-loop-core::0.1.1"
+        ivy"com.github.lolgab::native-loop-core::0.2.0"
       )
     }
 }
@@ -112,7 +112,7 @@ object `snunit-routes` extends Common with Publish {
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"tech.sparse::trail::0.3.0"
+        ivy"tech.sparse::trail::0.3.1"
       )
     }
 }
@@ -168,8 +168,8 @@ object integration extends ScalaModule {
     def testFrameworks = Seq("utest.runner.Framework")
     def ivyDeps =
       Agg(
-        ivy"com.lihaoyi::utest:0.7.5",
-        ivy"com.lihaoyi::os-lib:0.7.1",
+        ivy"com.lihaoyi::utest:0.7.7",
+        ivy"com.lihaoyi::os-lib:0.7.2",
         ivy"com.lihaoyi::requests:0.6.5"
       )
   }
