@@ -1,11 +1,9 @@
 package snunit
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
 
-import snunit.StatusCode.NotFound
 import upickle.default._
 
 object Autowire {

@@ -1,7 +1,6 @@
 package snunit.tests
 
 import snunit._
-import ujson._
 
 object Streaming {
   def main(args: Array[String]): Unit = {
