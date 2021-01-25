@@ -4,7 +4,7 @@ import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import $ivy.`com.goyeau::mill-scalafix:0.2.1`
 import com.goyeau.mill.scalafix.ScalafixModule
 
-val upickle = ivy"com.lihaoyi::upickle::1.2.2"
+val upickle = ivy"com.github.lolgab::upickle::1.2.2"
 
 trait Common extends ScalaNativeModule with ScalafixModule {
   def organization = "com.github.lolgab"
