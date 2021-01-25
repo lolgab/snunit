@@ -64,7 +64,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
 
   def scalacOptions = Seq("-Ywarn-unused")
 
-  def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.4.3")
+  def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.4.4")
 
   object test extends Tests {
     def testFrameworks = Seq.empty[String]
@@ -92,7 +92,7 @@ trait Publish extends PublishModule {
 }
 
 object snunit extends Common with Publish {
-  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.4") }
+  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.5") }
 }
 
 object `snunit-async` extends Common with Publish {
@@ -112,7 +112,7 @@ object `snunit-routes` extends Common with Publish {
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"tech.sparse::trail::0.3.0"
+        ivy"tech.sparse::trail::0.3.1"
       )
     }
 }
@@ -170,8 +170,8 @@ object integration extends ScalaModule {
     def testFrameworks = Seq("utest.runner.Framework")
     def ivyDeps =
       Agg(
-        ivy"com.lihaoyi::utest:0.7.6",
-        ivy"com.lihaoyi::os-lib:0.7.1",
+        ivy"com.lihaoyi::utest:0.7.7",
+        ivy"com.lihaoyi::os-lib:0.7.2",
         ivy"com.lihaoyi::requests:0.6.5"
       )
   }
