@@ -24,7 +24,7 @@ object AsyncServerBuilder {
           result = -1
         }
       }
-      if(result == NXT_UNIT_OK) {
+      if (result == NXT_UNIT_OK) {
         try {
           val poll = Poll(port.in_fd)
           poll.startRead { _ =>
@@ -33,7 +33,7 @@ object AsyncServerBuilder {
           ctx.data = poll.ptr
           NXT_UNIT_OK
         } catch {
-          case NonFatal(e@_) =>
+          case NonFatal(e @ _) =>
             nxt_unit_warn(ctx, s"Polling failed: ${fromCString(strerror(errno))}, $errno)")
             NXT_UNIT_ERROR
         }

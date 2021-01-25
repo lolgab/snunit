@@ -28,7 +28,13 @@ class WSFrame(val frame: Ptr[nxt_unit_websocket_frame_t]) extends AnyVal {
   }
 
   def send(opcode: Opcode, data: Array[Byte]) = {
-    nxt_unit_websocket_send(frame.req, opcode.value, frame.header.fin, data.asInstanceOf[ByteArray].at(0), data.length.toULong)
+    nxt_unit_websocket_send(
+      frame.req,
+      opcode.value,
+      frame.header.fin,
+      data.asInstanceOf[ByteArray].at(0),
+      data.length.toULong
+    )
   }
 
   def done(): Unit = nxt_unit_websocket_done(frame)
