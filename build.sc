@@ -4,7 +4,7 @@ import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import $ivy.`com.goyeau::mill-scalafix:0.2.1`
 import com.goyeau.mill.scalafix.ScalafixModule
 
-val upickle = ivy"com.github.lolgab::upickle::1.2.2"
+val upickle = ivy"com.lihaoyi::upickle::1.2.3"
 
 trait Common extends ScalaNativeModule with ScalafixModule {
   def organization = "com.github.lolgab"
@@ -122,7 +122,7 @@ object `snunit-autowire` extends Common with Publish {
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"com.github.lolgab::autowire::0.3.2",
+        ivy"com.lihaoyi::autowire::0.3.3",
         upickle
       )
     }
