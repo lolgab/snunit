@@ -100,5 +100,14 @@ object MainTest extends TestSuite {
         }
       }
     }
+    test("zio") {
+      withDeployedExample("zio") {
+        locally {
+          val result = requests.get(baseUrl).text()
+          val expectedResult = "Hello from ZIO!"
+          assert(result == expectedResult)
+        }
+      }
+    }
   }
 }
