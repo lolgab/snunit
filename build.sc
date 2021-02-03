@@ -128,6 +128,16 @@ object `snunit-autowire` extends Common with Publish {
     }
 }
 
+object `snunit-zio` extends Common with Publish {
+  def moduleDeps = Seq(`snunit-async`)
+  def ivyDeps =
+    T {
+      super.ivyDeps() ++ Agg(
+        ivy"dev.zio::zio::1.0.4-2"
+      )
+    }
+}
+
 object integration extends ScalaModule {
   object tests extends Module {
     object `hello-world` extends Common {
@@ -161,6 +171,10 @@ object integration extends ScalaModule {
     }
     object `handlers-composition` extends Common {
       def moduleDeps = Seq(snunit)
+    }
+    object zio extends Common {
+      def moduleDeps = Seq(`snunit-zio`)
+      def releaseMode = ReleaseMode.ReleaseFast
     }
   }
   def scalaVersion = "2.13.4"
