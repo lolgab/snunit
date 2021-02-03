@@ -3,8 +3,8 @@ package snunit.tests
 import snunit._
 import snunit.snunitzio._
 import zio._
-import zio.console._
 import zio.clock._
+import zio.console._
 import zio.duration._
 
 object Main {

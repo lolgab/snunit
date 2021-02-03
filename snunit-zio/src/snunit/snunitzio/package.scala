@@ -11,7 +11,7 @@ package object snunitzio {
           Runtime.default.unsafeRunAsync(handler(req)) {
             case Exit.Success(Response(code, body, headers)) =>
               req.send(code, body, headers)
-            case Exit.Failure(nothing) =>
+            case Exit.Failure(_) =>
           }
         })
     }
