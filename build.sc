@@ -174,7 +174,6 @@ object integration extends ScalaModule {
     }
     object zio extends Common {
       def moduleDeps = Seq(`snunit-zio`)
-      def releaseMode = ReleaseMode.ReleaseFast
     }
   }
   def scalaVersion = "2.13.4"
