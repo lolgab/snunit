@@ -21,7 +21,7 @@ object Routes {
         .withRequestHandler(req =>
           req.send(
             statusCode = StatusCode.NotFound,
-            content = s"Not found",
+            content = "Not found",
             headers = Seq("Content-Type" -> "text/plain")
           )
         )
