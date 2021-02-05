@@ -337,29 +337,31 @@ object CApiOps {
 
     def cookie_field: CInt = !(ptr.asInstanceOf[Ptr[Byte]] + 36).asInstanceOf[Ptr[CInt]]
 
-    def content_length: CUnsignedLongLong = !(ptr.asInstanceOf[Ptr[Byte]] + 40).asInstanceOf[Ptr[CUnsignedLongLong]]
+    def authorization_field: CInt = !(ptr.asInstanceOf[Ptr[Byte]] + 40).asInstanceOf[Ptr[CInt]]
 
-    def method: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 48).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def content_length: CUnsignedLongLong = !(ptr.asInstanceOf[Ptr[Byte]] + 48).asInstanceOf[Ptr[CUnsignedLongLong]]
 
-    def version: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 52).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def method: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 56).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def remote: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 56).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def version: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 60).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def local: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 60).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def remote: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 64).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+
+    def local: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 68).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
     def server_name: Ptr[Byte] =
-      nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 64).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+      nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 72).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def target: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 68).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def target: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 76).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def path: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 72).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def path: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 80).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def query: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 76).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def query: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 84).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
     def preread_content: Ptr[Byte] =
-      nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 80).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+      nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 88).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def fields: Ptr[nxt_unit_field_t] = (ptr.asInstanceOf[Ptr[Byte]] + 84).asInstanceOf[Ptr[nxt_unit_field_t]]
+    def fields: Ptr[nxt_unit_field_t] = (ptr.asInstanceOf[Ptr[Byte]] + 92).asInstanceOf[Ptr[nxt_unit_field_t]]
   }
 
   implicit class nxt_unit_response_t_ops(private val ptr: Ptr[nxt_unit_response_t]) extends AnyVal {
