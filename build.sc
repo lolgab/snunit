@@ -3,6 +3,8 @@ import mill.scalalib.publish._
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import $ivy.`com.goyeau::mill-scalafix:0.2.1`
 import com.goyeau.mill.scalafix.ScalafixModule
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.9:0.1.1`
+import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 val upickle = ivy"com.lihaoyi::upickle::1.2.3"
 
@@ -88,7 +90,7 @@ trait Publish extends PublishModule {
         Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lolgab")
       )
     )
-  def publishVersion = "0.0.8-SNAPSHOT"
+  def publishVersion = VcsVersion.vcsState().format()
 }
 
 object snunit extends Common with Publish {
