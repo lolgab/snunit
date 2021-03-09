@@ -93,7 +93,7 @@ jobs:
       - name: Publish to Maven Central
         run: |
           if [[ $(git tag --points-at HEAD) != '' ]]; then
-            echo $SONATYPE_PGP_PRIVATE_KEY > gpg_key
+            echo $SONATYPE_PGP_PRIVATE_KEY | base64 --decode > gpg_key
             gpg --import --no-tty --batch --yes gpg_key
             rm gpg_key
             ./mill -i mill.scalalib.PublishModule/publishAll \
