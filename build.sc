@@ -6,7 +6,7 @@ import com.goyeau.mill.scalafix.ScalafixModule
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.9:0.1.1`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 
-val upickle = ivy"com.lihaoyi::upickle::1.2.3"
+val upickle = ivy"com.lihaoyi::upickle::1.3.0"
 
 trait Common extends ScalaNativeModule with ScalafixModule {
   def organization = "com.github.lolgab"
@@ -94,7 +94,7 @@ trait Publish extends PublishModule {
 }
 
 object snunit extends Common with Publish {
-  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.5") }
+  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.6") }
 }
 
 object `snunit-async` extends Common with Publish {
@@ -184,7 +184,7 @@ object integration extends ScalaModule {
     def ivyDeps =
       Agg(
         ivy"com.lihaoyi::utest:0.7.7",
-        ivy"com.lihaoyi::os-lib:0.7.2",
+        ivy"com.lihaoyi::os-lib:0.7.3",
         ivy"com.lihaoyi::requests:0.6.5"
       )
   }
