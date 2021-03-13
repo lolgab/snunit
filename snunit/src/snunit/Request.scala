@@ -139,7 +139,7 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
   override def httpContentType: Option[String] = headers.get("Content-Type")
   override def contentLength: Option[Long] = Some(req.request.content_length.toLong)
   def send(statusCode: StatusCode, content: geny.Writable, headers: Seq[(String, String)]): Unit = {
-    val outputStream = new java.io.ByteArrayOutputStream()
+    val outputStream = new java.io.ByteArrayOutputStream(req.request.content_length.toInt)
     content.writeBytesTo(outputStream)
     sendRaw(
       statusCode,
