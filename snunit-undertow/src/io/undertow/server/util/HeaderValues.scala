@@ -1,7 +1,9 @@
 package io.undertow.util
 
-final class HeaderValues extends java.util.AbstractCollection[String] with java.util.Deque[String] with java.util.List[String] {
-  def getHeaderName(): String = ???
+import scala.jdk.CollectionConverters._
+
+final class HeaderValues private [undertow] (key: String, value: String) extends java.util.AbstractCollection[String] with java.util.Deque[String] with java.util.List[String] {
+  def getHeaderName(): String = key
   def addFirst(x$1: String): Unit = ???
   def addLast(x$1: String): Unit = ???
   def descendingIterator(): java.util.Iterator[String] = ???
@@ -30,7 +32,7 @@ final class HeaderValues extends java.util.AbstractCollection[String] with java.
   def addAll(x$1: Int, x$2: java.util.Collection[_ <: String]): Boolean = ???
   def get(x$1: Int): String = ???
   def indexOf(x$1: Object): Int = ???
-  def iterator(): java.util.Iterator[String] = ???
+  def iterator(): java.util.Iterator[String] = Array(value).iterator.asJava
   def lastIndexOf(x$1: Object): Int = ???
   def listIterator(x$1: Int): java.util.ListIterator[String] = ???
   def listIterator(): java.util.ListIterator[String] = ???

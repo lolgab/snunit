@@ -141,14 +141,7 @@ object `snunit-zio` extends Common with Publish {
 }
 
 object `snunit-undertow` extends Common with Publish {
-  def moduleDeps = Seq(`snunit-async`)
-  def ivyDeps = super.ivyDeps() ++ Agg(
-    upickle,
-    ivy"com.lihaoyi::castor::0.1.7",
-    ivy"org.ekrich::sjavatime::1.1.2",
-    ivy"com.lihaoyi::pprint::0.6.2"
-  )
-  def logLevel = NativeLogLevel.Error
+  def moduleDeps = Seq(snunit)
 }
 
 object integration extends ScalaModule {

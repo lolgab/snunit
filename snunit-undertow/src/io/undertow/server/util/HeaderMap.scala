@@ -1,10 +1,11 @@
 package io.undertow.util
 
 import scala.collection
+import scala.jdk.CollectionConverters._
 
 final class HeaderMap private [undertow] (underlying: collection.Map[String, String]) extends java.lang.Iterable[HeaderValues] {
-  lazy val underlyingMutable = underlying.asInstanceOf[scala.collection.mutable.Map[String, String]]
-  
+  private lazy val underlyingMutable = underlying.asInstanceOf[scala.collection.mutable.Map[String, String]]
+
   def this() = this(collection.mutable.Map.empty[String, String])
   private [undertow] def asScala = underlying.toSeq
   def getFirst(headerName: String): String = underlying.getOrElse(headerName, null)
@@ -17,5 +18,5 @@ final class HeaderMap private [undertow] (underlying: collection.Map[String, Str
     underlyingMutable(headerName.toString()) = headerValue
     this
   }
-  def iterator(): java.util.Iterator[HeaderValues] = ???
+  def iterator(): java.util.Iterator[HeaderValues] = underlying.iterator.map { case (k,v) => new HeaderValues(k,v) }.asJava
 }
