@@ -33,7 +33,10 @@ trait Common extends ScalaNativeModule with ScalafixModule {
           "type" -> "external",
           "working_directory" -> (binary / os.up).toString,
           "executable" -> binary.last,
-          "processes" -> numProcesses
+          "processes" -> numProcesses,
+          "limits" -> ujson.Obj(
+            "timeout" -> 1
+          )
         )
       ),
       "listeners" -> ujson.Obj(
@@ -140,6 +143,26 @@ object `snunit-undertow` extends Common with Publish {
   def moduleDeps = Seq(snunit)
 }
 
+def caskSources = T {
+  val dest = T.dest
+  os.proc("git", "clone", "https://github.com/com-lihaoyi/cask", dest).call()
+  PathRef(dest)  
+}
+object cask extends Common {
+  override def generatedSources = T {
+    val cask = caskSources().path / "cask"
+    val util = cask / "util"
+    Seq(cask / "src", cask / "src-2", util / "src").map(PathRef(_))
+  }
+  def moduleDeps = Seq(`snunit-undertow`)
+  def ivyDeps = super.ivyDeps() ++ Agg(
+    upickle,
+    ivy"com.lihaoyi::castor::0.1.8-3-083320",
+    ivy"org.ekrich::sjavatime::1.1.2",
+    ivy"com.lihaoyi::pprint::0.6.2"
+  )
+}
+
 object integration extends ScalaModule {
   object tests extends Module {
     object `hello-world` extends Common {
@@ -177,6 +200,7 @@ object integration extends ScalaModule {
     object zio extends Common {
       def moduleDeps = Seq(`snunit-zio`)
     }
+
     object `undertow-helloworld` extends Module {
       object jvm extends ScalaModule {
         def millSourcePath = super.millSourcePath / os.up
@@ -188,6 +212,27 @@ object integration extends ScalaModule {
       object native extends Common {
         def millSourcePath = super.millSourcePath / os.up
         def moduleDeps = Seq(`snunit-undertow`)
+      }
+    }
+    object `cask-helloworld` extends Module {
+      object jvm extends ScalaModule {
+        def millSourcePath = super.millSourcePath / os.up
+        def scalaVersion = scalaV
+        def ivyDeps = super.ivyDeps() ++ Agg(
+          ivy"com.lihaoyi::cask:0.7.11"
+        )
+      }
+      object native extends Common {
+        def millSourcePath = super.millSourcePath / os.up
+        def moduleDeps = Seq(cask)
+      }
+    }
+
+    object caskTests extends Common {
+      def moduleDeps = Seq(cask)
+      override def generatedSources = T {
+        val cask = caskSources().path
+        Seq(PathRef(cask / "example" / "compress" / "app" / "src"))
       }
     }
   }

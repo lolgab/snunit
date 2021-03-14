@@ -24,9 +24,13 @@ object TestUtils {
     val result = runMillCommand(s"integration.tests.$projectName.jvm.launcher").out.lines().head
     val s""""ref:$_:$path"""" = result
     val process = os.proc(path).spawn()
-    Thread.sleep(500)
+    Thread.sleep(1000)
     try { f }
     finally { process.close() }
+  }
+
+  def runOnAllPlatforms(f: String => Unit) = {
+    Seq("http://localhost:8080", baseUrl).foreach(f)
   }
 
   val baseUrl = "http://localhost:8081"

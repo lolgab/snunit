@@ -111,11 +111,28 @@ object MainTest extends TestSuite {
     }
     test("undertow-helloworld") {
       withDeployedExampleMultiplatform("undertow-helloworld") {
-        val resultNative = requests.get(baseUrl).text()
-        val resultJvm = requests.get("http://localhost:8080").text()
-        val expectedResult = "Hello World"
-        assert(resultNative == expectedResult)
-        assert(resultJvm == expectedResult)
+        runOnAllPlatforms { baseUrl =>
+          val result = requests.get(baseUrl).text()
+          val expectedResult = "Hello World"
+          assert(result == expectedResult)
+        }
+      }
+    }
+    test("cask-helloworld") {
+      withDeployedExampleMultiplatform("cask-helloworld") {
+        runOnAllPlatforms { baseUrl =>
+          locally {
+            val result = requests.get("http://localhost:8080").text()
+            val expectedResult = "Hello World!"
+            assert(result == expectedResult)
+          }
+
+          locally {
+            val result = requests.post(s"$baseUrl/do-thing", data = "hello").text()
+            val expectedResult = "olleh"
+            assert(result == expectedResult)
+          }
+        }
       }
     }
   }
