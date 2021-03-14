@@ -140,6 +140,10 @@ object `snunit-zio` extends Common with Publish {
     }
 }
 
+object `snunit-undertow` extends Common with Publish {
+  def moduleDeps = Seq(snunit)
+}
+
 object integration extends ScalaModule {
   object tests extends Module {
     object `hello-world` extends Common {
