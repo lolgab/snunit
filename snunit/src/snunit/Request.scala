@@ -95,7 +95,7 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
   def apply(h: Request => Unit): Unit = withFilter {
     h(this)
   }
-  private[snunit] def startSend(statusCode: StatusCode, headers: Seq[(String, String)]): Unit = {
+  def startSend(statusCode: StatusCode, headers: Seq[(String, String)]): Unit = {
     val fieldsSize: Int = {
       var res = 0
       for ((key, value) <- headers) {
@@ -113,18 +113,41 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
       addHeader(key, value)
     }
   }
-  private def sendBatch(data: Array[Byte]): Unit = {
+  def sendByte(byte: Int): Unit = {
+    val bytePtr = stackalloc[Byte]
+    !bytePtr = byte.toByte
     val res = nxt_unit_response_write_nb(
       req,
-      if (data.length > 0) data.asInstanceOf[ByteArray].at(0) else null,
-      data.length.toULong,
+      bytePtr,
+      1L.toULong,
+      0L.toULong
+    )
+    if (res < 0.toULong) {
+      throw new Exception("Failed to send byte")
+    }
+  }
+  @inline
+  private def sendBatchUnsafe(data: Array[Byte], off: Int, len: Int): Unit = {
+    val res = nxt_unit_response_write_nb(
+      req,
+      if (len > 0) data.asInstanceOf[ByteArray].at(off) else null,
+      len.toULong,
       0L.toULong
     )
     if (res < 0.toULong) {
       throw new Exception("Failed to send batch")
     }
   }
-  private def sendDone(): Unit = {
+  def sendBatch(data: Array[Byte], off: Int, len: Int): Unit = {
+    if (off < 0 || len < 0 || len > data.length - off) {
+      throw new IndexOutOfBoundsException
+    }
+    sendBatchUnsafe(data, off, len)
+  }
+  def sendBatch(data: Array[Byte]): Unit = {
+    sendBatchUnsafe(data, 0, data.length)
+  }
+  def sendDone(): Unit = {
     nxt_unit_request_done(req, NXT_UNIT_OK)
   }
   def sendRaw(statusCode: StatusCode, contentRaw: Array[Byte], headers: Seq[(String, String)]): Unit = {
@@ -138,17 +161,21 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
   def readBytesThrough[T](f: java.io.InputStream => T) = f(new java.io.ByteArrayInputStream(contentRaw))
   override def httpContentType: Option[String] = headers.get("Content-Type")
   override def contentLength: Option[Long] = Some(req.request.content_length.toLong)
+  lazy val outputStream = new java.io.OutputStream {
+    override def write(b: Int): Unit = sendByte(b)
+    override def write(b: Array[Byte]): Unit = sendBatch(b)
+    override def write(b: Array[Byte], off: Int, len: Int): Unit = sendBatch(b, off, len)
+  }
   def send(statusCode: StatusCode, content: geny.Writable, headers: Seq[(String, String)]): Unit = {
-    val outputStream = new java.io.ByteArrayOutputStream()
-    content.writeBytesTo(outputStream)
-    sendRaw(
+    startSend(
       statusCode,
-      outputStream.toByteArray(),
       headers ++
         content.contentLength.map("Content-Length" -> _.toString) ++
         content.httpContentType.map(
           "Content-Type" -> _
         )
     )
+    content.writeBytesTo(outputStream)
+    sendDone()
   }
 }
