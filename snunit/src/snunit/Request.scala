@@ -26,15 +26,13 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
       case other     => new Method(other)
     }
 
-  lazy val headers: Map[String, String] = {
-    val builder = Map.newBuilder[String, String]
-    for (i <- 0 until req.request.fields_count) {
+  lazy val headers: Seq[(String, String)] = {
+    for (i <- 0 until req.request.fields_count) yield {
       val field = req.request.fields + i
       val fieldName = fromCStringAndSize(field.name, field.name_length)
       val fieldValue = fromCStringAndSize(field.value, field.value_length)
-      builder += fieldName -> fieldValue
+      fieldName -> fieldValue
     }
-    builder.result()
   }
 
   def content: String = new String(contentRaw)
@@ -159,7 +157,7 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) ex
     sendRaw(statusCode, content.getBytes(), headers)
   }
   def readBytesThrough[T](f: java.io.InputStream => T) = f(new java.io.ByteArrayInputStream(contentRaw))
-  override def httpContentType: Option[String] = headers.get("Content-Type")
+  override def httpContentType: Option[String] = headers.collectFirst { case ("Content-Type", v) => v }
   override def contentLength: Option[Long] = Some(req.request.content_length.toLong)
   lazy val outputStream = new java.io.OutputStream {
     override def write(b: Int): Unit = sendByte(b)
