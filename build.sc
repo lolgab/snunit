@@ -67,12 +67,6 @@ trait Common extends ScalaNativeModule with ScalafixModule {
   def scalacOptions = Seq("-Ywarn-unused")
 
   def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.4.4")
-
-  object test extends Tests {
-    def testFrameworks = Seq.empty[String]
-
-    def nativeLinkStubs = true
-  }
 }
 
 trait Publish extends PublishModule {
@@ -179,15 +173,33 @@ object integration extends ScalaModule {
     }
   }
   def scalaVersion = "2.13.4"
-  object test extends Tests {
-    def testFrameworks = Seq("utest.runner.Framework")
+  object test extends Tests with TestModule.Utest {
     def ivyDeps =
       Agg(
         ivy"com.lihaoyi::utest:0.7.7",
-        ivy"com.lihaoyi::os-lib:0.7.3",
+        ivy"com.lihaoyi::os-lib:0.7.8",
         ivy"com.lihaoyi::requests:0.6.5"
       )
   }
+}
+
+object `snunit-plugins-shared` extends ScalaModule with Publish {
+  def scalaVersion = "2.13.4"
+
+  object test extends Tests with TestModule.Utest {
+    def ivyDeps = super.ivyDeps() ++ Agg(
+      ivy"com.lihaoyi::utest:0.7.7",
+      ivy"com.lihaoyi::os-lib:0.7.8"
+    )
+  }
+}
+
+object `snunit-mill-plugin` extends ScalaModule with Publish {
+  def moduleDeps = Seq(`snunit-plugins-shared`)
+  def scalaVersion = "2.13.4"
+  def ivyDeps = super.ivyDeps() ++ Agg(
+    ivy"com.lihaoyi::mill-scalanativelib:0.9.8"
+  )
 }
 
 def buildSources = T(Seq(PathRef(os.pwd / "build.sc")))
