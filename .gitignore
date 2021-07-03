@@ -2,3 +2,5 @@
 /lowered.hnir
 /.bloop
 /.metals
+target
+.bsp
