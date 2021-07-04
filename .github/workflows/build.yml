@@ -53,7 +53,15 @@ jobs:
         sudo systemctl stop unit.service
         sudo unitd --user $USER
         sudo ./mill -j $(nproc) integration.test
-
+    - name: Publish plugin shared locally
+      run: 
+        sudo ./mill -j $(nproc) snunit-plugins-shared.__.publishLocal
+    - name: Compile Sbt plugin
+      run: |
+        (
+          cd sbt-plugin
+          sudo sbt compile
+        )
   publish-sonatype:
     if: github.repository == 'lolgab/snunit' && contains(github.ref, 'refs/tags/')
     needs: build
@@ -104,4 +112,8 @@ jobs:
               --awaitTimeout 600000 \
               --release true \
               --signed true
+            (
+              cd sbt-plugin
+              sudo sbt publishSigned sonatypeBundleRelease
+            )
           fi

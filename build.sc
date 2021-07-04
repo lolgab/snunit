@@ -183,9 +183,8 @@ object integration extends ScalaModule {
   }
 }
 
-object `snunit-plugins-shared` extends ScalaModule with Publish {
-  def scalaVersion = "2.13.4"
-
+object `snunit-plugins-shared` extends Cross[SnunitPluginsShared]("2.13.4", "2.12.14")
+class SnunitPluginsShared(val crossScalaVersion: String) extends CrossScalaModule with Publish {
   object test extends Tests with TestModule.Utest {
     def ivyDeps = super.ivyDeps() ++ Agg(
       ivy"com.lihaoyi::utest:0.7.7",
@@ -195,7 +194,7 @@ object `snunit-plugins-shared` extends ScalaModule with Publish {
 }
 
 object `snunit-mill-plugin` extends ScalaModule with Publish {
-  def moduleDeps = Seq(`snunit-plugins-shared`)
+  def moduleDeps = Seq(`snunit-plugins-shared`("2.13.4"))
   def scalaVersion = "2.13.4"
   def ivyDeps = super.ivyDeps() ++ Agg(
     ivy"com.lihaoyi::mill-scalanativelib:0.9.8"
