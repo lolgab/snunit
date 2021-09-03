@@ -32,7 +32,7 @@ jobs:
         echo "deb https://packages.nginx.org/unit/ubuntu/ bionic unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
         echo "deb-src https://packages.nginx.org/unit/ubuntu/ bionic unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
         sudo apt-get update
-        unit_version="1.24*"
+        unit_version="1.25*"
         sudo apt-get install -y libuv1-dev unit=$unit_version unit-dev=$unit_version
     - uses: actions/setup-java@v1
       with:
