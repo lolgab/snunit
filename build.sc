@@ -8,11 +8,13 @@ import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 val upickle = ivy"com.lihaoyi::upickle::1.3.0"
 
+val scalaV = "2.13.4"
+
 trait Common extends ScalaNativeModule with ScalafixModule {
   def organization = "com.github.lolgab"
   def name = "snunit"
 
-  def scalaVersion = "2.13.4"
+  def scalaVersion = scalaV
   def scalaNativeVersion = "0.4.0"
 
   val unitSocketPath = sys.env
@@ -134,6 +136,10 @@ object `snunit-zio` extends Common with Publish {
     }
 }
 
+object `snunit-undertow` extends Common with Publish {
+  def moduleDeps = Seq(snunit)
+}
+
 object integration extends ScalaModule {
   object tests extends Module {
     object `hello-world` extends Common {
@@ -171,8 +177,21 @@ object integration extends ScalaModule {
     object zio extends Common {
       def moduleDeps = Seq(`snunit-zio`)
     }
+    object `undertow-helloworld` extends Module {
+      object jvm extends ScalaModule {
+        def millSourcePath = super.millSourcePath / os.up
+        def scalaVersion = scalaV
+        def ivyDeps = super.ivyDeps() ++ Agg(
+          ivy"io.undertow:undertow-core:2.2.10.Final"
+        )
+      }
+      object native extends Common {
+        def millSourcePath = super.millSourcePath / os.up
+        def moduleDeps = Seq(`snunit-undertow`)
+      }
+    }
   }
-  def scalaVersion = "2.13.4"
+  def scalaVersion = scalaV
   object test extends Tests with TestModule.Utest {
     def ivyDeps =
       Agg(
