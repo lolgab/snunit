@@ -109,5 +109,14 @@ object MainTest extends TestSuite {
         }
       }
     }
+    test("undertow-helloworld") {
+      withDeployedExampleMultiplatform("undertow-helloworld") {
+        val resultNative = requests.get(baseUrl).text()
+        val resultJvm = requests.get("http://localhost:8080").text()
+        val expectedResult = "Hello World"
+        assert(resultNative == expectedResult)
+        assert(resultJvm == expectedResult)
+      }
+    }
   }
 }
