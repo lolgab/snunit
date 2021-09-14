@@ -42,6 +42,14 @@ jobs:
       run: 
         ./mill -i --disable-ticker -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
         # ./mill -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll --sources buildSources
+    - name: publishLocal patched Castor
+      run: |
+        git clone https://github.com/com-lihaoyi/castor
+        cd castor
+        git remote add lolgab https://github.com/lolgab/castor
+        git fetch lolgab
+        git checkout fix-async-native-js
+        ./mill -i __.native[2.13.4,0.4.0].publishLocal
     - name: Check scalafix
       run: 
         ./mill -i --disable-ticker -j $(nproc) __.fix --check
