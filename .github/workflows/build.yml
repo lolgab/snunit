@@ -40,22 +40,22 @@ jobs:
         architecture: x64
     - name: Check formatting
       run: 
-        ./mill -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+        ./mill -i --disable-ticker -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
         # ./mill -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll --sources buildSources
     - name: Check scalafix
       run: 
-        ./mill -j $(nproc) __.fix --check
+        ./mill -i --disable-ticker -j $(nproc) __.fix --check
     - name: Compile
       run: 
-        ./mill -j $(nproc) __.compile
+        ./mill -i --disable-ticker -j $(nproc) __.compile
     - name: Integration Test
       run: |
         sudo systemctl stop unit.service
         sudo unitd --user $USER
-        sudo ./mill -j $(nproc) integration.test
+        sudo ./mill -i --disable-ticker -j $(nproc) integration.test
     - name: Publish plugin shared locally
       run: 
-        sudo ./mill -j $(nproc) snunit-plugins-shared.__.publishLocal
+        sudo ./mill -i --disable-ticker -j $(nproc) snunit-plugins-shared.__.publishLocal
     - name: Compile Sbt plugin
       run: |
         (
@@ -104,7 +104,7 @@ jobs:
             echo $SONATYPE_PGP_PRIVATE_KEY | base64 --decode > gpg_key
             gpg --import --no-tty --batch --yes gpg_key
             rm gpg_key
-            ./mill -i mill.scalalib.PublishModule/publishAll \
+            ./mill -i --disable-ticker mill.scalalib.PublishModule/publishAll \
               --sonatypeCreds $SONATYPE_USER:$SONATYPE_PASSWORD \
               --gpgArgs --passphrase=$SONATYPE_PGP_PRIVATE_KEY_PASSWORD,--no-tty,--pinentry-mode,loopback,--batch,--yes,-a,-b \
               --publishArtifacts __.publishArtifacts \
