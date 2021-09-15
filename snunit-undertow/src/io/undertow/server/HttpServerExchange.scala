@@ -46,7 +46,24 @@ final class HttpServerExchange private[undertow] (private[undertow] val req: Req
       sender
     }
   }
-  def getQueryParameters(): java.util.Map[String, java.util.Deque[String]] = new java.util.HashMap // TODO
+  def getQueryParameters(): java.util.Map[String, java.util.Deque[String]] = {
+    val result = new java.util.HashMap[String, java.util.Deque[String]]
+    def add(key: String, value: String) = result.get(key) match {
+      case null =>
+        val list = new java.util.LinkedList[String]
+        list.add(value)
+        result.put(key, list)
+      case list =>
+        list.add(value)
+    }
+    req.query.split('&').foreach {
+      case s"$key=$value" =>
+        add(key, value)
+      case key =>
+        add(key, "")
+    }
+    result
+  }
   def getOutputStream(): OutputStream = blockingHttpExchange.getOutputStream()
   def isComplete(): Boolean = ???
   def getRequestPath(): String = req.path

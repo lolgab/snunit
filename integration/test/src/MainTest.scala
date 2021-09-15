@@ -97,6 +97,25 @@ object MainTest extends TestSuite {
             val expectedResult = "olleh"
             assert(result == expectedResult)
           }
+
+          locally {
+            requests.get(s"$baseUrl/post/123?param=xyz&param=abc").text() ==>
+              "Post 123 ArraySeq(xyz, abc)"
+
+            requests.get(s"$baseUrl/post/123", check = false).text() ==>
+              """Missing argument: (param: Seq[String])
+                |
+                |Arguments provided did not match expected signature:
+                |
+                |showPost
+                |  postId  Int
+                |  param  Seq[String]
+                |
+                |""".stripMargin
+
+            requests.get(s"$baseUrl/path/one/two/three").text() ==>
+              "Subpath List(one, two, three)"
+          }
         }
       }
     }
