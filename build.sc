@@ -1,7 +1,7 @@
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.publish._
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
-import $ivy.`com.goyeau::mill-scalafix:0.2.1`
+import $ivy.`com.goyeau::mill-scalafix:0.2.4`
 import com.goyeau.mill.scalafix.ScalafixModule
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.9:0.1.1`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
