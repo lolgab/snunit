@@ -227,14 +227,6 @@ object integration extends ScalaModule {
         def moduleDeps = Seq(cask)
       }
     }
-
-    object caskTests extends Common {
-      def moduleDeps = Seq(cask)
-      override def generatedSources = T {
-        val cask = caskSources().path
-        Seq(PathRef(cask / "example" / "compress" / "app" / "src"))
-      }
-    }
   }
   def scalaVersion = scalaV
   object test extends Tests with TestModule.Utest {
