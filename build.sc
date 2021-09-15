@@ -157,7 +157,7 @@ object cask extends Common {
   def moduleDeps = Seq(`snunit-undertow`)
   def ivyDeps = super.ivyDeps() ++ Agg(
     upickle,
-    ivy"com.lihaoyi::castor::0.1.8-3-083320",
+    ivy"com.github.lolgab::castor::0.1.8-fix-async-native-js",
     ivy"org.ekrich::sjavatime::1.1.2",
     ivy"com.lihaoyi::pprint::0.6.2"
   )
