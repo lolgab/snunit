@@ -8,14 +8,14 @@ import de.tobiasroeser.mill.vcs.version.VcsVersion
 
 val upickle = ivy"com.lihaoyi::upickle::1.3.0"
 
-val scalaV = "2.13.4"
+val scalaV = "2.13.6"
 
 trait Common extends ScalaNativeModule with ScalafixModule {
   def organization = "com.github.lolgab"
   def name = "snunit"
 
   def scalaVersion = scalaV
-  def scalaNativeVersion = "0.4.0"
+  def scalaNativeVersion = "0.4.1"
 
   val unitSocketPath = sys.env
     .getOrElse(
