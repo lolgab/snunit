@@ -5,10 +5,15 @@ import $ivy.`com.goyeau::mill-scalafix:0.2.4`
 import com.goyeau.mill.scalafix.ScalafixModule
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.9:0.1.1`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
-
+import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest_mill0.9:0.4.1`
+import de.tobiasroeser.mill.integrationtest._
+import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
+import mill.contrib.buildinfo.BuildInfo
 val upickle = ivy"com.lihaoyi::upickle::1.3.0"
 
 val scalaV = "2.13.4"
+
+val testServerPort = 8081
 
 trait Common extends ScalaNativeModule with ScalafixModule {
   def organization = "com.github.lolgab"
@@ -26,13 +31,13 @@ trait Common extends ScalaNativeModule with ScalafixModule {
       }
     )
 
-  def baseTestConfig(binary: os.Path, numProcesses: Int, appName: String = "test_app", port: Int = 8081) =
+  def baseTestConfig(binary: os.Path, numProcesses: Int) = {
+    val appName = "test_app"
     ujson.Obj(
       "applications" -> ujson.Obj(
         appName -> ujson.Obj(
           "type" -> "external",
-          "working_directory" -> (binary / os.up).toString,
-          "executable" -> binary.last,
+          "executable" -> binary.toString,
           "processes" -> numProcesses,
           "limits" -> ujson.Obj(
             "timeout" -> 1
@@ -40,27 +45,25 @@ trait Common extends ScalaNativeModule with ScalafixModule {
         )
       ),
       "listeners" -> ujson.Obj(
-        s"*:$port" -> ujson.Obj(
+        s"*:$testServerPort" -> ujson.Obj(
           "pass" -> s"applications/$appName"
         )
       )
     )
+  }
 
   def deployTestApp() = {
     def doCurl(json: ujson.Value) = {
-      import scala.sys.process._
-      assert(
-        Seq(
-          "curl",
-          "-X",
-          "PUT",
-          "--data-binary",
-          json.toString,
-          "--unix-socket",
-          unitSocketPath,
-          "http://localhost/config"
-        ).! == 0
-      )
+      os.proc(
+        "curl",
+        "-X",
+        "PUT",
+        "--data-binary",
+        json.toString,
+        "--unix-socket",
+        unitSocketPath,
+        "http://localhost/config"
+      ).call()
     }
     T.command {
       val binary = nativeLink()
@@ -229,7 +232,10 @@ object integration extends ScalaModule {
     }
   }
   def scalaVersion = scalaV
-  object test extends Tests with TestModule.Utest {
+  object test extends Tests with TestModule.Utest with BuildInfo {
+    def buildInfoMembers = Map(
+      "port" -> testServerPort.toString
+    )
     def ivyDeps =
       Agg(
         ivy"com.lihaoyi::utest:0.7.7",
