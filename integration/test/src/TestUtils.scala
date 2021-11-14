@@ -33,5 +33,5 @@ object TestUtils {
     Seq("http://localhost:8080", baseUrl).foreach(f)
   }
 
-  val baseUrl = "http://localhost:8081"
+  val baseUrl = s"http://localhost:${BuildInfo.port}"
 }
