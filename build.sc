@@ -3,12 +3,11 @@ import mill.scalalib.publish._
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
 import $ivy.`com.goyeau::mill-scalafix:0.2.4`
 import com.goyeau.mill.scalafix.ScalafixModule
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version_mill0.9:0.1.1`
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.1`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
-import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest_mill0.9:0.4.1`
-import de.tobiasroeser.mill.integrationtest._
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
+
 val upickle = ivy"com.lihaoyi::upickle::1.3.0"
 
 val scalaV = "2.13.4"
