@@ -7,9 +7,8 @@ class Undertow private (builder: Undertow.Builder) {
   private val handler: HttpHandler = builder.handler
 
   def start(): Unit = {
-    SyncServerBuilder()
-      .withRequestHandler(req => handler.handleRequest(new HttpServerExchange(req)))
-      .build()
+    SyncServerBuilder
+      .build(req => handler.handleRequest(new HttpServerExchange(req)))
       .listen()
   }
 }

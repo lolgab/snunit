@@ -5,7 +5,9 @@ import java.nio.charset.Charset
 import scala.scalanative.unsafe._
 
 private[snunit] object Utils {
-  def fromCStringAndSize(cstr: CString, size: Int, charset: Charset = Charset.defaultCharset()): String = {
+  private val charset = Charset.defaultCharset()
+
+  def fromCStringAndSize(cstr: CString, size: Int): String = {
     val bytes = new Array[Byte](size)
 
     var c = 0

@@ -40,22 +40,22 @@ jobs:
         architecture: x64
     - name: Check formatting
       run: 
-        ./mill -i --disable-ticker -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
-        # ./mill -j $(nproc) mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll --sources buildSources
+        ./mill -i --disable-ticker -j 0 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+        # ./mill -j 0 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll --sources buildSources
     - name: Check scalafix
       run: 
-        ./mill -i --disable-ticker -j $(nproc) __.fix --check
+        ./mill -i --disable-ticker -j 0 __.fix --check
     - name: Compile
       run: 
-        ./mill -i --disable-ticker -j $(nproc) __.compile
+        ./mill -i --disable-ticker -j 0 __.compile
     - name: Integration Test
       run: |
         sudo systemctl stop unit.service
         sudo unitd --user $USER
-        sudo ./mill -i --disable-ticker -j $(nproc) integration.test
+        sudo ./mill -i --disable-ticker -j 0 integration.test
     - name: Publish plugin shared locally
       run: 
-        sudo ./mill -i --disable-ticker -j $(nproc) snunit-plugins-shared.__.publishLocal
+        sudo ./mill -i --disable-ticker -j 0 snunit-plugins-shared.__.publishLocal
     - name: Compile Sbt plugin
       run: |
         (

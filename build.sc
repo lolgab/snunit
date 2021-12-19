@@ -1,16 +1,16 @@
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.publish._
 import $ivy.`com.lihaoyi::mill-contrib-bloop:$MILL_VERSION`
-import $ivy.`com.goyeau::mill-scalafix:0.2.4`
+import $ivy.`com.goyeau::mill-scalafix:0.2.5`
 import com.goyeau.mill.scalafix.ScalafixModule
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.1`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-val upickle = ivy"com.lihaoyi::upickle::1.3.0"
+val upickle = ivy"com.lihaoyi::upickle::1.4.3"
 
-val scalaV = "2.13.4"
+val scalaV = "2.13.6"
 
 val testServerPort = 8081
 
@@ -19,7 +19,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
   def name = "snunit"
 
   def scalaVersion = scalaV
-  def scalaNativeVersion = "0.4.0"
+  def scalaNativeVersion = "0.4.2"
 
   val unitSocketPath = sys.env
     .getOrElse(
@@ -94,9 +94,7 @@ trait Publish extends PublishModule {
   def publishVersion = VcsVersion.vcsState().format()
 }
 
-object snunit extends Common with Publish {
-  def ivyDeps = T { super.ivyDeps() ++ Seq(ivy"com.lihaoyi::geny::0.6.6") }
-}
+object snunit extends Common with Publish
 
 object `snunit-async` extends Common with Publish {
   def moduleDeps = Seq(snunit)
@@ -131,26 +129,16 @@ object `snunit-autowire` extends Common with Publish {
     }
 }
 
-object `snunit-zio` extends Common with Publish {
-  def moduleDeps = Seq(`snunit-async`)
-  def ivyDeps =
-    T {
-      super.ivyDeps() ++ Agg(
-        ivy"dev.zio::zio::1.0.4-2"
-      )
-    }
-}
-
 object `snunit-undertow` extends Common with Publish {
   def moduleDeps = Seq(snunit)
 }
 
 def caskSources = T {
   val dest = T.dest
-  os.proc("git", "clone", "https://github.com/com-lihaoyi/cask", dest).call()
-  PathRef(dest)  
+  os.proc("git", "clone", "--branch", "0.8.0", "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
+  PathRef(dest)
 }
-object cask extends Common {
+object `snunit-cask` extends Common with Publish {
   override def generatedSources = T {
     val cask = caskSources().path / "cask"
     val util = cask / "util"
@@ -160,8 +148,8 @@ object cask extends Common {
   def ivyDeps = super.ivyDeps() ++ Agg(
     upickle,
     ivy"com.lihaoyi::castor::0.2.0",
-    ivy"org.ekrich::sjavatime::1.1.2",
-    ivy"com.lihaoyi::pprint::0.6.2"
+    ivy"org.ekrich::sjavatime::1.1.5",
+    ivy"com.lihaoyi::pprint::0.6.6"
   )
 }
 
@@ -188,10 +176,6 @@ object integration extends ScalaModule {
     object `async-multiple-handlers` extends Common {
       def moduleDeps = Seq(`snunit-async`)
     }
-    object stream extends Common {
-      def moduleDeps = Seq(snunit)
-      def ivyDeps = T { super.ivyDeps() ++ Seq(upickle) }
-    }
     object routes extends Common {
       def moduleDeps = Seq(`snunit-routes`)
       def ivyDeps = T { super.ivyDeps() ++ Seq(upickle) }
@@ -199,10 +183,6 @@ object integration extends ScalaModule {
     object `handlers-composition` extends Common {
       def moduleDeps = Seq(snunit)
     }
-    object zio extends Common {
-      def moduleDeps = Seq(`snunit-zio`)
-    }
-
     object `undertow-helloworld` extends Module {
       object jvm extends ScalaModule {
         def millSourcePath = super.millSourcePath / os.up
@@ -226,7 +206,7 @@ object integration extends ScalaModule {
       }
       object native extends Common {
         def millSourcePath = super.millSourcePath / os.up
-        def moduleDeps = Seq(cask)
+        def moduleDeps = Seq(`snunit-cask`)
       }
     }
   }
@@ -244,7 +224,7 @@ object integration extends ScalaModule {
   }
 }
 
-object `snunit-plugins-shared` extends Cross[SnunitPluginsShared]("2.13.4", "2.12.14")
+object `snunit-plugins-shared` extends Cross[SnunitPluginsShared]("2.13.6", "2.12.13")
 class SnunitPluginsShared(val crossScalaVersion: String) extends CrossScalaModule with Publish {
   object test extends Tests with TestModule.Utest {
     def ivyDeps = super.ivyDeps() ++ Agg(
@@ -255,8 +235,8 @@ class SnunitPluginsShared(val crossScalaVersion: String) extends CrossScalaModul
 }
 
 object `snunit-mill-plugin` extends ScalaModule with Publish {
-  def moduleDeps = Seq(`snunit-plugins-shared`("2.13.4"))
-  def scalaVersion = "2.13.4"
+  def moduleDeps = Seq(`snunit-plugins-shared`("2.13.6"))
+  def scalaVersion = "2.13.6"
   def ivyDeps = super.ivyDeps() ++ Agg(
     ivy"com.lihaoyi::mill-scalanativelib:0.9.8"
   )

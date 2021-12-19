@@ -5,7 +5,7 @@ import sjsonnew.shaded.scalajson.ast.unsafe._
 import sjsonnew.support.scalajson.unsafe._
 
 def getFromMillJson(taskName: String): JValue = {
-  val json = Parser.parseFromFile(file(s"../out/snunit-plugins-shared/2.12.14/$taskName/meta.json")).get
+  val json = Parser.parseFromFile(file(s"../out/snunit-plugins-shared/2.12.13/$taskName/meta.json")).get
   json match {
     case JObject(fields) =>
       fields.collectFirst {
