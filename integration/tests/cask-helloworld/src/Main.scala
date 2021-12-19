@@ -10,7 +10,6 @@ object MinimalApplication extends cask.MainRoutes {
 
   @cask.post("/do-thing")
   def doThing(request: cask.Request) = {
-    pprint.pprintln(request.headers)
     request.text().reverse
   }
 

@@ -70,7 +70,7 @@ object CApi {
     Ptr[nxt_unit_buf_t],
     CInt,
     Ptr[nxt_unit_buf_t],
-    CUnsignedLongLong,
+    CLongLong, // CUnsignedLongLong,
     CInt,
     Ptr[Byte]
   ]
@@ -139,7 +139,7 @@ object CApi {
     Ptr[nxt_websocket_header_t],
     Ptr[Byte],
     Ptr[nxt_unit_buf_t],
-    CUnsignedLongLong
+    CLongLong // CUnsignedLongLong
   ]
 
   /*
@@ -196,24 +196,24 @@ object CApi {
   def nxt_unit_response_write_nb(
       req: Ptr[nxt_unit_request_info_t],
       start: CString,
-      size: CSize,
-      min_size: CSize
-  ): CSize = extern
+      size: CSSize,
+      min_size: CSSize
+  ): CSSize = extern
 
   def nxt_unit_buf_send(buf: Ptr[nxt_unit_buf_t]): CInt = extern
 
-  def nxt_unit_request_read(req: Ptr[nxt_unit_request_info_t], dst: Ptr[Byte], size: CSize): CSize = extern
+  def nxt_unit_request_read(req: Ptr[nxt_unit_request_info_t], dst: Ptr[Byte], size: CSSize): CSSize = extern
 
   def nxt_unit_request_done(req: Ptr[nxt_unit_request_info_t], rc: CInt): Unit = extern
 
-  def nxt_unit_websocket_read(ws: Ptr[nxt_unit_websocket_frame_t], dest: Ptr[Byte], size: CSize): CSize = extern
+  def nxt_unit_websocket_read(ws: Ptr[nxt_unit_websocket_frame_t], dest: Ptr[Byte], size: CSSize): CSSize = extern
 
   def nxt_unit_websocket_send(
       req: Ptr[nxt_unit_request_info_t],
       opcode: Byte,
       last: Byte,
       start: Ptr[Byte],
-      size: CSize
+      size: CSSize
   ): CInt = extern
 
   def nxt_unit_websocket_done(ws: Ptr[nxt_unit_websocket_frame_t]): Unit = extern
@@ -339,7 +339,8 @@ object CApiOps {
 
     def authorization_field: CInt = !(ptr.asInstanceOf[Ptr[Byte]] + 40).asInstanceOf[Ptr[CInt]]
 
-    def content_length: CUnsignedLongLong = !(ptr.asInstanceOf[Ptr[Byte]] + 48).asInstanceOf[Ptr[CUnsignedLongLong]]
+    def content_length: CLongLong =
+      !(ptr.asInstanceOf[Ptr[Byte]] + 48).asInstanceOf[Ptr[CLongLong]] // CUnsignedLongLong
 
     def method: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 56).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
@@ -411,8 +412,8 @@ object CApiOps {
     def content_buf: Ptr[nxt_unit_buf_t] = ptr._9
     def content_buf_=(v: Ptr[nxt_unit_buf_t]): Unit = ptr._9 = v
 
-    def content_length: CUnsignedLongLong = ptr._10
-    def content_length_=(v: CUnsignedLongLong): Unit = ptr._10 = v
+    def content_length: CLongLong = ptr._10 // CUnsignedLongLong
+    def content_length_=(v: CLongLong): Unit = ptr._10 = v // CUnsignedLongLong
 
     def content_fd: CInt = ptr._11
     def content_fd_=(v: CInt): Unit = ptr._11 = v
@@ -493,6 +494,6 @@ object CApiOps {
     def header: Ptr[nxt_websocket_header_t] = ptr._3
     def mask: Ptr[Byte] = ptr._4
     def content_buf: Ptr[nxt_unit_buf_t] = ptr._5
-    def content_length: CUnsignedLongLong = ptr._6
+    def content_length: CLongLong = ptr._6 // CUnsignedLongLong
   }
 }

@@ -66,47 +66,12 @@ object MainTest extends TestSuite {
         assert(asyncResult == "2")
       }
     }
-    test("stream") {
-      withDeployedExample("stream") {
-        val json = """{"message":"Hello world!"}"""
-        val asyncResult = requests.post(s"$baseUrl", data = json).text()
-        assert(asyncResult == json)
-      }
-    }
     test("routes") {
       withDeployedExample("routes") {
         val i = 10
         val getResult = requests.get(s"$baseUrl/test/$i").text()
         val expectedGetResult = s"Got $i"
         assert(getResult == expectedGetResult)
-      }
-    }
-    test("handlers-composition") {
-      withDeployedExample("handlers-composition") {
-        locally {
-          val result = requests.get(baseUrl).text()
-          val expectedResult = "Hello world!\n"
-          assert(result == expectedResult)
-        }
-        locally {
-          val result = requests.post(baseUrl, check = false).text()
-          val expectedResult = "Not found!\n"
-          assert(result == expectedResult)
-        }
-        locally {
-          val result = requests.post(baseUrl + "/hello", check = false).text()
-          val expectedResult = "Not found!\n"
-          assert(result == expectedResult)
-        }
-      }
-    }
-    test("zio") {
-      withDeployedExample("zio") {
-        locally {
-          val result = requests.get(baseUrl).text()
-          val expectedResult = "Hello from ZIO!"
-          assert(result == expectedResult)
-        }
       }
     }
     test("undertow-helloworld") {
