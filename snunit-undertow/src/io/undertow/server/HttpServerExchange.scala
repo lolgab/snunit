@@ -59,6 +59,7 @@ final class HttpServerExchange private[undertow] (private[undertow] val req: Req
     req.query.split('&').foreach {
       case s"$key=$value" =>
         add(key, value)
+      case "" =>
       case key =>
         add(key, "")
     }

@@ -87,8 +87,14 @@ object MainTest extends TestSuite {
       withDeployedExampleMultiplatform("cask-helloworld") {
         runOnAllPlatforms { baseUrl =>
           locally {
-            val result = requests.get("http://localhost:8080").text()
+            val result = requests.get(baseUrl).text()
             val expectedResult = "Hello World!"
+            assert(result == expectedResult)
+          }
+
+          locally {
+            val result = requests.get(s"$baseUrl/hello?name=Lorenzo").text()
+            val expectedResult = "Hello Lorenzo!"
             assert(result == expectedResult)
           }
 
@@ -96,25 +102,6 @@ object MainTest extends TestSuite {
             val result = requests.post(s"$baseUrl/do-thing", data = "hello").text()
             val expectedResult = "olleh"
             assert(result == expectedResult)
-          }
-
-          locally {
-            requests.get(s"$baseUrl/post/123?param=xyz&param=abc").text() ==>
-              "Post 123 ArraySeq(xyz, abc)"
-
-            requests.get(s"$baseUrl/post/123", check = false).text() ==>
-              """Missing argument: (param: Seq[String])
-                |
-                |Arguments provided did not match expected signature:
-                |
-                |showPost
-                |  postId  Int
-                |  param  Seq[String]
-                |
-                |""".stripMargin
-
-            requests.get(s"$baseUrl/path/one/two/three").text() ==>
-              "Subpath List(one, two, three)"
           }
         }
       }
