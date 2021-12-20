@@ -8,6 +8,11 @@ object MinimalApplication extends cask.MainRoutes {
     "Hello World!"
   }
 
+  @cask.get("/hello")
+  def hello(name: String) = {
+    s"Hello $name!"
+  }
+
   @cask.post("/do-thing")
   def doThing(request: cask.Request) = {
     request.text().reverse

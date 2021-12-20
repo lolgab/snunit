@@ -87,8 +87,14 @@ object MainTest extends TestSuite {
       withDeployedExampleMultiplatform("cask-helloworld") {
         runOnAllPlatforms { baseUrl =>
           locally {
-            val result = requests.get("http://localhost:8080").text()
+            val result = requests.get(baseUrl).text()
             val expectedResult = "Hello World!"
+            assert(result == expectedResult)
+          }
+
+          locally {
+            val result = requests.get(s"$baseUrl/hello?name=Lorenzo").text()
+            val expectedResult = "Hello Lorenzo!"
             assert(result == expectedResult)
           }
 

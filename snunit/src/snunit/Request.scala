@@ -33,6 +33,8 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) {
 
   def path: String = fromCStringAndSize(req.request.path, req.request.path_length)
 
+  def query: String = fromCStringAndSize(req.request.query, req.request.query_length)
+
   private def addHeader(name: String, value: String): Unit = {
     val n = name.getBytes().asInstanceOf[ByteArray]
     val v = value.getBytes().asInstanceOf[ByteArray]
