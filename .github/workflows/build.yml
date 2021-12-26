@@ -51,7 +51,6 @@ jobs:
     - name: Integration Test
       run: |
         sudo systemctl stop unit.service
-        sudo unitd --user $USER
         sudo ./mill -i --disable-ticker -j 0 integration.test
     - name: Publish plugin shared locally
       run: 

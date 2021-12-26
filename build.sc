@@ -21,23 +21,14 @@ trait Common extends ScalaNativeModule with ScalafixModule {
   def scalaVersion = scalaV
   def scalaNativeVersion = "0.4.2"
 
-  val unitSocketPath = sys.env
-    .getOrElse(
-      "UNIT_CONTROL_SOCKET_PATH",
-      sys.props("os.name") match {
-        case "Linux"    => "/var/run/control.unit.sock"
-        case "Mac OS X" => "/usr/local/var/run/unit/control.sock"
-      }
-    )
-
-  def baseTestConfig(binary: os.Path, numProcesses: Int) = {
-    val appName = "test_app"
-    ujson.Obj(
+  def deployTestApp() = T.command {
+    os.proc("killall", "unitd").call()
+    val binary = nativeLink()
+    val json = ujson.Obj(
       "applications" -> ujson.Obj(
-        appName -> ujson.Obj(
+        "app" -> ujson.Obj(
           "type" -> "external",
           "executable" -> binary.toString,
-          "processes" -> numProcesses,
           "limits" -> ujson.Obj(
             "timeout" -> 1
           )
@@ -45,30 +36,17 @@ trait Common extends ScalaNativeModule with ScalafixModule {
       ),
       "listeners" -> ujson.Obj(
         s"*:$testServerPort" -> ujson.Obj(
-          "pass" -> s"applications/$appName"
+          "pass" -> "applications/app"
         )
       )
     )
-  }
 
-  def deployTestApp() = {
-    def doCurl(json: ujson.Value) = {
-      os.proc(
-        "curl",
-        "-X",
-        "PUT",
-        "--data-binary",
-        json.toString,
-        "--unix-socket",
-        unitSocketPath,
-        "http://localhost/config"
-      ).call()
-    }
-    T.command {
-      val binary = nativeLink()
-      doCurl(baseTestConfig(binary = binary, numProcesses = 0))
-      doCurl(baseTestConfig(binary = binary, numProcesses = sys.runtime.availableProcessors))
-    }
+    val stateDir = T.dest / "state"
+    os.makeDir.all(stateDir)
+    os.write.over(stateDir / "conf.json", json)
+
+    os.proc("unitd", "--no-daemon", "--log", "/dev/stdout", "--state", stateDir).spawn()
+    ()
   }
 
   def scalacOptions = Seq("-Ywarn-unused")
