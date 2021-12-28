@@ -24,7 +24,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
   def deployTestApp() = T.command {
     val dest = T.dest
     val env = T.env
-    os.proc("killall", "unitd").call(check = false)
+    os.proc("killall", "-KILL", "unitd").call(check = false)
     val binary = nativeLink()
     val json = ujson.Obj(
       "applications" -> ujson.Obj(
