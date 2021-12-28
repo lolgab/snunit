@@ -53,7 +53,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
     os.proc(
       "unitd",
       "--control",
-      s"unix:${dest / "control.sock"}",
+      s"unix:${os.pwd / "control.sock"}",
       "--pid",
       pidFile,
       "--log",
