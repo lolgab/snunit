@@ -22,6 +22,8 @@ trait Common extends ScalaNativeModule with ScalafixModule {
   def scalaNativeVersion = "0.4.2"
 
   def deployTestApp() = T.command {
+    val dest = T.dest
+    val env = T.env
     os.proc("killall", "unitd").call()
     val binary = nativeLink()
     val json = ujson.Obj(
@@ -41,11 +43,28 @@ trait Common extends ScalaNativeModule with ScalafixModule {
       )
     )
 
-    val stateDir = T.dest / "state"
+    val stateDir = dest / "state"
     os.makeDir.all(stateDir)
     os.write.over(stateDir / "conf.json", json)
 
-    os.proc("unitd", "--no-daemon", "--log", "/dev/stdout", "--state", stateDir).spawn()
+    os.proc(
+      "unitd",
+      "--no-daemon",
+      "--control",
+      dest / "control.sock",
+      "--pid",
+      dest / "unit.pid",
+      "--log",
+      "/dev/stdout",
+      "--state",
+      stateDir,
+      "--tmp",
+      dest / "tmp",
+      "--user",
+      env("USER"),
+      "--group",
+      env("USER")
+    ).spawn()
     ()
   }
 
