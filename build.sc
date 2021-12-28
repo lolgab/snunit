@@ -64,7 +64,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
       env("USER"),
       "--group",
       env("USER")
-    ).call().out.text
+    ).spawn()
     ()
   }
 
