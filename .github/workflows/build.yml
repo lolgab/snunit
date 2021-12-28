@@ -38,6 +38,13 @@ jobs:
       with:
         java-version: '8'
         architecture: x64
+    - name: Start SSH via tmate
+      uses: rdp-studio/ssh2actions@main
+      # Send connection info to Telegram (optional)
+      # You can find related documents here: https://core.telegram.org/bots
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     - name: Check formatting
       run: 
         ./mill -i --disable-ticker -j 0 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
