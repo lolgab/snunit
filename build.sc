@@ -47,24 +47,22 @@ trait Common extends ScalaNativeModule with ScalafixModule {
     os.makeDir.all(stateDir)
     os.write.over(stateDir / "conf.json", json)
 
+    val pidFile = dest / "unit.pid"
+    os.write(pidFile, "")
+
     os.proc(
       "unitd",
-      "--no-daemon",
       "--control",
-      dest / "control.sock",
+      s"unix:${dest / "control.sock"}",
       "--pid",
-      dest / "unit.pid",
+      pidFile,
       "--log",
       "/dev/stdout",
       "--state",
       stateDir,
       "--tmp",
-      dest / "tmp",
-      "--user",
-      env("USER"),
-      "--group",
-      env("USER")
-    ).spawn()
+      dest / "tmp"
+    ).call()
     ()
   }
 

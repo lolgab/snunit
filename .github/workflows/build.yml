@@ -48,11 +48,6 @@ jobs:
     # - name: Compile
     #   run: 
     #     ./mill -i --disable-ticker -j 0 __.compile
-    - name: Start SSH via tmate
-      uses: rdp-studio/ssh2actions@main
-      env:
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     - name: Integration Test
       run: |
         sudo systemctl stop unit.service
