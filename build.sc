@@ -50,7 +50,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
     val pidFile = dest / "unit.pid"
     os.write(pidFile, "")
 
-    val controlFile = os.pwd / "control.sock"
+    val controlFile = os.pwd / "out" / "control.sock"
     os.remove.all(controlFile)
 
     os.proc(
