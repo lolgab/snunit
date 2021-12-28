@@ -51,7 +51,7 @@ trait Common extends ScalaNativeModule with ScalafixModule {
     os.write(pidFile, "")
 
     val controlFile = os.pwd / "control.sock"
-    os.remove(controlFile)
+    os.remove.all(controlFile)
 
     os.proc(
       "unitd",
