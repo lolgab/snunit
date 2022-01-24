@@ -1,10 +1,10 @@
 package io.undertow.server
 
+import io.undertow.io.Sender
+
 import java.io.Closeable
 import java.io.InputStream
 import java.io.OutputStream
-
-import io.undertow.io.Sender
 
 trait BlockingHttpExchange extends Closeable {
   def getInputStream(): InputStream

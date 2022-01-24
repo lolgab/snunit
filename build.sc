@@ -1,4 +1,5 @@
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
+import mill.scalalib.api.ZincWorkerUtil.isScala3
 import mill.scalalib.publish._
 import $ivy.`com.goyeau::mill-scalafix::0.2.8`
 import com.goyeau.mill.scalafix.ScalafixModule
@@ -73,9 +74,9 @@ object Common {
       }
     }
 
-    def scalacOptions = Seq("-Ywarn-unused")
+    def scalacOptions = super.scalacOptions() ++ (if(isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
 
-    def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.4.4")
+    def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.6.0")
   }
 
   trait Scala2Only extends Shared {

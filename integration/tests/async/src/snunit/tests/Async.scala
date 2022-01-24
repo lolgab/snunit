@@ -1,9 +1,9 @@
 package snunit.tests
 
+import snunit._
+
 import scala.concurrent.duration._
 import scala.scalanative.loop.Timer
-
-import snunit._
 
 object Async {
   def main(args: Array[String]): Unit = {

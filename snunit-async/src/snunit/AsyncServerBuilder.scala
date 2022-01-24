@@ -1,5 +1,8 @@
 package snunit
 
+import snunit.unsafe.CApi._
+import snunit.unsafe.CApiOps._
+
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.string.strerror
 import scala.scalanative.loop.Poll
@@ -9,9 +12,6 @@ import scala.scalanative.posix.fcntl.fcntl
 import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsafe._
 import scala.util.control.NonFatal
-
-import snunit.unsafe.CApi._
-import snunit.unsafe.CApiOps._
 
 object AsyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)

@@ -1,11 +1,11 @@
 package snunit
 
-import scala.scalanative.runtime.ByteArray
-import scala.scalanative.unsafe._
-
 import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
 import snunit.unsafe.Utils._
+
+import scala.scalanative.runtime.ByteArray
+import scala.scalanative.unsafe._
 
 class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) {
   def method: Method = Method.of(req.request.method, req.request.method_length)

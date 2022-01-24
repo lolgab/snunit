@@ -1,10 +1,10 @@
 package snunit.unsafe
 
+import snunit.unsafe.nxt_unit_sptr._
+
 import scala.scalanative.posix.sys.types.pid_t
 import scala.scalanative.unsafe.Nat._8
 import scala.scalanative.unsafe._
-
-import snunit.unsafe.nxt_unit_sptr._
 
 @link("unit")
 @extern

@@ -1,14 +1,14 @@
 package io.undertow.server
 
-import java.io.InputStream
-import java.io.OutputStream
-
 import io.undertow.io.AsyncSenderImpl
 import io.undertow.io.BlockingSenderImpl
 import io.undertow.io.Sender
 import io.undertow.server.handlers.Cookie
 import io.undertow.util.HeaderMap
 import snunit._
+
+import java.io.InputStream
+import java.io.OutputStream
 
 final class HttpServerExchange private[undertow] (private[undertow] val req: Request) {
   private var state = 200
