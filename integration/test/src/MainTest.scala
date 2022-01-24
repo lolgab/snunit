@@ -5,7 +5,7 @@ import TestUtils._
 object MainTest extends TestSuite {
   val tests = Tests {
     test("hello-world") {
-      withDeployedExample("hello-world") {
+      withDeployedExampleCross("hello-world") {
         val result = requests.get(baseUrl).text()
         val expectedResult = "Hello world!\n"
         assert(result == expectedResult)

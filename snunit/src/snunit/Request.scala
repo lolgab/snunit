@@ -64,7 +64,7 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) {
   @inline
   def startSend(statusCode: StatusCode, headers: Seq[(String, String)]): Unit = startSendUnsafe(statusCode, headers, 0)
   def sendByte(byte: Int): Unit = {
-    val bytePtr = stackalloc[Byte]
+    val bytePtr = stackalloc[Byte]()
     !bytePtr = byte.toByte
     val res = nxt_unit_response_write_nb(
       req,
