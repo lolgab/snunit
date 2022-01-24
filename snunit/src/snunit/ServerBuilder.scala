@@ -1,9 +1,9 @@
 package snunit
 
-import scala.scalanative.unsafe._
-
 import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
+
+import scala.scalanative.unsafe._
 
 private[snunit] object ServerBuilder {
 

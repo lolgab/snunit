@@ -1,11 +1,11 @@
 package snunit.Autowire
 
+import snunit._
+import upickle.default._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Try
-
-import snunit._
-import upickle.default._
 
 object UpickleAutowireServer extends autowire.Server[String, Reader, Writer] {
   override def write[Result: Writer](r: Result): String = upickle.default.write(r)

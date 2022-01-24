@@ -1,7 +1,6 @@
 package snunit.unsafe
 
 import java.nio.charset.Charset
-
 import scala.scalanative.unsafe._
 
 private[snunit] object Utils {

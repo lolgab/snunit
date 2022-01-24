@@ -1,10 +1,10 @@
 package snunit.tests
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 import snunit.AsyncServerBuilder
 import snunit.Autowire._
 import snunit.StatusCode
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 trait MyApi {
   def addOne(i: Int): Int

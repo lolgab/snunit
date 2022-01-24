@@ -1,9 +1,9 @@
 package snunit
 
+import snunit.unsafe.CApi._
+
 import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsafe._
-
-import snunit.unsafe.CApi._
 
 object SyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)

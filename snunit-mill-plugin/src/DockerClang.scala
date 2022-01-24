@@ -10,10 +10,7 @@ private[plugin] object UpickleImplicits {
   implicit val scriptsRW: ReadWriter[ClangScripts.Scripts] = macroRW[ClangScripts.Scripts]
 }
 
-/**
-  * Uses Clang from a Docker image to allow
-  * building SNUnit binaries for Debian Linux on
-  * other operative systems
+/** Uses Clang from a Docker image to allow building SNUnit binaries for Debian Linux on other operative systems
   */
 trait DockerClang extends ScalaNativeModule {
   import UpickleImplicits._

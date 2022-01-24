@@ -1,8 +1,8 @@
 package snunit.tests
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 import snunit._
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object AsyncMultipleHandlers {
   val fallback: Handler = _.send(

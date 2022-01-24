@@ -18,6 +18,12 @@ object TestUtils {
     runMillCommand(s"integration.tests.$projectName.deployTestApp")
     f
   }
+  def withDeployedExampleCross(projectName: String)(f: => Unit) = {
+    BuildInfo.scalaVersions.split(',').foreach { scalaVersion =>
+      runMillCommand(s"integration.tests.$projectName[$scalaVersion].deployTestApp")
+      f
+    }
+  }
 
   def withDeployedExampleMultiplatform(projectName: String)(f: => Unit) = {
     runMillCommand(s"integration.tests.$projectName.native.deployTestApp")
