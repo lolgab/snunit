@@ -75,9 +75,17 @@ object Common {
       }
     }
 
-    def scalacOptions = super.scalacOptions() ++ (if(isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
+    def scalacOptions = super.scalacOptions() ++ (if (isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
 
     def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.6.0")
+
+    override def docJar = if (isScala3(crossScalaVersion)) T {
+      val outDir = T.ctx().dest
+      val javadocDir = outDir / "javadoc"
+      os.makeDir.all(javadocDir)
+      mill.api.Result.Success(mill.modules.Jvm.createJar(Agg(javadocDir))(outDir))
+    }
+    else super.docJar
   }
 
   trait Scala2Only extends Shared {
