@@ -5,7 +5,7 @@ import sjsonnew.shaded.scalajson.ast.unsafe._
 import sjsonnew.support.scalajson.unsafe._
 
 def getFromMillJson(taskName: String): JValue = {
-  val json = Parser.parseFromFile(file(s"../out/snunit-plugins-shared/2.12.13/$taskName/meta.json")).get
+  val json = Parser.parseFromFile(file(s"../out/snunit-plugins-shared/2.12.13/$taskName.json")).get
   json match {
     case JObject(fields) =>
       fields.collectFirst {
@@ -24,7 +24,7 @@ lazy val snunitSbtPlugin = project.in(file("."))
     sbtPlugin := true,
     scalaVersion := "2.12.14",
     organization := "com.github.lolgab",
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.0"),
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.4.3"),
     libraryDependencies ++= Seq(
       "com.github.lolgab" %% "snunit-plugins-shared" % snunitVersion
     ),
