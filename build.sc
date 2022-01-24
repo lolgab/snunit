@@ -7,6 +7,7 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.4`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
 import mill.contrib.buildinfo.BuildInfo
+import $file.versions
 
 val upickle = ivy"com.lihaoyi::upickle::1.4.3"
 
@@ -22,7 +23,7 @@ object Common {
     def name = "snunit"
 
     def crossScalaVersion: String
-    def scalaNativeVersion = "0.4.3"
+    def scalaNativeVersion = versions.Versions.scalaNative
 
     val unitSocketPath = sys.env
       .getOrElse(
@@ -234,7 +235,7 @@ object integration extends ScalaModule {
   }
 }
 
-object `snunit-plugins-shared` extends Cross[SnunitPluginsShared](scala213, "2.12.13")
+object `snunit-plugins-shared` extends Cross[SnunitPluginsShared](scala213, versions.Versions.scala212)
 class SnunitPluginsShared(val crossScalaVersion: String) extends CrossScalaModule with Publish {
   object test extends Tests with TestModule.Utest {
     def ivyDeps = super.ivyDeps() ++ Agg(
