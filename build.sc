@@ -48,7 +48,7 @@ object Common {
 
     def deployTestApp() = T.command {
       val binary = nativeLink()
-      unitd.runBackground(T.dest, baseTestConfig(binary))
+      unitd.runBackground(baseTestConfig(binary))
     }
 
     def scalacOptions = super.scalacOptions() ++ (if (isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
