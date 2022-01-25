@@ -51,16 +51,15 @@ jobs:
     - name: Integration Test
       run: |
         sudo systemctl stop unit.service
-        sudo unitd --user $USER
-        sudo ./mill -i --disable-ticker -j 0 integration.test
+        ./mill -i --disable-ticker -j 0 integration.test
     - name: Publish plugin shared locally
       run: 
-        sudo ./mill -i --disable-ticker -j 0 snunit-plugins-shared.__.publishLocal
+        ./mill -i --disable-ticker -j 0 snunit-plugins-shared.__.publishLocal
     - name: Compile Sbt plugin
       run: |
         (
           cd sbt-plugin
-          sudo sbt compile
+          sbt compile
         )
   publish-sonatype:
     if: github.repository == 'lolgab/snunit' && contains(github.ref, 'refs/tags/')
@@ -114,6 +113,6 @@ jobs:
               --signed true
             (
               cd sbt-plugin
-              sudo sbt publishSigned sonatypeBundleRelease
+              sbt publishSigned sonatypeBundleRelease
             )
           fi

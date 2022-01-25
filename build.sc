@@ -8,6 +8,7 @@ import de.tobiasroeser.mill.vcs.version.VcsVersion
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
 import mill.contrib.buildinfo.BuildInfo
 import $file.versions
+import $file.unitd
 
 val upickle = ivy"com.lihaoyi::upickle::1.4.3"
 
@@ -25,23 +26,13 @@ object Common {
     def crossScalaVersion: String
     def scalaNativeVersion = versions.Versions.scalaNative
 
-    val unitSocketPath = sys.env
-      .getOrElse(
-        "UNIT_CONTROL_SOCKET_PATH",
-        sys.props("os.name") match {
-          case "Linux"    => "/var/run/control.unit.sock"
-          case "Mac OS X" => "/usr/local/var/run/unit/control.sock"
-        }
-      )
-
-    def baseTestConfig(binary: os.Path, numProcesses: Int) = {
-      val appName = "test_app"
+    def baseTestConfig(binary: os.Path) = {
+      val appName = "app"
       ujson.Obj(
         "applications" -> ujson.Obj(
           appName -> ujson.Obj(
             "type" -> "external",
             "executable" -> binary.toString,
-            "processes" -> numProcesses,
             "limits" -> ujson.Obj(
               "timeout" -> 1
             )
@@ -55,24 +46,9 @@ object Common {
       )
     }
 
-    def deployTestApp() = {
-      def doCurl(json: ujson.Value) = {
-        os.proc(
-          "curl",
-          "-X",
-          "PUT",
-          "--data-binary",
-          json.toString,
-          "--unix-socket",
-          unitSocketPath,
-          "http://localhost/config"
-        ).call()
-      }
-      T.command {
-        val binary = nativeLink()
-        doCurl(baseTestConfig(binary = binary, numProcesses = 0))
-        doCurl(baseTestConfig(binary = binary, numProcesses = sys.runtime.availableProcessors))
-      }
+    def deployTestApp() = T.command {
+      val binary = nativeLink()
+      unitd.runBackground(T.dest, baseTestConfig(binary))
     }
 
     def scalacOptions = super.scalacOptions() ++ (if (isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
