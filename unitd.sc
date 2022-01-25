@@ -12,9 +12,11 @@ def runBackground(config: ujson.Obj): Unit = {
   os.makeDir.all(state)
   os.write.over(state / "conf.json", config)
   val control = dest / "control.sock"
+  os.remove(control)
   close()
-  optProc = Some(
-    os.proc(
+  var started = new java.util.concurrent.atomic.AtomicBoolean(false)
+  val spawned = os
+    .proc(
       "unitd",
       "--no-daemon",
       "--log",
@@ -25,6 +27,18 @@ def runBackground(config: ujson.Obj): Unit = {
       s"unix:$control",
       "--pid",
       dest / "unit.pid"
-    ).spawn()
-  )
+    )
+    .spawn(stderr = os.ProcessOutput.Readlines(line => {
+      line match {
+        case s"$_ unit $_ started" =>
+          started.set(true)
+        case _ =>
+      }
+      System.err.println(line)
+    }))
+  while(!started.get()) {
+    println("Waiting for unit to start...")
+    Thread.sleep(100)
+  }
+  optProc = Some(spawned)
 }
