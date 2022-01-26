@@ -7,7 +7,7 @@ object TestUtils {
   private def runMillCommand(command: String) = os
     .proc(
       "./mill",
-      "-i",
+      // adding `-i` breaks the ability to close unitd processes
       "--disable-ticker",
       "show",
       command
