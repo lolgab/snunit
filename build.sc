@@ -10,7 +10,7 @@ import mill.contrib.buildinfo.BuildInfo
 import $file.versions
 import $file.unitd
 
-val upickle = ivy"com.lihaoyi::upickle::1.4.3"
+val upickle = ivy"com.lihaoyi::upickle::1.5.0"
 
 val scala213 = "2.13.8"
 val scala3 = "3.1.0"
@@ -89,13 +89,14 @@ trait Publish extends PublishModule {
 object snunit extends Cross[SNUnitModule](scalaVersions: _*)
 class SNUnitModule(val crossScalaVersion: String) extends Common.Cross with Publish
 
-object `snunit-async` extends Common.Scala2Only with Publish {
+object `snunit-async` extends Cross[SNUnitAsyncModule](scalaVersions: _*)
+class SNUnitAsyncModule(val crossScalaVersion: String) extends Common.Cross with Publish {
   def moduleDeps = Seq(snunit(crossScalaVersion))
 
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"com.github.lolgab::native-loop-core::0.2.0"
+        ivy"com.github.lolgab::native-loop-core::0.2.1"
       )
     }
 }
@@ -112,7 +113,7 @@ object `snunit-routes` extends Common.Scala2Only with Publish {
 }
 
 object `snunit-autowire` extends Common.Scala2Only with Publish {
-  def moduleDeps = Seq(`snunit-async`)
+  def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
@@ -122,7 +123,8 @@ object `snunit-autowire` extends Common.Scala2Only with Publish {
     }
 }
 
-object `snunit-undertow` extends Common.Scala2Only with Publish {
+object `snunit-undertow` extends Cross[SNUnitUndertow](scalaVersions: _*)
+class SNUnitUndertow(val crossScalaVersion: String) extends Common.Cross with Publish {
   def moduleDeps = Seq(snunit(crossScalaVersion))
 }
 
@@ -137,11 +139,11 @@ object `snunit-cask` extends Common.Scala2Only with Publish {
     val util = cask / "util"
     Seq(cask / "src", cask / "src-2", util / "src").map(PathRef(_))
   }
-  def moduleDeps = Seq(`snunit-undertow`)
+  def moduleDeps = Seq(`snunit-undertow`(crossScalaVersion))
   def ivyDeps = super.ivyDeps() ++ Agg(
     upickle,
-    ivy"com.lihaoyi::castor::0.2.0",
-    ivy"org.ekrich::sjavatime::1.1.5",
+    ivy"com.lihaoyi::castor::0.2.1",
+    ivy"org.ekrich::sjavatime::1.1.9",
     ivy"com.lihaoyi::pprint::0.6.6"
   )
 }
@@ -164,30 +166,35 @@ object integration extends ScalaModule {
     object `autowire-int` extends Common.Scala2Only {
       def moduleDeps = Seq(`snunit-autowire`)
     }
-    object async extends Common.Scala2Only {
-      def moduleDeps = Seq(`snunit-async`)
+    object async extends Cross[AsyncModule](scalaVersions: _*)
+    class AsyncModule(val crossScalaVersion: String) extends Common.Cross {
+      def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
     }
-    object `async-multiple-handlers` extends Common.Scala2Only {
-      def moduleDeps = Seq(`snunit-async`)
+    object `async-multiple-handlers` extends Cross[AsyncMultipleHandlersModule](scalaVersions: _*)
+    class AsyncMultipleHandlersModule(val crossScalaVersion: String) extends Common.Cross {
+      def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
     }
     object routes extends Common.Scala2Only {
       def moduleDeps = Seq(`snunit-routes`)
       def ivyDeps = T { super.ivyDeps() ++ Seq(upickle) }
     }
-    object `handlers-composition` extends Common.Scala2Only {
+    object `handlers-composition` extends Cross[HandlersCompositionModule](scalaVersions: _*)
+    class HandlersCompositionModule(val crossScalaVersion: String) extends Common.Cross {
       def moduleDeps = Seq(snunit(crossScalaVersion))
     }
     object `undertow-helloworld` extends Module {
-      object jvm extends ScalaModule {
+      object jvm extends Cross[JvmModule](scalaVersions: _*)
+      class JvmModule(val crossScalaVersion: String) extends CrossScalaModule {
         def millSourcePath = super.millSourcePath / os.up
         def scalaVersion = scala213
         def ivyDeps = super.ivyDeps() ++ Agg(
-          ivy"io.undertow:undertow-core:2.2.10.Final"
+          ivy"io.undertow:undertow-core:2.2.14.Final"
         )
       }
-      object native extends Common.Scala2Only {
+      object native extends Cross[NativeModule](scalaVersions: _*)
+      class NativeModule(val crossScalaVersion: String) extends Common.Cross {
         def millSourcePath = super.millSourcePath / os.up
-        def moduleDeps = Seq(`snunit-undertow`)
+        def moduleDeps = Seq(`snunit-undertow`(crossScalaVersion))
       }
     }
     object `cask-helloworld` extends Module {
