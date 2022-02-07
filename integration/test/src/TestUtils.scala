@@ -14,25 +14,29 @@ object TestUtils {
     )
     .call()
 
-  def withDeployedExample(projectName: String)(f: => Unit) = {
-    runMillCommand(s"integration.tests.$projectName.deployTestApp")
+  def withDeployedExample(projectName: String, crossSuffix: String = "")(f: => Unit) = {
+    runMillCommand(s"integration.tests.$projectName$crossSuffix.deployTestApp")
     f
   }
   def withDeployedExampleCross(projectName: String)(f: => Unit) = {
     BuildInfo.scalaVersions.split(',').foreach { scalaVersion =>
-      runMillCommand(s"integration.tests.$projectName[$scalaVersion].deployTestApp")
-      f
+      withDeployedExample(projectName, s"[$scalaVersion]")(f)
     }
   }
-
-  def withDeployedExampleMultiplatform(projectName: String)(f: => Unit) = {
-    runMillCommand(s"integration.tests.$projectName.native.deployTestApp")
-    val result = runMillCommand(s"integration.tests.$projectName.jvm.launcher").out.lines().head
+  def withDeployedExampleMultiplatform(projectName: String, crossSuffix: String = "")(f: => Unit) = {
+    val projectPrefix = s"integration.tests.$projectName"
+    runMillCommand(s"$projectPrefix.native$crossSuffix.deployTestApp")
+    val result = runMillCommand(s"$projectPrefix.jvm$crossSuffix.launcher").out.lines().head
     val s""""ref:$_:$path"""" = result
     val process = os.proc(path).spawn()
     Thread.sleep(1000)
     try { f }
     finally { process.close() }
+  }
+  def withDeployedExampleMultiplatformCross(projectName: String)(f: => Unit) = {
+    BuildInfo.scalaVersions.split(',').foreach { scalaVersion =>
+      withDeployedExampleMultiplatform(projectName, s"[$scalaVersion]")(f)
+    }
   }
 
   def runOnAllPlatforms(f: String => Unit) = {

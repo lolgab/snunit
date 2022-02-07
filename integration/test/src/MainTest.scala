@@ -19,7 +19,7 @@ object MainTest extends TestSuite {
       }
     }
     test("async") {
-      withDeployedExample("async") {
+      withDeployedExampleCross("async") {
         val result = requests.get(baseUrl, readTimeout = 10000).text()
         val expectedResult = "Hello world async!\n"
         assert(result == expectedResult)
@@ -39,7 +39,7 @@ object MainTest extends TestSuite {
       }
     }
     test("async-multiple-handlers") {
-      withDeployedExample("async-multiple-handlers") {
+      withDeployedExampleCross("async-multiple-handlers") {
         val getResult = requests.get(baseUrl).text()
         val expectedGetResult = "Hello world async multiple handlers!\n"
         assert(getResult == expectedGetResult)
@@ -75,7 +75,7 @@ object MainTest extends TestSuite {
       }
     }
     test("undertow-helloworld") {
-      withDeployedExampleMultiplatform("undertow-helloworld") {
+      withDeployedExampleMultiplatformCross("undertow-helloworld") {
         runOnAllPlatforms { baseUrl =>
           val result = requests.get(baseUrl).text()
           val expectedResult = "Hello World"
