@@ -11,19 +11,27 @@ import $file.versions
 import $file.unitd
 
 val upickle = ivy"com.lihaoyi::upickle::1.5.0"
+val undertow = ivy"io.undertow:undertow-core:2.2.14.Final"
 
 val scala213 = "2.13.8"
-val scala3 = "3.1.0"
+val scala3 = "3.1.1"
 val scalaVersions = Seq(scala213, scala3)
 
 val testServerPort = 8081
 
 object Common {
-  trait Shared extends ScalaNativeModule with ScalafixModule {
+  trait Shared extends ScalaModule with ScalafixModule {
     def organization = "com.github.lolgab"
     def name = "snunit"
-
     def crossScalaVersion: String
+
+    def scalacOptions = super.scalacOptions() ++ (if (isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
+
+    def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.6.0")
+
+    override def sources = T.sources { super.sources() ++ Seq(PathRef(millSourcePath / os.up / "shared" / "src")) }
+  }
+  trait SharedNative extends Shared with ScalaNativeModule {
     def scalaNativeVersion = versions.Versions.scalaNative
 
     def baseTestConfig(binary: os.Path) = {
@@ -51,24 +59,14 @@ object Common {
       unitd.runBackground(baseTestConfig(binary))
     }
 
-    def scalacOptions = super.scalacOptions() ++ (if (isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
-
-    def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.6.0")
-
-    override def docJar = if (isScala3(crossScalaVersion)) T {
-      val outDir = T.ctx().dest
-      val javadocDir = outDir / "javadoc"
-      os.makeDir.all(javadocDir)
-      mill.api.Result.Success(mill.modules.Jvm.createJar(Agg(javadocDir))(outDir))
-    }
-    else super.docJar
   }
 
-  trait Scala2Only extends Shared {
+  trait Scala2Only extends SharedNative {
     def crossScalaVersion = scala213
     def scalaVersion = crossScalaVersion
   }
-  trait Cross extends Shared with CrossScalaModule
+  trait Cross extends SharedNative with CrossScalaModule
+  trait CrossJvm extends Shared with CrossScalaModule
 }
 
 trait Publish extends PublishModule {
@@ -86,12 +84,19 @@ trait Publish extends PublishModule {
   def publishVersion = VcsVersion.vcsState().format()
 }
 
-object snunit extends Cross[SNUnitModule](scalaVersions: _*)
-class SNUnitModule(val crossScalaVersion: String) extends Common.Cross with Publish
+object snunit extends Module {
+  object native extends Cross[SNUnitNativeModule](scalaVersions: _*)
+  class SNUnitNativeModule(val crossScalaVersion: String) extends Common.Cross with Publish
+
+  object jvm extends Cross[SNUnitJvmModule](scalaVersions: _*)
+  class SNUnitJvmModule(val crossScalaVersion: String) extends Common.CrossJvm with Publish {
+    def ivyDeps = Agg(undertow)
+  }
+}
 
 object `snunit-async` extends Cross[SNUnitAsyncModule](scalaVersions: _*)
 class SNUnitAsyncModule(val crossScalaVersion: String) extends Common.Cross with Publish {
-  def moduleDeps = Seq(snunit(crossScalaVersion))
+  def moduleDeps = Seq(snunit.native(crossScalaVersion))
 
   def ivyDeps =
     T {
@@ -102,7 +107,7 @@ class SNUnitAsyncModule(val crossScalaVersion: String) extends Common.Cross with
 }
 
 object `snunit-routes` extends Common.Scala2Only with Publish {
-  def moduleDeps = Seq(snunit(crossScalaVersion))
+  def moduleDeps = Seq(snunit.native(crossScalaVersion))
 
   def ivyDeps =
     T {
@@ -125,7 +130,7 @@ object `snunit-autowire` extends Common.Scala2Only with Publish {
 
 object `snunit-undertow` extends Cross[SNUnitUndertow](scalaVersions: _*)
 class SNUnitUndertow(val crossScalaVersion: String) extends Common.Cross with Publish {
-  def moduleDeps = Seq(snunit(crossScalaVersion))
+  def moduleDeps = Seq(snunit.native(crossScalaVersion))
 }
 
 def caskSources = T {
@@ -150,15 +155,23 @@ object `snunit-cask` extends Common.Scala2Only with Publish {
 
 object integration extends ScalaModule {
   object tests extends Module {
-    object `hello-world` extends Cross[HelloWorldModule](scalaVersions: _*)
-    class HelloWorldModule(val crossScalaVersion: String) extends Common.Cross {
-      def moduleDeps = Seq(snunit(crossScalaVersion))
+    object `hello-world` extends Module {
+      object native extends Cross[HelloWorldNativeModule](scalaVersions: _*)
+      class HelloWorldNativeModule(val crossScalaVersion: String) extends Common.Cross {
+        def millSourcePath = super.millSourcePath / os.up
+        def moduleDeps = Seq(snunit.native(crossScalaVersion))
+      }
+      object jvm extends Cross[HelloWorldJvmModule](scalaVersions: _*)
+      class HelloWorldJvmModule(val crossScalaVersion: String) extends Common.CrossJvm {
+        def millSourcePath = super.millSourcePath / os.up
+        def moduleDeps = Seq(snunit.jvm(crossScalaVersion))
+      }
     }
     object `empty-response` extends Common.Scala2Only {
-      def moduleDeps = Seq(snunit(crossScalaVersion))
+      def moduleDeps = Seq(snunit.native(crossScalaVersion))
     }
     object `multiple-handlers` extends Common.Scala2Only {
-      def moduleDeps = Seq(snunit(crossScalaVersion))
+      def moduleDeps = Seq(snunit.native(crossScalaVersion))
     }
     object autowire extends Common.Scala2Only {
       def moduleDeps = Seq(`snunit-autowire`)
@@ -180,16 +193,14 @@ object integration extends ScalaModule {
     }
     object `handlers-composition` extends Cross[HandlersCompositionModule](scalaVersions: _*)
     class HandlersCompositionModule(val crossScalaVersion: String) extends Common.Cross {
-      def moduleDeps = Seq(snunit(crossScalaVersion))
+      def moduleDeps = Seq(snunit.native(crossScalaVersion))
     }
     object `undertow-helloworld` extends Module {
       object jvm extends Cross[JvmModule](scalaVersions: _*)
       class JvmModule(val crossScalaVersion: String) extends CrossScalaModule {
         def millSourcePath = super.millSourcePath / os.up
         def scalaVersion = scala213
-        def ivyDeps = super.ivyDeps() ++ Agg(
-          ivy"io.undertow:undertow-core:2.2.14.Final"
-        )
+        def ivyDeps = super.ivyDeps() ++ Agg(undertow)
       }
       object native extends Cross[NativeModule](scalaVersions: _*)
       class NativeModule(val crossScalaVersion: String) extends Common.Cross {

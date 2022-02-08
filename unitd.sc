@@ -1,5 +1,8 @@
 import java.util.concurrent.atomic.AtomicBoolean
 
+private val dest = os.home / ".cache" / "snunit"
+private val pid = dest / "unit.pid"
+
 // Variables are not maintained among invocations in interactive (`-i`) mode.
 // Running Mill with `-i` in TestUtils breaks makes it impossible to kill the previous processes.
 private var optProc: Option[os.SubProcess] = None
@@ -10,10 +13,13 @@ private def closeUnitd(): Unit = {
     Thread.sleep(100)
     optProc = None
   }
+  // We also try to kill the process in the pid file
+  if(os.exists(pid)) {
+    os.proc("kill", os.read(pid).trim).call(check = false)
+  }
 }
 def runBackground(config: ujson.Obj): Unit = {
   closeUnitd()
-  val dest = os.home / ".cache" / "snunit"
   val state = dest / "state"
   os.makeDir.all(state)
   os.write.over(state / "conf.json", config)
@@ -31,7 +37,7 @@ def runBackground(config: ujson.Obj): Unit = {
       "--control",
       s"unix:$control",
       "--pid",
-      dest / "unit.pid"
+      pid
     ).spawn(stderr = os.ProcessOutput.Readlines(line => {
       line match {
         case s"$_ unit $_ started" =>

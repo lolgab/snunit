@@ -7,8 +7,8 @@ import snunit.unsafe.Utils._
 import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsafe._
 
-class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) {
-  def method: Method = Method.of(req.request.method, req.request.method_length)
+class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) extends Request {
+  def method: Method = MethodUtils.of(req.request.method, req.request.method_length)
 
   def headers: Seq[(String, String)] = {
     for (i <- 0 until req.request.fields_count) yield {
@@ -18,8 +18,6 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) {
       fieldName -> fieldValue
     }
   }
-
-  def content: String = new String(contentRaw)
 
   lazy val contentRaw: Array[Byte] = {
     val contentLength = req.request.content_length
@@ -111,9 +109,6 @@ class Request private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) {
     }
     nxt_unit_response_send(req)
     sendDone()
-  }
-  def send(statusCode: StatusCode, content: String, headers: Seq[(String, String)]): Unit = {
-    send(statusCode, content.getBytes(), headers)
   }
   def outputStream = new java.io.OutputStream {
     override def write(b: Int): Unit = sendByte(b)

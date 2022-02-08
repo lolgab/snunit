@@ -16,7 +16,7 @@ private[snunit] object ServerBuilder {
   }
 
   protected[snunit] val request_handler: request_handler_t = (req: Ptr[nxt_unit_request_info_t]) => {
-    handler.handleRequest(new Request(req))
+    handler.handleRequest(new RequestImpl(req))
   }
 
   protected[snunit] val quit: quit_t = (ctx: Ptr[nxt_unit_ctx_t]) => {
