@@ -83,13 +83,15 @@ trait Publish extends PublishModule {
     )
   def publishVersion = VcsVersion.vcsState().format()
 }
-
+trait Multiplatform extends Publish {
+  override def artifactName = super.artifactName().split('-').init.mkString("-")
+}
 object snunit extends Module {
   object native extends Cross[SNUnitNativeModule](scalaVersions: _*)
-  class SNUnitNativeModule(val crossScalaVersion: String) extends Common.Cross with Publish
+  class SNUnitNativeModule(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish
 
   object jvm extends Cross[SNUnitJvmModule](scalaVersions: _*)
-  class SNUnitJvmModule(val crossScalaVersion: String) extends Common.CrossJvm with Publish {
+  class SNUnitJvmModule(val crossScalaVersion: String) extends Common.CrossJvm with Multiplatform with Publish {
     def ivyDeps = Agg(undertow)
   }
 }
