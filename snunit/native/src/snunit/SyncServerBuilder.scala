@@ -16,6 +16,6 @@ object SyncServerBuilder {
     if (ctx == null) {
       throw new Exception("Failed to create Unit object")
     }
-    new SyncServer(ctx)
+    new SyncServerImpl(ctx)
   }
 }
