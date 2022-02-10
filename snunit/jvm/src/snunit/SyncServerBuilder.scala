@@ -9,10 +9,11 @@ import java.nio.ByteBuffer
 
 object SyncServerBuilder {
   def build(handler: Handler): SyncServer = {
+    val port = sys.env.get("SNUNIT_PORT").map(_.toInt).getOrElse(8080)
     new SyncServer {
       private val server = Undertow
         .builder()
-        .addHttpListener(8080, "localhost")
+        .addHttpListener(port, "127.0.0.1")
         .setHandler(new BlockingHandler(new HttpHandler() {
           def handleRequest(exchange: HttpServerExchange): Unit = {
             handler.handleRequest(new Request {
