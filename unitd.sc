@@ -14,7 +14,7 @@ private def closeUnitd(): Unit = {
     optProc = None
   }
   // We also try to kill the process in the pid file
-  if(os.exists(pid)) {
+  if (os.exists(pid)) {
     os.proc("kill", os.read(pid).trim).call(check = false)
   }
 }
@@ -38,14 +38,17 @@ def runBackground(config: ujson.Obj): Unit = {
       s"unix:$control",
       "--pid",
       pid
-    ).spawn(stderr = os.ProcessOutput.Readlines(line => {
-      line match {
-        case s"$_ unit $_ started" =>
-          started.set(true)
-        case _ =>
-      }
-      System.err.println(line)
-    }))
+    ).spawn(
+      stdout = os.Inherit,
+      stderr = os.ProcessOutput.Readlines(line => {
+        line match {
+          case s"$_ unit $_ started" =>
+            started.set(true)
+          case _ =>
+        }
+        System.err.println(line)
+      })
+    )
   )
   while (!started.get()) {
     println("Waiting for unit to start...")
