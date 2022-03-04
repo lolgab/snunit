@@ -86,7 +86,7 @@ object MainTest extends TestSuite {
       }
     }
     test("cask-helloworld") {
-      withDeployedExampleMultiplatform("cask-helloworld") {
+      withDeployedExampleMultiplatformCross("cask-helloworld") {
         runOnAllPlatforms { baseUrl =>
           locally {
             val result = requests.get(baseUrl).text()

@@ -1,0 +1,224 @@
+diff --git a/cask/src/cask/decorators/compress.scala b/cask/src/cask/decorators/compress.scala
+index 71f4bb4..ab833e1 100644
+--- a/cask/src/cask/decorators/compress.scala
++++ b/cask/src/cask/decorators/compress.scala
+@@ -7,7 +7,7 @@ import cask.model.{Request, Response}
+ import collection.JavaConverters._
+ class compress extends cask.RawDecorator{
+   def wrapFunction(ctx: Request, delegate: Delegate) = {
+-    val acceptEncodings = Option(ctx.exchange.getRequestHeaders.get("Accept-Encoding"))
++    val acceptEncodings = Option(ctx.exchange.getRequestHeaders().get("Accept-Encoding"))
+       .toSeq
+       .flatMap(_.asScala)
+       .flatMap(_.split(", "))
+diff --git a/cask/src/cask/endpoints/JsonEndpoint.scala b/cask/src/cask/endpoints/JsonEndpoint.scala
+index fbab2fa..8218adc 100644
+--- a/cask/src/cask/endpoints/JsonEndpoint.scala
++++ b/cask/src/cask/endpoints/JsonEndpoint.scala
+@@ -51,7 +51,7 @@ class postJson(val path: String, override val subpath: Boolean = false)
+       str <-
+         try {
+           val boas = new ByteArrayOutputStream()
+-          Util.transferTo(ctx.exchange.getInputStream, boas)
++          Util.transferTo(ctx.exchange.getInputStream(), boas)
+           Right(new String(boas.toByteArray))
+         }
+         catch{case e: Throwable => Left(cask.model.Response(
+diff --git a/cask/src/cask/endpoints/WebEndpoints.scala b/cask/src/cask/endpoints/WebEndpoints.scala
+index 9951628..afd46c5 100644
+--- a/cask/src/cask/endpoints/WebEndpoints.scala
++++ b/cask/src/cask/endpoints/WebEndpoints.scala
+@@ -18,7 +18,7 @@ trait WebEndpoint extends HttpEndpoint[Response.Raw, Seq[String]]{
+ object WebEndpoint{
+   def buildMapFromQueryParams(ctx: Request) = {
+     val b = Map.newBuilder[String, Seq[String]]
+-    val queryParams = ctx.exchange.getQueryParameters
++    val queryParams = ctx.exchange.getQueryParameters()
+     for(k <- queryParams.keySet().iterator().asScala){
+       val deque = queryParams.get(k)
+       val arr = new Array[String](deque.size)
+diff --git a/cask/src/cask/endpoints/WebSocketEndpoint.scala b/cask/src/cask/endpoints/WebSocketEndpoint.scala
+index d96d6ac..f3b1dc2 100644
+--- a/cask/src/cask/endpoints/WebSocketEndpoint.scala
++++ b/cask/src/cask/endpoints/WebSocketEndpoint.scala
+@@ -42,31 +42,31 @@ extends WebsocketResult with WebSocketConnectionCallback {
+      // as different events here; the former goes to AbstractReceiveListener#onClose,
+      // while the latter to ChannelListener#handleEvent. Make sure we handle both cases.
+      channel.addCloseTask(channel => actor.send(Ws.ChannelClosed()))
+-     channel.getReceiveSetter.set(
++     channel.getReceiveSetter().set(
+        new AbstractReceiveListener() {
+          override def onFullTextMessage(channel: WebSocketChannel, message: BufferedTextMessage) = {
+-           actor.send(Ws.Text(message.getData))
++           actor.send(Ws.Text(message.getData()))
+          }
+ 
+          override def onFullBinaryMessage(channel: WebSocketChannel, message: BufferedBinaryMessage): Unit = {
+            actor.send(Ws.Binary(
+-             WebSockets.mergeBuffers(message.getData.getResource:_*).array()
++             WebSockets.mergeBuffers(message.getData().getResource():_*).array()
+            ))
+          }
+ 
+          override def onFullPingMessage(channel: WebSocketChannel, message: BufferedBinaryMessage): Unit = {
+            actor.send(Ws.Ping(
+-             WebSockets.mergeBuffers(message.getData.getResource:_*).array()
++             WebSockets.mergeBuffers(message.getData().getResource():_*).array()
+            ))
+          }
+          override def onFullPongMessage(channel: WebSocketChannel, message: BufferedBinaryMessage): Unit = {
+            actor.send(Ws.Pong(
+-             WebSockets.mergeBuffers(message.getData.getResource:_*).array()
++             WebSockets.mergeBuffers(message.getData().getResource():_*).array()
+            ))
+          }
+ 
+          override def onCloseMessage(cm: CloseMessage, channel: WebSocketChannel) = {
+-           actor.send(Ws.Close(cm.getCode, cm.getReason))
++           actor.send(Ws.Close(cm.getCode(), cm.getReason()))
+          }
+        }
+      )
+diff --git a/cask/src/cask/main/Main.scala b/cask/src/cask/main/Main.scala
+index 3e53c18..3ca3d72 100644
+--- a/cask/src/cask/main/Main.scala
++++ b/cask/src/cask/main/Main.scala
+@@ -62,10 +62,10 @@ abstract class Main{
+ 
+   def main(args: Array[String]): Unit = {
+     if (!verbose) Main.silenceJboss()
+-    val server = Undertow.builder
++    val server = Undertow.builder()
+       .addHttpListener(port, host)
+       .setHandler(defaultHandler)
+-      .build
++      .build()
+     server.start()
+   }
+ 
+@@ -81,7 +81,7 @@ object Main{
+                       (implicit log: Logger) extends HttpHandler() {
+     def handleRequest(exchange: HttpServerExchange): Unit = try {
+       //        println("Handling Request: " + exchange.getRequestPath)
+-      val (effectiveMethod, runner) = if (exchange.getRequestHeaders.getFirst("Upgrade") == "websocket") {
++      val (effectiveMethod, runner) = if (exchange.getRequestHeaders().getFirst("Upgrade") == "websocket") {
+         Tuple2(
+           "websocket",
+           (r: Any) =>
+@@ -95,11 +95,11 @@ object Main{
+             }
+         )
+       } else Tuple2(
+-        exchange.getRequestMethod.toString.toLowerCase(),
++        exchange.getRequestMethod().toString.toLowerCase(),
+         (r: Any) => Main.writeResponse(exchange, r.asInstanceOf[Response.Raw])
+       )
+ 
+-      dispatchTrie.lookup(Util.splitPath(exchange.getRequestPath).toList, Map()) match {
++      dispatchTrie.lookup(Util.splitPath(exchange.getRequestPath()).toList, Map()) match {
+         case None => Main.writeResponse(exchange, handleNotFound())
+         case Some((methodMap, routeBindings, remaining)) =>
+           methodMap.get(effectiveMethod) match {
+@@ -163,24 +163,24 @@ object Main{
+ 
+   def writeResponse(exchange: HttpServerExchange, response: Response.Raw) = {
+     response.data.headers.foreach{case (k, v) =>
+-      exchange.getResponseHeaders.put(new HttpString(k), v)
++      exchange.getResponseHeaders().put(new HttpString(k), v)
+     }
+     response.headers.foreach{case (k, v) =>
+-      exchange.getResponseHeaders.put(new HttpString(k), v)
++      exchange.getResponseHeaders().put(new HttpString(k), v)
+     }
+     response.cookies.foreach(c => exchange.setResponseCookie(Cookie.toUndertow(c)))
+ 
+     exchange.setStatusCode(response.statusCode)
+-    val output = exchange.getOutputStream
++    val output = exchange.getOutputStream()
+     response.data.write(new java.io.OutputStream {
+       def write(b: Int): Unit = output.write(b)
+       override def write(b: Array[Byte]): Unit = output.write(b)
+       override def write(b: Array[Byte], off: Int, len: Int): Unit = output.write(b, off, len)
+       override def close() = {
+-        if (!exchange.isComplete) output.close()
++        if (!exchange.isComplete()) output.close()
+       }
+       override def flush() = {
+-        if (!exchange.isComplete) output.flush()
++        if (!exchange.isComplete()) output.flush()
+       }
+     })
+   }
+diff --git a/cask/src/cask/model/Params.scala b/cask/src/cask/model/Params.scala
+index 3d8d4dd..6fbae2b 100644
+--- a/cask/src/cask/model/Params.scala
++++ b/cask/src/cask/model/Params.scala
+@@ -10,9 +10,9 @@ case class Request(exchange: HttpServerExchange, remainingPathSegments: Seq[Stri
+ extends geny.ByteData with geny.Readable {
+   import collection.JavaConverters._
+   lazy val cookies: Map[String, Cookie] = {
+-    exchange.getRequestCookies.asScala.mapValues(Cookie.fromUndertow).toMap
++    exchange.getRequestCookies().asScala.mapValues(Cookie.fromUndertow).toMap
+   }
+-  lazy val data: InputStream = exchange.getInputStream
++  lazy val data: InputStream = exchange.getInputStream()
+ 
+   /**
+    * Read all the bytes of the incoming request *with* caching
+@@ -28,11 +28,11 @@ extends geny.ByteData with geny.Readable {
+     baos.toByteArray
+   }
+   lazy val queryParams: Map[String, collection.Seq[String]] = {
+-    exchange.getQueryParameters.asScala.mapValues(_.asScala.toArray.toSeq).toMap
++    exchange.getQueryParameters().asScala.mapValues(_.asScala.toArray.toSeq).toMap
+   }
+   lazy val headers: Map[String, collection.Seq[String]] = {
+-    exchange.getRequestHeaders.asScala
+-      .map{ header => header.getHeaderName.toString.toLowerCase -> header.asScala }
++    exchange.getRequestHeaders().asScala
++      .map{ header => header.getHeaderName().toString.toLowerCase -> header.asScala }
+       .toMap
+   }
+ 
+@@ -42,18 +42,18 @@ object Cookie{
+ 
+   def fromUndertow(from: io.undertow.server.handlers.Cookie): Cookie = {
+     Cookie(
+-      from.getName,
+-      from.getValue,
+-      from.getComment,
+-      from.getDomain,
+-      if (from.getExpires == null) null else from.getExpires.toInstant,
+-      from.getMaxAge,
+-      from.getPath,
+-      from.getVersion,
+-      from.isDiscard,
+-      from.isHttpOnly,
+-      from.isSecure,
+-      from.getSameSiteMode
++      from.getName(),
++      from.getValue(),
++      from.getComment(),
++      from.getDomain(),
++      if (from.getExpires() == null) null else from.getExpires().toInstant,
++      from.getMaxAge(),
++      from.getPath(),
++      from.getVersion(),
++      from.isDiscard(),
++      from.isHttpOnly(),
++      from.isSecure(),
++      from.getSameSiteMode()
+     )
+   }
+   def toUndertow(from: Cookie): io.undertow.server.handlers.Cookie = {
+@@ -96,8 +96,8 @@ sealed trait FormEntry{
+ }
+ object FormEntry{
+   def fromUndertow(from: io.undertow.server.handlers.form.FormData.FormValue) = {
+-    if (!from.isFile) FormValue(from.getValue, from.getHeaders)
+-    else FormFile(from.getFileName, from.getPath, from.getHeaders)
++    if (!from.isFile()) FormValue(from.getValue(), from.getHeaders())
++    else FormFile(from.getFileName(), from.getPath(), from.getHeaders())
+   }
+ 
+ }
