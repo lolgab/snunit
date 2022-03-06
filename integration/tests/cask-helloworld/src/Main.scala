@@ -19,10 +19,11 @@ object MinimalApplication extends cask.MainRoutes {
   }
 
   override def main(args: Array[String]): Unit = {
-    val server = Undertow.builder
+    val server = Undertow
+      .builder()
       .addHttpListener(port, host)
       .setHandler(defaultHandler)
-      .build
+      .build()
     server.start()
   }
 

@@ -138,20 +138,25 @@ class SNUnitUndertow(val crossScalaVersion: String) extends Common.Cross with Pu
 def caskSources = T {
   val dest = T.dest
   os.proc("git", "clone", "--branch", "0.8.0", "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
+  os.proc("git", "apply", os.pwd / "cask.patch").call(cwd = dest / "cask")
   PathRef(dest)
 }
-object `snunit-cask` extends Common.Scala2Only with Publish {
+object `snunit-cask` extends Cross[SNUnitCaskModule](scalaVersions: _*)
+class SNUnitCaskModule(val crossScalaVersion: String) extends Common.Cross with Publish {
   override def generatedSources = T {
     val cask = caskSources().path / "cask"
     val util = cask / "util"
-    Seq(cask / "src", cask / "src-2", util / "src").map(PathRef(_))
+    val scala2 = cask / "src-2"
+    val scala3 = cask / "src-3"
+    val scalaVersionSpecific = if (isScala3(crossScalaVersion)) scala3 else scala2
+    Seq(cask / "src", util / "src", scalaVersionSpecific).map(PathRef(_))
   }
   def moduleDeps = Seq(`snunit-undertow`(crossScalaVersion))
   def ivyDeps = super.ivyDeps() ++ Agg(
     upickle,
     ivy"com.lihaoyi::castor::0.2.1",
     ivy"org.ekrich::sjavatime::1.1.9",
-    ivy"com.lihaoyi::pprint::0.6.6"
+    ivy"com.lihaoyi::pprint::0.7.2"
   )
 }
 
@@ -211,16 +216,17 @@ object integration extends ScalaModule {
       }
     }
     object `cask-helloworld` extends Module {
-      object jvm extends ScalaModule {
+      object jvm extends Cross[CaskHelloWorldJvmModule](scalaVersions: _*)
+      class CaskHelloWorldJvmModule(val crossScalaVersion: String) extends Common.CrossJvm {
         def millSourcePath = super.millSourcePath / os.up
-        def scalaVersion = scala213
         def ivyDeps = super.ivyDeps() ++ Agg(
           ivy"com.lihaoyi::cask:0.7.11"
         )
       }
-      object native extends Common.Scala2Only {
+      object native extends Cross[CaskHelloWorldNativeModule](scalaVersions: _*)
+      class CaskHelloWorldNativeModule(val crossScalaVersion: String) extends Common.Cross {
         def millSourcePath = super.millSourcePath / os.up
-        def moduleDeps = Seq(`snunit-cask`)
+        def moduleDeps = Seq(`snunit-cask`(crossScalaVersion))
       }
     }
   }
