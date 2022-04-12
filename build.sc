@@ -9,6 +9,7 @@ import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
 import mill.contrib.buildinfo.BuildInfo
 import $file.versions
 import $file.unitd
+import $file.zio
 
 val upickle = ivy"com.lihaoyi::upickle::1.5.0"
 val undertow = ivy"io.undertow:undertow-core:2.2.14.Final"
@@ -135,6 +136,11 @@ class SNUnitUndertow(val crossScalaVersion: String) extends Common.Cross with Pu
   def moduleDeps = Seq(snunit.native(crossScalaVersion))
 }
 
+object `snunit-netty` extends Cross[SNUnitNetty](scalaVersions: _*)
+class SNUnitNetty(val crossScalaVersion: String) extends Common.Cross with Publish {
+  def moduleDeps = Seq(snunit.native(crossScalaVersion))
+}
+
 def caskSources = T {
   val dest = T.dest
   os.proc("git", "clone", "--branch", "0.8.0", "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
@@ -157,6 +163,23 @@ class SNUnitCaskModule(val crossScalaVersion: String) extends Common.Cross with 
     ivy"com.lihaoyi::castor::0.2.1",
     ivy"org.ekrich::sjavatime::1.1.9",
     ivy"com.lihaoyi::pprint::0.7.2"
+  )
+}
+object `snunit-zio-http` extends Cross[SNUnitZioHttpModule](scala213)
+class SNUnitZioHttpModule(val crossScalaVersion: String) extends Common.Cross with Publish {
+  override def generatedSources = T {
+    val zioHttp = zio.zioHttpSources().path / "zio-http" / "src" / "main" / "scala"
+    // val util = cask / "util"
+    // val scala2 = cask / "src-2"
+    // val scala3 = cask / "src-3"
+    // val scalaVersionSpecific = if (isScala3(crossScalaVersion)) scala3 else scala2
+    // Seq(cask / "src", util / "src", scalaVersionSpecific).map(PathRef(_))
+    Seq(PathRef(zioHttp))
+  }
+  def moduleDeps = Seq(`snunit-netty`(crossScalaVersion))
+  def ivyDeps = super.ivyDeps() ++ Agg(
+    ivy"dev.zio::zio::2.0.0-RC4",
+    ivy"dev.zio::zio-streams::2.0.0-RC4",
   )
 }
 
