@@ -14,7 +14,7 @@ val upickle = ivy"com.lihaoyi::upickle::1.5.0"
 val undertow = ivy"io.undertow:undertow-core:2.2.14.Final"
 
 val scala213 = "2.13.8"
-val scala3 = "3.1.1"
+val scala3 = "3.1.2"
 val scalaVersions = Seq(scala213, scala3)
 
 val testServerPort = 8081
@@ -135,6 +135,20 @@ class SNUnitUndertow(val crossScalaVersion: String) extends Common.Cross with Pu
   def moduleDeps = Seq(snunit.native(crossScalaVersion))
 }
 
+object `snunit-tapir` extends Module {
+  val tapirServer = ivy"com.softwaremill.sttp.tapir::tapir-server::1.0.0-RC1"
+  object native extends Cross[SNUnitTapirNative](scala213)
+  class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish {
+    def moduleDeps = Seq(snunit.native(crossScalaVersion))
+    def ivyDeps = super.ivyDeps() ++ Agg(tapirServer)
+  }
+  object jvm extends Cross[SNUnitTapirJvm](scala213)
+  class SNUnitTapirJvm(val crossScalaVersion: String) extends Common.CrossJvm with Multiplatform with Publish {
+    def moduleDeps = Seq(snunit.jvm(crossScalaVersion))
+    def ivyDeps = super.ivyDeps() ++ Agg(tapirServer)
+  }
+}
+
 def caskSources = T {
   val dest = T.dest
   os.proc("git", "clone", "--branch", "0.8.0", "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
@@ -227,6 +241,18 @@ object integration extends ScalaModule {
       class CaskHelloWorldNativeModule(val crossScalaVersion: String) extends Common.Cross {
         def millSourcePath = super.millSourcePath / os.up
         def moduleDeps = Seq(`snunit-cask`(crossScalaVersion))
+      }
+    }
+    object `tapir-helloworld` extends Module {
+      object jvm extends Cross[TapirHelloWorldJvmModule](scala213)
+      class TapirHelloWorldJvmModule(val crossScalaVersion: String) extends Common.CrossJvm {
+        def millSourcePath = super.millSourcePath / os.up
+        def moduleDeps = Seq(`snunit-tapir`.jvm(crossScalaVersion))
+      }
+      object native extends Cross[TapirHelloWorldNativeModule](scala213)
+      class TapirHelloWorldNativeModule(val crossScalaVersion: String) extends Common.Cross {
+        def millSourcePath = super.millSourcePath / os.up
+        def moduleDeps = Seq(`snunit-tapir`.native(crossScalaVersion))
       }
     }
   }
