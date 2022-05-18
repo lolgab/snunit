@@ -33,7 +33,7 @@ jobs:
         echo "deb-src https://packages.nginx.org/unit/ubuntu/ bionic unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
         sudo apt-get update
         unit_version="1.26*"
-        sudo apt-get install -y libuv1-dev unit=$unit_version unit-dev=$unit_version
+        sudo apt-get install -y libuv1-dev libidn11-dev unit=$unit_version unit-dev=$unit_version
     - uses: actions/setup-java@v1
       with:
         java-version: '8'

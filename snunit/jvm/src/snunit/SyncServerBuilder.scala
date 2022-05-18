@@ -6,6 +6,7 @@ import io.undertow.server.handlers.BlockingHandler
 import io.undertow.util._
 
 import java.nio.ByteBuffer
+import scala.jdk.CollectionConverters._
 
 object SyncServerBuilder {
   def build(handler: Handler): SyncServer = {
@@ -19,7 +20,11 @@ object SyncServerBuilder {
             handler.handleRequest(new Request {
               def method: Method = methodOf(exchange.getRequestMethod())
               def path: String = exchange.getRequestPath()
-              def query: String = ???
+              def query: String = exchange
+                .getQueryParameters()
+                .asScala
+                .flatMap { case (k, values) => values.asScala.map(v => s"$k=$v") }
+                .mkString("&")
               def contentRaw: Array[Byte] = {
                 exchange.startBlocking()
                 val src = exchange.getInputStream()
