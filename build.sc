@@ -260,7 +260,8 @@ object integration extends ScalaModule {
   object test extends Tests with TestModule.Utest with BuildInfo {
     def buildInfoMembers = Map(
       "port" -> testServerPort.toString,
-      "scalaVersions" -> scalaVersions.mkString(",")
+      "scalaVersions" -> scalaVersions.mkString(","),
+      "scala213" -> scala213
     )
     def ivyDeps =
       Agg(

@@ -109,7 +109,7 @@ object MainTest extends TestSuite {
       }
     }
     test("tapir-helloworld") {
-      withDeployedExampleMultiplatformCross("tapir-helloworld") {
+      withDeployedExampleMultiplatform("tapir-helloworld", crossSuffix = s"[${BuildInfo.scala213}]") {
         runOnAllPlatforms { baseUrl =>
           locally {
             val result = requests.get(s"$baseUrl/hello?name=Lorenzo").text()
