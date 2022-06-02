@@ -116,6 +116,10 @@ object MainTest extends TestSuite {
             val expectedResult = "Hello Lorenzo!"
             assert(result == expectedResult)
           }
+          locally {
+            val resultResponse = requests.get(s"$baseUrl/inexistent", check = false)
+            assert(resultResponse.statusCode == 404)
+          }
         }
       }
     }

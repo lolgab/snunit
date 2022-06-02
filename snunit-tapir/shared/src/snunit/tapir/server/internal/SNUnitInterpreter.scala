@@ -125,9 +125,8 @@ object SNUnitInterpreter {
       def handleRequest(req: Request): Unit = {
         val applied = interpreter.apply(new SNUnitServerRequest(req))
         applied match {
-          case RequestResult.Failure(failures) =>
-            // TODO: Handle errors properly
-            req.send(snunit.StatusCode.InternalServerError, "Server error", Seq.empty)
+          case RequestResult.Failure(_) =>
+            req.send(snunit.StatusCode.NotFound, emptyArray, Seq.empty)
           case RequestResult.Response(response) =>
             val body = response.body.getOrElse(emptyArray)
             req.send(snunit.StatusCode.OK, body, response.headers.map(h => h.name -> h.value))
