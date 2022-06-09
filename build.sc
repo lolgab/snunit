@@ -149,6 +149,20 @@ object `snunit-tapir` extends Module {
   }
 }
 
+object `snunit-tapir-zio` extends Module {
+  val zio = ivy"dev.zio::zio::2.0.0-RC6"
+  object native extends Cross[SNUnitTapirNative](scala213)
+  class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish {
+    def moduleDeps = Seq(`snunit-tapir`.native(crossScalaVersion))
+    def ivyDeps = super.ivyDeps() ++ Agg(zio)
+  }
+  object jvm extends Cross[SNUnitTapirJvm](scala213)
+  class SNUnitTapirJvm(val crossScalaVersion: String) extends Common.CrossJvm with Multiplatform with Publish {
+    def moduleDeps = Seq(`snunit-tapir`.jvm(crossScalaVersion))
+    def ivyDeps = super.ivyDeps() ++ Agg(zio)
+  }
+}
+
 def caskSources = T {
   val dest = T.dest
   os.proc("git", "clone", "--branch", "0.8.0", "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
@@ -254,6 +268,13 @@ object integration extends ScalaModule {
         def millSourcePath = super.millSourcePath / os.up
         def moduleDeps = Seq(`snunit-tapir`.native(crossScalaVersion))
       }
+    }
+    object `tapir-helloworld-future` extends Cross[TapirHelloWorldFutureNative](scalaVersions: _*)
+    class TapirHelloWorldFutureNative(val crossScalaVersion: String) extends Common.Cross {
+      def moduleDeps = Seq(
+        `snunit-async`(crossScalaVersion),
+        `snunit-tapir`.native(crossScalaVersion)
+      )
     }
   }
   def scalaVersion = scala213
