@@ -136,13 +136,13 @@ class SNUnitUndertow(val crossScalaVersion: String) extends Common.Cross with Pu
 }
 
 object `snunit-tapir` extends Module {
-  val tapirServer = ivy"com.softwaremill.sttp.tapir::tapir-server::1.0.0-RC1"
-  object native extends Cross[SNUnitTapirNative](scala213)
+  val tapirServer = ivy"com.softwaremill.sttp.tapir::tapir-server::1.0.0-RC3"
+  object native extends Cross[SNUnitTapirNative](scalaVersions: _*)
   class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish {
     def moduleDeps = Seq(snunit.native(crossScalaVersion))
     def ivyDeps = super.ivyDeps() ++ Agg(tapirServer)
   }
-  object jvm extends Cross[SNUnitTapirJvm](scala213)
+  object jvm extends Cross[SNUnitTapirJvm](scalaVersions: _*)
   class SNUnitTapirJvm(val crossScalaVersion: String) extends Common.CrossJvm with Multiplatform with Publish {
     def moduleDeps = Seq(snunit.jvm(crossScalaVersion))
     def ivyDeps = super.ivyDeps() ++ Agg(tapirServer)
@@ -220,7 +220,7 @@ object integration extends ScalaModule {
       object jvm extends Cross[JvmModule](scalaVersions: _*)
       class JvmModule(val crossScalaVersion: String) extends CrossScalaModule {
         def millSourcePath = super.millSourcePath / os.up
-        def scalaVersion = scala213
+        def scalaVersion = crossScalaVersion
         def ivyDeps = super.ivyDeps() ++ Agg(undertow)
       }
       object native extends Cross[NativeModule](scalaVersions: _*)
@@ -244,12 +244,12 @@ object integration extends ScalaModule {
       }
     }
     object `tapir-helloworld` extends Module {
-      object jvm extends Cross[TapirHelloWorldJvmModule](scala213)
+      object jvm extends Cross[TapirHelloWorldJvmModule](scalaVersions: _*)
       class TapirHelloWorldJvmModule(val crossScalaVersion: String) extends Common.CrossJvm {
         def millSourcePath = super.millSourcePath / os.up
         def moduleDeps = Seq(`snunit-tapir`.jvm(crossScalaVersion))
       }
-      object native extends Cross[TapirHelloWorldNativeModule](scala213)
+      object native extends Cross[TapirHelloWorldNativeModule](scalaVersions: _*)
       class TapirHelloWorldNativeModule(val crossScalaVersion: String) extends Common.Cross {
         def millSourcePath = super.millSourcePath / os.up
         def moduleDeps = Seq(`snunit-tapir`.native(crossScalaVersion))
