@@ -108,19 +108,27 @@ object MainTest extends TestSuite {
         }
       }
     }
+    def tapirHelloWorldTest(baseUrl: String) = {
+      locally {
+        val result = requests.get(s"$baseUrl/hello?name=Lorenzo").text()
+        val expectedResult = "Hello Lorenzo!"
+        assert(result == expectedResult)
+      }
+      locally {
+        val resultResponse = requests.get(s"$baseUrl/inexistent", check = false)
+        assert(resultResponse.statusCode == 404)
+      }
+    }
     test("tapir-helloworld") {
       withDeployedExampleMultiplatformCross("tapir-helloworld") {
         runOnAllPlatforms { baseUrl =>
-          locally {
-            val result = requests.get(s"$baseUrl/hello?name=Lorenzo").text()
-            val expectedResult = "Hello Lorenzo!"
-            assert(result == expectedResult)
-          }
-          locally {
-            val resultResponse = requests.get(s"$baseUrl/inexistent", check = false)
-            assert(resultResponse.statusCode == 404)
-          }
+          tapirHelloWorldTest(baseUrl)
         }
+      }
+    }
+    test("tapir-helloworld-future") {
+      withDeployedExampleCross("tapir-helloworld-future") {
+        tapirHelloWorldTest(baseUrl)
       }
     }
   }

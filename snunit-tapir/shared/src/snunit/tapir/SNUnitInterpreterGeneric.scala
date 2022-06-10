@@ -16,13 +16,15 @@ import java.nio.charset._
 import java.nio.file._
 import scala.util._
 
-object SNUnitInterpreter {
-  type Id[T] = T
+private[tapir] trait SNUnitInterpreterGeneric {
+  private[tapir] type F[_]
 
-  private val requestBody: RequestBody[Id, NoStreams] = new RequestBody[Id, NoStreams] {
+  private[tapir] implicit def monadError: MonadError[F]
+
+  private val requestBody: RequestBody[F, NoStreams] = new RequestBody[F, NoStreams] {
     val streams = NoStreams
     def toStream(serverRequest: ServerRequest): streams.BinaryStream = throw new UnsupportedOperationException
-    override def toRaw[RAW](serverRequest: ServerRequest, bodyType: RawBodyType[RAW]): Id[RawValue[RAW]] = {
+    override def toRaw[RAW](serverRequest: ServerRequest, bodyType: RawBodyType[RAW]): F[RawValue[RAW]] = {
       @inline def req = serverRequest.underlying.asInstanceOf[snunit.Request]
 
       // adapted from tapir Netty implementation
@@ -74,22 +76,12 @@ object SNUnitInterpreter {
     ): Array[Byte] = throw new UnsupportedOperationException
   }
 
-  private val interceptors: List[Interceptor[Id]] = Nil
+  private val interceptors: List[Interceptor[F]] = Nil
 
-  private val deleteFile: TapirFile => Id[Unit] = _ => ()
+  private val deleteFile: TapirFile => F[Unit] = _ => monadError.unit(())
 
-  private implicit val monadError: MonadError[Id] = new MonadError[Id] {
-    override def unit[T](t: T): Id[T] = t
-    override def map[T, T2](fa: Id[T])(f: T => T2): Id[T2] = f(fa)
-    override def flatMap[T, T2](fa: Id[T])(f: T => Id[T2]): Id[T2] = f(fa)
-    override def error[T](t: Throwable): Id[T] = throw t
-    override protected def handleWrappedError[T](rt: Id[T])(h: PartialFunction[Throwable, Id[T]]): Id[T] = rt
-    override def ensure[T](f: Id[T], e: => Id[Unit]): Id[T] = try f
-    finally e
-  }
-
-  implicit val bodyListener: BodyListener[Id, Array[Byte]] = new BodyListener[Id, Array[Byte]] {
-    def onComplete(body: Array[Byte])(cb: Try[Unit] => Id[Unit]): Id[Array[Byte]] = ???
+  implicit val bodyListener: BodyListener[F, Array[Byte]] = new BodyListener[F, Array[Byte]] {
+    def onComplete(body: Array[Byte])(cb: Try[Unit] => F[Unit]): F[Array[Byte]] = ???
   }
 
   private class SNUnitServerRequest(req: snunit.Request) extends ServerRequest {
@@ -113,8 +105,8 @@ object SNUnitInterpreter {
 
   private val emptyArray = new Array[Byte](0)
 
-  def toHandler(endpoints: List[ServerEndpoint[Any, Id]]): snunit.Handler = {
-    val interpreter = new ServerInterpreter[Any, Id, Array[Byte], NoStreams](
+  def toHandler(endpoints: List[ServerEndpoint[Any, F]]): snunit.Handler = {
+    val interpreter = new ServerInterpreter[Any, F, Array[Byte], NoStreams](
       FilterServerEndpoints(endpoints),
       requestBody,
       toResponseBody,
@@ -124,7 +116,7 @@ object SNUnitInterpreter {
     new snunit.Handler {
       def handleRequest(req: Request): Unit = {
         val applied = interpreter.apply(new SNUnitServerRequest(req))
-        applied match {
+        monadError.map(applied) {
           case RequestResult.Failure(_) =>
             req.send(snunit.StatusCode.NotFound, emptyArray, Seq.empty)
           case RequestResult.Response(response) =>
@@ -135,5 +127,5 @@ object SNUnitInterpreter {
     }
   }
 
-  def toHandler(endpoint: ServerEndpoint[Any, Id]): snunit.Handler = toHandler(List(endpoint))
+  def toHandler(endpoint: ServerEndpoint[Any, F]): snunit.Handler = toHandler(List(endpoint))
 }
