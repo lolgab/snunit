@@ -108,7 +108,7 @@ object MainTest extends TestSuite {
         }
       }
     }
-    def tapirHelloWorldTest() = runOnAllPlatforms { baseUrl =>
+    def tapirHelloWorldTest(baseUrl: String) = {
       locally {
         val result = requests.get(s"$baseUrl/hello?name=Lorenzo").text()
         val expectedResult = "Hello Lorenzo!"
@@ -121,12 +121,14 @@ object MainTest extends TestSuite {
     }
     test("tapir-helloworld") {
       withDeployedExampleMultiplatformCross("tapir-helloworld") {
-        tapirHelloWorldTest()
+        runOnAllPlatforms { baseUrl =>
+          tapirHelloWorldTest(baseUrl)
+        }
       }
     }
     test("tapir-helloworld-future") {
       withDeployedExampleCross("tapir-helloworld-future") {
-        tapirHelloWorldTest()
+        tapirHelloWorldTest(baseUrl)
       }
     }
   }
