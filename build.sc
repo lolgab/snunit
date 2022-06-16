@@ -44,11 +44,52 @@ object Common {
             "limits" -> ujson.Obj(
               "timeout" -> 1
             )
+          ),
+          "vouch" -> ujson.Obj(
+            "type" -> "external",
+            "executable" -> "/Users/lorenzo/scala/vouch-proxy/vouch-proxy",
+            "limits" -> ujson.Obj(
+              "timeout" -> 1
+            ),
+          )
+        ),
+        "routes" -> ujson.Arr(
+          ujson.Obj(
+            "match" -> ujson.Obj(
+              "uri" -> "/auth"
+            ),
+            "action"-> ujson.Obj(
+              "pass" -> "applications/vouch"
+            )
+          ),
+          ujson.Obj(
+            "match" -> ujson.Obj(
+              "uri" -> "/login"
+            ),
+            "action"-> ujson.Obj(
+              "pass" -> "applications/vouch"
+            )
+          ),
+          ujson.Obj(
+            "match" -> ujson.Obj(
+              "uri" -> "/logout"
+            ),
+            "action" -> ujson.Obj(
+              "pass" -> "applications/vouch"
+            )
+          ),
+          ujson.Obj(
+            "action" -> ujson.Obj(
+              "pass" -> s"applications/$appName"
+            )
           )
         ),
         "listeners" -> ujson.Obj(
           s"*:$testServerPort" -> ujson.Obj(
-            "pass" -> s"applications/$appName"
+            "pass" -> "routes"
+          ),
+          s"127.0.0.1:9090" -> ujson.Obj(
+            "pass" -> "applications/vouch"
           )
         )
       )
@@ -104,6 +145,18 @@ class SNUnitAsyncModule(val crossScalaVersion: String) extends Common.Cross with
     T {
       super.ivyDeps() ++ Agg(
         ivy"com.github.lolgab::native-loop-core::0.2.1"
+      )
+    }
+}
+
+object `snunit-auth` extends Cross[SNUnitAuthModule](scalaVersions: _*)
+class SNUnitAuthModule(val crossScalaVersion: String) extends Common.Cross with Publish {
+  def moduleDeps = Seq(snunit.native(crossScalaVersion))
+
+  def ivyDeps =
+    T {
+      super.ivyDeps() ++ Agg(
+        ivy"com.softwaremill.sttp.client3::core::3.6.2"
       )
     }
 }
@@ -217,6 +270,10 @@ object integration extends ScalaModule {
     object async extends Cross[AsyncModule](scalaVersions: _*)
     class AsyncModule(val crossScalaVersion: String) extends Common.Cross {
       def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
+    }
+    object auth extends Cross[AuthModule](scalaVersions: _*)
+    class AuthModule(val crossScalaVersion: String) extends Common.Cross {
+      def moduleDeps = Seq(`snunit-auth`(crossScalaVersion))
     }
     object `async-multiple-handlers` extends Cross[AsyncMultipleHandlersModule](scalaVersions: _*)
     class AsyncMultipleHandlersModule(val crossScalaVersion: String) extends Common.Cross {

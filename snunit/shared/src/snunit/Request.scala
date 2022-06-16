@@ -1,7 +1,10 @@
 package snunit
 
 trait Request {
+  private[snunit] protected var extraRequestHeaders: Seq[(String, String)] = Seq.empty
   def method: Method
+  private[snunit] def addRequestHeader(key: String, value: String): Unit =
+    extraRequestHeaders +:= (key, value)
   def headers: Seq[(String, String)]
   def content: String = new String(contentRaw)
   def contentRaw: Array[Byte]

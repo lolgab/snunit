@@ -9,14 +9,14 @@ import scala.scalanative.unsafe._
 
 class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) extends Request {
   def method: Method = MethodUtils.of(req.request.method, req.request.method_length)
-
   def headers: Seq[(String, String)] = {
-    for (i <- 0 until req.request.fields_count) yield {
+    val requestHeaders = for (i <- 0 until req.request.fields_count) yield {
       val field = req.request.fields + i
       val fieldName = fromCStringAndSize(field.name, field.name_length)
       val fieldValue = fromCStringAndSize(field.value, field.value_length)
       fieldName -> fieldValue
     }
+    requestHeaders ++ extraRequestHeaders
   }
 
   lazy val contentRaw: Array[Byte] = {
@@ -33,7 +33,7 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
 
   def query: String = fromCStringAndSize(req.request.query, req.request.query_length)
 
-  private def addHeader(name: String, value: String): Unit = {
+  private def addResponseHeader(name: String, value: String): Unit = {
     val n = name.getBytes().asInstanceOf[ByteArray]
     val v = value.getBytes().asInstanceOf[ByteArray]
     val res = nxt_unit_response_add_field(req, n.at(0), n.length.toByte, v.at(0), v.length)
@@ -56,7 +56,7 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
     }
 
     for ((key, value) <- headers) {
-      addHeader(key, value)
+      addResponseHeader(key, value)
     }
   }
   @inline
