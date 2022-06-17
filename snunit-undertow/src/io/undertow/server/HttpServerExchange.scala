@@ -67,6 +67,7 @@ final class HttpServerExchange private[undertow] (private[undertow] val req: Req
   }
   def getOutputStream(): OutputStream = blockingHttpExchange.getOutputStream()
   def isComplete(): Boolean = ???
+  def getRequestURI(): String = req.target
   def getRequestPath(): String = req.path
   def startBlocking(): BlockingHttpExchange = {
     val old = blockingHttpExchange

@@ -5,6 +5,7 @@ trait Request {
   def headers: Seq[(String, String)]
   def content: String = new String(contentRaw)
   def contentRaw: Array[Byte]
+  def target: String
   def path: String
   def query: String
   def send(statusCode: StatusCode, content: Array[Byte], headers: Seq[(String, String)]): Unit

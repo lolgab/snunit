@@ -35,7 +35,7 @@ class AutowireHandler(router: autowire.Server[String, Reader, Writer]#Router, ne
 
   def handleRequest(req: Request): Unit = {
     if (req.method == Method.POST) {
-      req.path.split("/").toList match {
+      req.target.split("/").toList match {
         case "" :: segments =>
           val future = for {
             args <- Future.fromTry(Try(ujson.read(req.contentRaw).obj.mapValues(ujson.write(_)).toMap))

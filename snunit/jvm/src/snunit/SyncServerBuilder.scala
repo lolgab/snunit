@@ -19,6 +19,7 @@ object SyncServerBuilder {
           def handleRequest(exchange: HttpServerExchange): Unit = {
             handler.handleRequest(new Request {
               def method: Method = methodOf(exchange.getRequestMethod())
+              def target: String = exchange.getRequestURI()
               def path: String = exchange.getRequestPath()
               def query: String = exchange
                 .getQueryParameters()
