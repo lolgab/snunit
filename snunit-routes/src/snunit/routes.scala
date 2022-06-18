@@ -9,7 +9,7 @@ trait ArgsHandler[Args] {
 
 class RouteHandler[Args](route: Route[Args], argsHandler: ArgsHandler[Args], next: Handler) extends Handler {
   def handleRequest(req: Request): Unit = {
-    val res = route.parseArgs(req.path)
+    val res = route.parseArgs(req.target)
     res match {
       case Some(args) => argsHandler.handleRequest(req, args)
       case None       => next.handleRequest(req)
