@@ -7,9 +7,21 @@ object MainTest extends TestSuite {
     test("hello-world") {
       withDeployedExampleMultiplatformCross("hello-world") {
         runOnAllPlatforms { baseUrl =>
-          val result = requests.get(baseUrl).text()
-          val expectedResult = "Hello world!\n"
-          assert(result == expectedResult)
+          locally {
+            val result = requests.get(baseUrl).text()
+            val expectedResult = "Hello world!\n"
+            assert(result == expectedResult)
+          }
+          locally {
+            val result = requests.get(s"$baseUrl/target/%2F%2f%5C%5c").text()
+            val expectedResult = "/target/%2F%2f%5C%5c"
+            assert(result == expectedResult)
+          }
+          locally {
+            val result = requests.get(s"$baseUrl/path/foo%2Fbar%2f%5C%5c").text()
+            val expectedResult = """/path/foo/bar/\\"""
+            assert(result == expectedResult)
+          }
         }
       }
     }

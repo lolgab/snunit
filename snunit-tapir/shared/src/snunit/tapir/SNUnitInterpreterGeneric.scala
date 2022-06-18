@@ -90,7 +90,7 @@ private[tapir] trait SNUnitInterpreterGeneric {
 
     // Members declared in sttp.model.RequestMetadata
     def method: sttp.model.Method = Method(req.method.name)
-    def uri: sttp.model.Uri = Uri.unsafeParse(s"${req.path}?${req.query}")
+    def uri: sttp.model.Uri = Uri.unsafeParse(req.target)
 
     // Members declared in sttp.tapir.model.ServerRequest
     def attribute[T](k: sttp.tapir.AttributeKey[T], v: T): sttp.tapir.model.ServerRequest = ???

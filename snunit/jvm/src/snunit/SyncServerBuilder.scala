@@ -19,7 +19,17 @@ object SyncServerBuilder {
           def handleRequest(exchange: HttpServerExchange): Unit = {
             handler.handleRequest(new Request {
               def method: Method = methodOf(exchange.getRequestMethod())
-              def path: String = exchange.getRequestPath()
+              def target: String = {
+                val q = query
+                val querySuffix = if (q.nonEmpty) s"?$q" else q
+                s"${exchange.getRequestURI()}$querySuffix"
+              }
+              def path: String = exchange
+                .getRequestPath()
+                .replace("%2F", "/")
+                .replace("%2f", "/")
+                .replace("%5C", "\\")
+                .replace("%5c", "\\")
               def query: String = exchange
                 .getQueryParameters()
                 .asScala

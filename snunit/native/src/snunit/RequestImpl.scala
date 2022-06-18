@@ -29,6 +29,8 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
     } else Array.emptyByteArray
   }
 
+  def target: String = fromCStringAndSize(req.request.target, req.request.target_length)
+
   def path: String = fromCStringAndSize(req.request.path, req.request.path_length)
 
   def query: String = fromCStringAndSize(req.request.query, req.request.query_length)

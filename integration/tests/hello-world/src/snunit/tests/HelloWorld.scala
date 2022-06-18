@@ -8,9 +8,14 @@ object MyHandler extends Handler {
     println(req.content)
     req.method match {
       case Method.GET =>
+        val content =
+          if (req.path.startsWith("/path")) req.path
+          else if (req.path.startsWith("/target")) req.target
+          else if (req.path.startsWith("/query")) req.query
+          else "Hello world!\n"
         req.send(
           statusCode = StatusCode.OK,
-          content = s"Hello world!\n",
+          content = content,
           headers = Seq("Content-Type" -> "text/plain")
         )
       case _ =>
