@@ -21,10 +21,11 @@ object SyncServerBuilder {
               def method: Method = methodOf(exchange.getRequestMethod())
               def target: String = {
                 val q = query
-                val querySuffix = if(q.nonEmpty) s"?$q" else q
+                val querySuffix = if (q.nonEmpty) s"?$q" else q
                 s"${exchange.getRequestURI()}$querySuffix"
               }
-              def path: String = exchange.getRequestPath()
+              def path: String = exchange
+                .getRequestPath()
                 .replace("%2F", "/")
                 .replace("%2f", "/")
                 .replace("%5C", "\\")
