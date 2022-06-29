@@ -136,7 +136,7 @@ class SNUnitUndertow(val crossScalaVersion: String) extends Common.Cross with Pu
 }
 
 object `snunit-tapir` extends Module {
-  val tapirServer = ivy"com.softwaremill.sttp.tapir::tapir-server::1.0.0-RC3"
+  val tapirServer = ivy"com.softwaremill.sttp.tapir::tapir-server::1.0.0"
   object native extends Cross[SNUnitTapirNative](scalaVersions: _*)
   class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish {
     def moduleDeps = Seq(snunit.native(crossScalaVersion))
