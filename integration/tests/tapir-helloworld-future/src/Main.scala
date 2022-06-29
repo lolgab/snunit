@@ -14,5 +14,5 @@ object TapirHelloWorldFuture {
 
   def main(args: Array[String]): Unit =
     snunit.AsyncServerBuilder
-      .build(toHandler(helloWorld))
+      .build(toHandler(helloWorld :: Nil))
 }

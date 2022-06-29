@@ -12,6 +12,6 @@ object TapirHelloWorld {
 
   def main(args: Array[String]): Unit =
     snunit.SyncServerBuilder
-      .build(toHandler(helloWorld))
+      .build(toHandler(helloWorld :: Nil))
       .listen()
 }

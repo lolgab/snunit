@@ -126,6 +126,4 @@ private[tapir] trait SNUnitInterpreterGeneric {
       }
     }
   }
-
-  def toHandler(endpoint: ServerEndpoint[Any, F]): snunit.Handler = toHandler(List(endpoint))
 }
