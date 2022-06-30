@@ -3,6 +3,7 @@ package snunit.tapir
 import snunit.Request
 import sttp.model._
 import sttp.monad._
+import sttp.monad.syntax._
 import sttp.tapir._
 import sttp.tapir.capabilities._
 import sttp.tapir.model._
@@ -115,14 +116,21 @@ private[tapir] trait SNUnitInterpreterGeneric {
     )
     new snunit.Handler {
       def handleRequest(req: Request): Unit = {
-        val applied = interpreter.apply(new SNUnitServerRequest(req))
-        monadError.map(applied) {
-          case RequestResult.Failure(_) =>
-            req.send(snunit.StatusCode.NotFound, emptyArray, Seq.empty)
-          case RequestResult.Response(response) =>
-            val body = response.body.getOrElse(emptyArray)
-            req.send(snunit.StatusCode.OK, body, response.headers.map(h => h.name -> h.value))
-        }
+        interpreter
+          .apply(new SNUnitServerRequest(req))
+          .map {
+            case RequestResult.Failure(_) =>
+              req.send(snunit.StatusCode.NotFound, emptyArray, Seq.empty)
+            case RequestResult.Response(response) =>
+              val body = response.body.getOrElse(emptyArray)
+              req.send(snunit.StatusCode.OK, body, response.headers.map(h => h.name -> h.value))
+          }
+          .handleError { case ex: Exception =>
+            System.err.println(s"Error while processing the request")
+            ex.printStackTrace()
+            req.send(snunit.StatusCode.InternalServerError, emptyArray, Seq.empty)
+            monadError.unit(())
+          }
       }
     }
   }
