@@ -5,7 +5,6 @@ import snunit._
 object MyHandler extends Handler {
   val res = "Hello world!\n".getBytes
   def handleRequest(req: Request): Unit = {
-    println(req.content)
     req.method match {
       case Method.GET =>
         val content =
