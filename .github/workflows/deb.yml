@@ -5,11 +5,8 @@ on:
     branches:
       - main
 
-env:
-  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
 jobs:
-  dependency-update:
+  submit-dependency-graph:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
@@ -18,6 +15,4 @@ jobs:
         with:
           distribution: "temurin"
           java-version: "17"
-
-      - name: Submit dependency graph
-        run: ./mill --no-server --import ivy:io.chris-kipp::mill-github-dependency-graph::0.0.9 io.kipp.mill.github.dependency.graph.Graph/submit
+      - uses: ckipp01/mill-dependency-submission@v1
