@@ -3,28 +3,30 @@ import sjsonnew._
 import sjsonnew.BasicJsonProtocol._
 import sjsonnew.shaded.scalajson.ast.unsafe._
 import sjsonnew.support.scalajson.unsafe._
+import scala.sys.process._
 
-val snunitVersion: String = {
-  val json = Parser.parseFromFile(file(s"../out/snunit-plugins-shared/${Versions.scala212}/publishVersion.json")).get
-  json match {
-    case JObject(fields) =>
-      fields.collectFirst {
-        case JField("value", JString(value)) => value
-      }.get
-    case _ => throw new Exception("Not an object")
-  }
+val snunitVersion = Def.setting {
+  val snunitDir = baseDirectory.value / ".."
+  val versionString =
+    Process(
+      Seq("./mill", "--disable-ticker", "show", s"snunit-plugins-shared[${Versions.scala212}].publishVersion"),
+      cwd = snunitDir
+    ).!!
+  val JString(version) = Parser.parseFromString(versionString).get
+  version
 }
 
-lazy val snunitSbtPlugin = project.in(file("."))
+lazy val snunitSbtPlugin = project
+  .in(file("."))
   .settings(
     name := "snunit-sbt-plugin",
-    version := snunitVersion,
+    version := snunitVersion.value,
     sbtPlugin := true,
     scalaVersion := Versions.scala212,
     organization := "com.github.lolgab",
     addSbtPlugin("org.scala-native" % "sbt-scala-native" % Versions.scalaNative),
     libraryDependencies ++= Seq(
-      "com.github.lolgab" %% "snunit-plugins-shared" % snunitVersion
+      "com.github.lolgab" %% "snunit-plugins-shared" % snunitVersion.value
     ),
     publishTo := sonatypePublishToBundle.value,
     publishMavenStyle := true,
@@ -44,6 +46,5 @@ lazy val snunitSbtPlugin = project.in(file("."))
       "oss.sonatype.org",
       sys.env.getOrElse("SONATYPE_USER", "username"),
       sys.env.getOrElse("SONATYPE_PASSWORD", "password")
-    ),
+    )
   )
-
