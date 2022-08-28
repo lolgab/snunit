@@ -104,8 +104,6 @@ private[tapir] trait SNUnitInterpreterGeneric {
     def withUnderlying(underlying: Any): sttp.tapir.model.ServerRequest = ???
   }
 
-  private val emptyArray = new Array[Byte](0)
-
   def toHandler(endpoints: List[ServerEndpoint[Any, F]]): snunit.Handler = {
     val interpreter = new ServerInterpreter[Any, F, Array[Byte], NoStreams](
       FilterServerEndpoints(endpoints),
@@ -120,15 +118,15 @@ private[tapir] trait SNUnitInterpreterGeneric {
           .apply(new SNUnitServerRequest(req))
           .map {
             case RequestResult.Failure(_) =>
-              req.send(snunit.StatusCode.NotFound, emptyArray, Seq.empty)
+              req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, Seq.empty)
             case RequestResult.Response(response) =>
-              val body = response.body.getOrElse(emptyArray)
+              val body = response.body.getOrElse(Array.emptyByteArray)
               req.send(snunit.StatusCode.OK, body, response.headers.map(h => h.name -> h.value))
           }
           .handleError { case ex: Exception =>
             System.err.println(s"Error while processing the request")
             ex.printStackTrace()
-            req.send(snunit.StatusCode.InternalServerError, emptyArray, Seq.empty)
+            req.send(snunit.StatusCode.InternalServerError, Array.emptyByteArray, Seq.empty)
             monadError.unit(())
           }
       }
