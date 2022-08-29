@@ -10,10 +10,12 @@ private[snunit] object Utils {
   private val charset = Charset.defaultCharset()
 
   def fromCStringAndSize(cstr: CString, size: Int): String = {
-    val bytes = new Array[Byte](size)
+    if (size > 0) {
+      val bytes = new Array[Byte](size)
 
-    memcpy(bytes.asInstanceOf[ByteArray].at(0), cstr, size.toULong)
+      memcpy(bytes.asInstanceOf[ByteArray].at(0), cstr, size.toULong)
 
-    new String(bytes, charset)
+      new String(bytes, charset)
+    } else ""
   }
 }
