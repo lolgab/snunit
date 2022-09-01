@@ -58,6 +58,9 @@ object SyncServerBuilder {
                 }
                 builder.result()
               }
+              def headerName(index: Int): String = headers(index)._1
+              def headerValue(index: Int): String = headers(index)._2
+              def headersLength: Int = headers.length
               def send(statusCode: StatusCode, contentRaw: Array[Byte], headers: Seq[(String, String)]): Unit = {
                 exchange.setStatusCode(statusCode.value)
                 val responseHeaders = exchange.getResponseHeaders()

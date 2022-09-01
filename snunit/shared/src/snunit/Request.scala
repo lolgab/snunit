@@ -3,6 +3,9 @@ package snunit
 trait Request {
   def method: Method
   def headers: Seq[(String, String)]
+  def headersLength: Int
+  def headerName(index: Int): String
+  def headerValue(index: Int): String
   def content: String = new String(contentRaw)
   def contentRaw: Array[Byte]
   def target: String
