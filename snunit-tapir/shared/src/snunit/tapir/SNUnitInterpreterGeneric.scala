@@ -91,7 +91,7 @@ private[tapir] trait SNUnitInterpreterGeneric {
     def headers: Seq[Header] = {
       val array = new Array[Header](req.headersLength)
       for (i <- 0 until req.headersLength) {
-        array(i) = Header(req.headerName(i), req.headerValue(i))
+        array(i) = Header(req.headerNameUnsafe(i), req.headerValueUnsafe(i))
       }
       ArraySeq.unsafeWrapArray(array)
     }

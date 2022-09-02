@@ -23,13 +23,23 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
   }
 
   def headersLength: Int = req.request.fields_count
+  @inline private def checkIndex(index: Int): Unit = {
+    if (index < 0 && index >= req.request.fields_count)
+      throw new IndexOutOfBoundsException(s"Index $index out of bounds for length ${req.request.fields_count}")
+  }
   def headerName(index: Int): String = {
-    require(index > 0 && index < req.request.fields_count)
+    checkIndex(index)
+    headerNameUnsafe(index)
+  }
+  @inline def headerNameUnsafe(index: Int): String = {
     val field = req.request.fields + index
     fromCStringAndSize(field.name, field.name_length)
   }
   def headerValue(index: Int): String = {
-    require(index > 0 && index < req.request.fields_count)
+    checkIndex(index)
+    headerValueUnsafe(index)
+  }
+  @inline def headerValueUnsafe(index: Int): String = {
     val field = req.request.fields + index
     fromCStringAndSize(field.value, field.value_length)
   }
