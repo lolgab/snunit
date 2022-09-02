@@ -11,10 +11,10 @@ import $file.versions
 import $file.unitd
 
 val upickle = ivy"com.lihaoyi::upickle::1.5.0"
-val undertow = ivy"io.undertow:undertow-core:2.2.14.Final"
+val undertow = ivy"io.undertow:undertow-core:2.2.19.Final"
 
 val scala213 = "2.13.8"
-val scala3 = "3.1.2"
+val scala3 = "3.1.3"
 val scalaVersions = Seq(scala213, scala3)
 
 val testServerPort = 8081
