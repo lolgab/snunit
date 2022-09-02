@@ -31,7 +31,7 @@ def runBackground(config: ujson.Obj): Unit = {
       "unitd",
       "--no-daemon",
       "--log",
-      "/dev/stdout",
+      dest / "log.txt",
       "--state",
       state,
       "--control",

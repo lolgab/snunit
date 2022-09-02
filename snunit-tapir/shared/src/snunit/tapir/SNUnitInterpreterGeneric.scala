@@ -15,6 +15,7 @@ import java.io._
 import java.nio._
 import java.nio.charset._
 import java.nio.file._
+import scala.collection.immutable.ArraySeq
 import scala.util._
 
 private[tapir] trait SNUnitInterpreterGeneric {
@@ -87,10 +88,26 @@ private[tapir] trait SNUnitInterpreterGeneric {
 
   private class SNUnitServerRequest(req: snunit.Request) extends ServerRequest {
     // Members declared in sttp.model.HasHeaders
-    def headers: Seq[sttp.model.Header] = req.headers.map { case (k, v) => Header(k, v) }
+    def headers: Seq[Header] = {
+      val array = new Array[Header](req.headersLength)
+      for (i <- 0 until req.headersLength) {
+        array(i) = Header(req.headerNameUnsafe(i), req.headerValueUnsafe(i))
+      }
+      ArraySeq.unsafeWrapArray(array)
+    }
 
     // Members declared in sttp.model.RequestMetadata
-    def method: sttp.model.Method = Method(req.method.name)
+    def method: Method = req.method match {
+      case snunit.Method.GET     => Method.GET
+      case snunit.Method.HEAD    => Method.HEAD
+      case snunit.Method.POST    => Method.POST
+      case snunit.Method.PUT     => Method.PUT
+      case snunit.Method.DELETE  => Method.DELETE
+      case snunit.Method.OPTIONS => Method.OPTIONS
+      case snunit.Method.PATCH   => Method.PATCH
+      case snunit.Method.CONNECT => Method.CONNECT
+      case snunit.Method.TRACE   => Method.TRACE
+    }
     def uri: sttp.model.Uri = Uri.unsafeParse(req.target)
 
     // Members declared in sttp.tapir.model.ServerRequest

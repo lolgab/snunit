@@ -4,6 +4,7 @@ import snunit.unsafe.CApi._
 import snunit.unsafe.CApiOps._
 import snunit.unsafe.Utils._
 
+import scala.collection.immutable.ArraySeq
 import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsafe._
 
@@ -11,12 +12,36 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
   def method: Method = MethodUtils.of(req.request.method, req.request.method_length)
 
   def headers: Seq[(String, String)] = {
-    for (i <- 0 until req.request.fields_count) yield {
+    val array = new Array[(String, String)](req.request.fields_count)
+    for (i <- 0 until req.request.fields_count) {
       val field = req.request.fields + i
       val fieldName = fromCStringAndSize(field.name, field.name_length)
       val fieldValue = fromCStringAndSize(field.value, field.value_length)
-      fieldName -> fieldValue
+      array(i) = fieldName -> fieldValue
     }
+    ArraySeq.unsafeWrapArray(array)
+  }
+
+  def headersLength: Int = req.request.fields_count
+  @inline private def checkIndex(index: Int): Unit = {
+    if (index < 0 && index >= req.request.fields_count)
+      throw new IndexOutOfBoundsException(s"Index $index out of bounds for length ${req.request.fields_count}")
+  }
+  def headerName(index: Int): String = {
+    checkIndex(index)
+    headerNameUnsafe(index)
+  }
+  @inline def headerNameUnsafe(index: Int): String = {
+    val field = req.request.fields + index
+    fromCStringAndSize(field.name, field.name_length)
+  }
+  def headerValue(index: Int): String = {
+    checkIndex(index)
+    headerValueUnsafe(index)
+  }
+  @inline def headerValueUnsafe(index: Int): String = {
+    val field = req.request.fields + index
+    fromCStringAndSize(field.value, field.value_length)
   }
 
   lazy val contentRaw: Array[Byte] = {
@@ -35,6 +60,7 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
 
   def query: String = fromCStringAndSize(req.request.query, req.request.query_length)
 
+  @inline
   private def addHeader(name: String, value: String): Unit = {
     val n = name.getBytes().asInstanceOf[ByteArray]
     val v = value.getBytes().asInstanceOf[ByteArray]
