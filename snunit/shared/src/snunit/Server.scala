@@ -1,3 +1,3 @@
 package snunit
 
-trait Server extends Any
+trait Server

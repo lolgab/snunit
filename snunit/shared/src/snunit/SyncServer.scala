@@ -1,5 +1,5 @@
 package snunit
 
-trait SyncServer extends Any with Server {
+trait SyncServer extends Server {
   def listen(): Unit
 }

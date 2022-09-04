@@ -4,7 +4,7 @@ import snunit.unsafe.CApi._
 
 import scala.scalanative.unsafe._
 
-class SyncServerImpl private[snunit] (private val ctx: Ptr[nxt_unit_ctx_t]) extends AnyVal with SyncServer {
+class SyncServerImpl private[snunit] (private val ctx: Ptr[nxt_unit_ctx_t]) extends SyncServer {
   def listen(): Unit = {
     nxt_unit_run(ctx)
     nxt_unit_done(ctx)
