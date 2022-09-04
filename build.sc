@@ -3,14 +3,14 @@ import mill.scalalib.api.ZincWorkerUtil.isScala3
 import mill.scalalib.publish._
 import $ivy.`com.goyeau::mill-scalafix::0.2.8`
 import com.goyeau.mill.scalafix.ScalafixModule
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.1.4`
+import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.2.0`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
 import mill.contrib.buildinfo.BuildInfo
 import $file.versions
 import $file.unitd
 
-val upickle = ivy"com.lihaoyi::upickle::1.5.0"
+val upickle = ivy"com.lihaoyi::upickle::2.0.0"
 val undertow = ivy"io.undertow:undertow-core:2.2.19.Final"
 
 val scala213 = "2.13.8"
