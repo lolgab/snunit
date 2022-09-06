@@ -138,7 +138,7 @@ private[tapir] trait SNUnitInterpreterGeneric {
               req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, Seq.empty)
             case RequestResult.Response(response) =>
               val body = response.body.getOrElse(Array.emptyByteArray)
-              req.send(snunit.StatusCode.OK, body, response.headers.map(h => h.name -> h.value))
+              req.send(new snunit.StatusCode(response.code.code), body, response.headers.map(h => h.name -> h.value))
           }
           .handleError { case ex: Exception =>
             System.err.println(s"Error while processing the request")
