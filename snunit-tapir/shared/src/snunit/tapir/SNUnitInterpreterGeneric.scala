@@ -107,6 +107,7 @@ private[tapir] trait SNUnitInterpreterGeneric {
       case snunit.Method.PATCH   => Method.PATCH
       case snunit.Method.CONNECT => Method.CONNECT
       case snunit.Method.TRACE   => Method.TRACE
+      case other                 => Method.unsafeApply(other.name)
     }
     def uri: sttp.model.Uri = Uri.unsafeParse(req.target)
 
