@@ -1,6 +1,13 @@
 package snunit
 
-class Method(val name: String)
+class Method(val name: String) {
+  override def toString(): String = s"Method($name)"
+  override def equals(x: Any): Boolean = x match {
+    case method: Method => method.name == name
+    case _              => false
+  }
+  override def hashCode(): Int = name.hashCode()
+}
 
 object Method {
   final val GET = new Method("GET")

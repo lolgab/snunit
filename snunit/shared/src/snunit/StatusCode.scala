@@ -1,6 +1,13 @@
 package snunit
 
-class StatusCode(val value: Int)
+class StatusCode(val value: Int) {
+  override def toString(): String = s"StatusCode($value)"
+  override def equals(x: Any): Boolean = x match {
+    case code: StatusCode => code.value == value
+    case _                => false
+  }
+  override def hashCode(): Int = value
+}
 
 object StatusCode {
   final val Continue = new StatusCode(100)
