@@ -1,6 +1,6 @@
 package snunit
 
-class StatusCode(val value: Int) {
+final class StatusCode(val value: Int) {
   override def toString(): String = s"StatusCode($value)"
   override def equals(x: Any): Boolean = x match {
     case code: StatusCode => code.value == value
