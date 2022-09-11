@@ -7,6 +7,7 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.2.0`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
 import mill.contrib.buildinfo.BuildInfo
+import coursier.maven.MavenRepository
 import $file.versions
 import $file.unitd
 
@@ -146,6 +147,20 @@ object `snunit-tapir` extends Module {
   class SNUnitTapirJvm(val crossScalaVersion: String) extends Common.CrossJvm with Multiplatform with Publish {
     def moduleDeps = Seq(snunit.jvm(crossScalaVersion))
     def ivyDeps = super.ivyDeps() ++ Agg(tapirServer)
+  }
+}
+
+object `snunit-http4s` extends Module {
+  val http4sServer = ivy"com.armanbilge::http4s-server::0.23.14-101-02562a0-SNAPSHOT"
+  object native extends Cross[SNUnitTapirNative](scalaVersions: _*)
+  class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform {
+    def moduleDeps = Seq(snunit.native(crossScalaVersion))
+    def ivyDeps = super.ivyDeps() ++ Agg(http4sServer)
+    def repositoriesTask = T.task {
+      super.repositoriesTask() ++ Seq(
+        MavenRepository("https://s01.oss.sonatype.org/content/repositories/snapshots")
+      )
+    }
   }
 }
 
