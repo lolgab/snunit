@@ -70,16 +70,18 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
 
   @inline
   private def startSendUnsafe(statusCode: StatusCode, headers: Seq[(String, String)], contentLength: Int): Unit = {
+    var headersLength = 0
     val fieldsSize: Int = {
       var res = 0
       for ((key, value) <- headers) {
         res += key.length + value.length
+        headersLength += 1
       }
       res
     }
 
     locally {
-      val res = nxt_unit_response_init(req, statusCode.value.toShort, headers.length, fieldsSize + contentLength)
+      val res = nxt_unit_response_init(req, statusCode.value.toShort, headersLength, fieldsSize + contentLength)
       if (res != NXT_UNIT_OK) throw new Exception("Failed to create response")
     }
 
