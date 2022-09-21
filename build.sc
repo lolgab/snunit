@@ -7,7 +7,6 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.2.0`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
 import mill.contrib.buildinfo.BuildInfo
-import coursier.maven.MavenRepository
 import $file.versions
 import $file.unitd
 
