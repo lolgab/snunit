@@ -1,7 +1,7 @@
 package snunit.http4s
 
-import org.http4s.HttpApp
 import cats.effect.IO
+import org.http4s.HttpApp
 import org.http4s.Response
 import org.http4s.Status
 
