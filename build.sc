@@ -13,6 +13,7 @@ import $file.unitd
 
 val upickle = ivy"com.lihaoyi::upickle::2.0.0"
 val undertow = ivy"io.undertow:undertow-core:2.2.19.Final"
+val http4sVersion = "0.23.16"
 
 val scala213 = "2.13.8"
 val scala3 = "3.1.3"
@@ -151,16 +152,11 @@ object `snunit-tapir` extends Module {
 }
 
 object `snunit-http4s` extends Module {
-  val http4sServer = ivy"com.armanbilge::http4s-server::0.23.14-101-02562a0-SNAPSHOT"
+  val http4sServer = ivy"org.http4s::http4s-server::0.23.16"
   object native extends Cross[SNUnitTapirNative](scalaVersions: _*)
   class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform {
-    def moduleDeps = Seq(snunit.native(crossScalaVersion))
+    def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
     def ivyDeps = super.ivyDeps() ++ Agg(http4sServer)
-    def repositoriesTask = T.task {
-      super.repositoriesTask() ++ Seq(
-        MavenRepository("https://s01.oss.sonatype.org/content/repositories/snapshots")
-      )
-    }
   }
 }
 
@@ -283,6 +279,14 @@ object integration extends ScalaModule {
         def millSourcePath = super.millSourcePath / os.up
         def moduleDeps = Seq(`snunit-tapir`.native(crossScalaVersion))
       }
+    }
+    object `http4s-helloworld` extends Cross[Http4sHelloWorldNativeModule](scalaVersions: _*)
+    class Http4sHelloWorldModule(val crossScalaVersion: String) extends Common.Cross {
+      def millSourcePath = super.millSourcePath / os.up
+      def moduleDeps = Seq(`snunit-http4s`.native(crossScalaVersion))
+      def ivyDeps = super.ivyDeps() ++ Agg(
+        ivy"org.http4s::http4s-dsl::$http4sVersion"
+      )
     }
     object `tapir-helloworld-future` extends Cross[TapirHelloWorldFutureNative](scalaVersions: _*)
     class TapirHelloWorldFutureNative(val crossScalaVersion: String) extends Common.Cross {
