@@ -1,11 +1,11 @@
 package snunit.http4s
 
-import org.http4s.HttpApp
-import snunit.AsyncServer
-import org.typelevel.vault.Vault
-import org.http4s
-import fs2.Chunk
 import cats.effect.IO
+import fs2.Chunk
+import org.http4s
+import org.http4s.HttpApp
+import org.typelevel.vault.Vault
+import snunit.AsyncServer
 
 private[http4s] object Impl {
   @inline

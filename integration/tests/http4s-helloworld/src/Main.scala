@@ -1,10 +1,10 @@
 package snunit.tests
 
-import snunit.http4s._
-import org.http4s.dsl._
-import org.http4s._
-import cats.syntax.all._
 import cats.effect._
+import cats.syntax.all._
+import org.http4s._
+import org.http4s.dsl._
+import snunit.http4s._
 
 object Http4sHelloWorld extends IOApp {
   def helloWorldRoutes: HttpRoutes[IO] = {
