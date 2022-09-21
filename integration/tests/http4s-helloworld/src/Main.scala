@@ -8,17 +8,15 @@ import cats.effect._
 
 object Http4sHelloWorld extends IOApp {
   def helloWorldRoutes: HttpRoutes[IO] = {
-    val dsl = new Http4sDsl[IO]{}
+    val dsl = new Http4sDsl[IO] {}
     import dsl._
-    HttpRoutes.of[IO] {
-      case GET -> Root =>
-        Ok("Hello Http4s!")
+    HttpRoutes.of[IO] { case GET -> Root =>
+      Ok("Hello Http4s!")
     }
   }
 
   def run(args: List[String]): IO[ExitCode] = {
-    SNUnitServerBuilder
-      .default
+    SNUnitServerBuilder.default
       .withHttpApp(helloWorldRoutes.orNotFound)
       .build
       .map(_ => ExitCode.Success)
