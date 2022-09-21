@@ -279,9 +279,8 @@ object integration extends ScalaModule {
         def moduleDeps = Seq(`snunit-tapir`.native(crossScalaVersion))
       }
     }
-    object `http4s-helloworld` extends Cross[Http4sHelloWorldNativeModule](scalaVersions: _*)
+    object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](scalaVersions: _*)
     class Http4sHelloWorldModule(val crossScalaVersion: String) extends Common.Cross {
-      def millSourcePath = super.millSourcePath / os.up
       def moduleDeps = Seq(`snunit-http4s`.native(crossScalaVersion))
       def ivyDeps = super.ivyDeps() ++ Agg(
         ivy"org.http4s::http4s-dsl::$http4sVersion"
