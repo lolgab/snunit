@@ -5,6 +5,7 @@ import cats.effect.Resource
 import fs2.Chunk
 import org.http4s
 import org.http4s.HttpApp
+import org.typelevel.ci.CIString
 import org.typelevel.vault.Vault
 import snunit.AsyncServer
 
@@ -18,7 +19,11 @@ private[http4s] object Impl {
     def toHttp4sUri(req: snunit.Request): http4s.Uri = http4s.Uri()
     @inline
     def toHttp4sHeaders(req: snunit.Request): http4s.Headers = {
-      http4s.Headers()
+      val builder = List.newBuilder[http4s.Header.Raw]
+      for (i <- 0 until req.headersLength) {
+        builder += http4s.Header.Raw(CIString(req.headerNameUnsafe(i)), req.headerValueUnsafe(i))
+      }
+      http4s.Headers(builder.result())
     }
     @inline
     def toHttp4sVersion(req: snunit.Request): http4s.HttpVersion = {
