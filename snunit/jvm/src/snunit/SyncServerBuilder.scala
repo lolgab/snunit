@@ -73,6 +73,7 @@ object SyncServerBuilder {
                 exchange.getResponseSender().send(ByteBuffer.wrap(contentRaw))
               }
               def sendDone(): Unit = ???
+              def sendBatch(data: Array[Byte], off: Int, len: Int): Unit = ???
               def sendBatch(data: Array[Byte]): Unit = ???
               def startSend(statusCode: snunit.StatusCode, headers: Seq[(String, String)]): Unit = ???
             })
