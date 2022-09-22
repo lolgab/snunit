@@ -1,6 +1,7 @@
 package snunit.http4s
 
 import cats.effect.IO
+import cats.effect.Resource
 import fs2.Chunk
 import org.http4s
 import org.http4s.HttpApp
@@ -41,31 +42,36 @@ private[http4s] object Impl {
       attributes = toHttp4sAttributes(req)
     )
   }
-  def buildServer(httpApp: HttpApp[IO], errorHandler: Throwable => IO[http4s.Response[IO]]): IO[AsyncServer] = {
-    IO {
-      snunit.AsyncServerBuilder.build(new snunit.Handler {
-        def handleRequest(req: snunit.Request): Unit = {
-          httpApp
-            .run(toHttp4sRequest(req))
-            .flatMap { response =>
-              response.body.chunkAll
-                .map(chunk =>
-                  req.send(
-                    new snunit.StatusCode(response.status.code),
-                    chunk.toArray,
-                    response.headers.headers.map { h => (h.name.toString, h.value) }
+  def buildServer(
+      httpApp: HttpApp[IO],
+      errorHandler: Throwable => IO[http4s.Response[IO]]
+  ): Resource[IO, AsyncServer] = {
+    Resource.eval(
+      IO(
+        snunit.AsyncServerBuilder.build(new snunit.Handler {
+          def handleRequest(req: snunit.Request): Unit = {
+            httpApp
+              .run(toHttp4sRequest(req))
+              .flatMap { response =>
+                response.body.chunkAll
+                  .map(chunk =>
+                    req.send(
+                      new snunit.StatusCode(response.status.code),
+                      chunk.toArray,
+                      response.headers.headers.map { h => (h.name.toString, h.value) }
+                    )
                   )
-                )
-                .compile
-                .drain
-            }
-            .handleErrorWith(errorHandler)
-            .handleError(_ =>
-              http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
-            )
-            .unsafeRunAndForget()(LoopIORuntime.global)
-        }
-      })
-    }
+                  .compile
+                  .drain
+              }
+              .handleErrorWith(errorHandler)
+              .handleError(_ =>
+                http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
+              )
+              .unsafeRunAndForget()(LoopIORuntime.global)
+          }
+        })
+      )
+    )
   }
 }

@@ -1,6 +1,7 @@
 package snunit.http4s
 
 import cats.effect.IO
+import cats.effect.Resource
 import org.http4s.HttpApp
 import org.http4s.Response
 import org.http4s.Status
@@ -19,7 +20,7 @@ class SNUnitServerBuilder(
   def withErrorHandler(errorHandler: Throwable => IO[Response[IO]]): SNUnitServerBuilder =
     copy(errorHandler = errorHandler)
   def withHttpApp(httpApp: HttpApp[IO]): SNUnitServerBuilder = copy(httpApp = httpApp)
-  def build: IO[snunit.AsyncServer] = Impl.buildServer(httpApp, errorHandler)
+  def build: Resource[IO, snunit.AsyncServer] = Impl.buildServer(httpApp, errorHandler)
 }
 object SNUnitServerBuilder {
   def default: SNUnitServerBuilder = {

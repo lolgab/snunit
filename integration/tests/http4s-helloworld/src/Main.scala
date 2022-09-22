@@ -18,6 +18,7 @@ object Http4sHelloWorld extends LoopIOApp {
     SNUnitServerBuilder.default
       .withHttpApp(helloWorldRoutes.orNotFound)
       .build
-      .map(_ => ExitCode.Success) >> IO.never
+      .useForever
+      .as(ExitCode.Success)
   }
 }
