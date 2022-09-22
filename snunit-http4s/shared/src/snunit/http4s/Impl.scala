@@ -42,29 +42,30 @@ private[http4s] object Impl {
     )
   }
   def buildServer(httpApp: HttpApp[IO], errorHandler: Throwable => IO[http4s.Response[IO]]): IO[AsyncServer] = {
-    IO(snunit.AsyncServerBuilder.build(new snunit.Handler {
-      def handleRequest(req: snunit.Request): Unit = {
-        val http4sRequest = toHttp4sRequest(req)
-        httpApp
-          .run(http4sRequest)
-          .flatMap { response =>
-            response.body.chunkAll
-              .map(chunk =>
-                req.send(
-                  new snunit.StatusCode(response.status.code),
-                  chunk.toArray,
-                  response.headers.headers.map { h => (h.name.toString, h.value) }
+    IO {
+      snunit.AsyncServerBuilder.build(new snunit.Handler {
+        def handleRequest(req: snunit.Request): Unit = {
+          httpApp
+            .run(toHttp4sRequest(req))
+            .flatMap { response =>
+              response.body.chunkAll
+                .map(chunk =>
+                  req.send(
+                    new snunit.StatusCode(response.status.code),
+                    chunk.toArray,
+                    response.headers.headers.map { h => (h.name.toString, h.value) }
+                  )
                 )
-              )
-              .compile
-              .drain
-          }
-          .handleErrorWith(errorHandler)
-          .handleError(_ =>
-            http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
-          )
-          .unsafeRunAndForget()(cats.effect.unsafe.implicits.global)
-      }
-    }))
+                .compile
+                .drain
+            }
+            .handleErrorWith(errorHandler)
+            .handleError(_ =>
+              http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
+            )
+            .unsafeRunAndForget()(LoopIORuntime.global)
+        }
+      })
+    }
   }
 }
