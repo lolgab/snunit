@@ -13,6 +13,11 @@ object MainTest extends TestSuite {
             assert(result == expectedResult)
           }
           locally {
+            val result = requests.get(s"$baseUrl/version").text()
+            val expectedResult = "HTTP/1.1"
+            assert(result == expectedResult)
+          }
+          locally {
             val result = requests.get(s"$baseUrl/target/%2F%2f%5C%5c").text()
             val expectedResult = "/target/%2F%2f%5C%5c"
             assert(result == expectedResult)

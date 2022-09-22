@@ -2,6 +2,7 @@ package snunit
 
 trait Request {
   def method: Method
+  def version: String
   def headers: Seq[(String, String)]
   def headersLength: Int
   def headerName(index: Int): String
