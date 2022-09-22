@@ -9,6 +9,7 @@ object MyHandler extends Handler {
       case Method.GET =>
         val content =
           if (req.path.startsWith("/path")) req.path
+          else if (req.path.startsWith("/version")) req.version
           else if (req.path.startsWith("/target")) req.target
           else if (req.path.startsWith("/query")) req.query
           else "Hello world!\n"

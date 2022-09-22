@@ -10,6 +10,7 @@ import scala.scalanative.unsafe._
 
 class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) extends Request {
   def method: Method = MethodUtils.of(req.request.method, req.request.method_length)
+  def version: String = fromCStringAndSize(req.request.version, req.request.version_length)
 
   def headers: Seq[(String, String)] = {
     val array = new Array[(String, String)](req.request.fields_count)

@@ -13,6 +13,11 @@ object MainTest extends TestSuite {
             assert(result == expectedResult)
           }
           locally {
+            val result = requests.get(s"$baseUrl/version").text()
+            val expectedResult = "HTTP/1.1"
+            assert(result == expectedResult)
+          }
+          locally {
             val result = requests.get(s"$baseUrl/target/%2F%2f%5C%5c").text()
             val expectedResult = "/target/%2F%2f%5C%5c"
             assert(result == expectedResult)
@@ -141,6 +146,13 @@ object MainTest extends TestSuite {
     test("tapir-helloworld-future") {
       withDeployedExampleCross("tapir-helloworld-future") {
         tapirHelloWorldTest(baseUrl)
+      }
+    }
+    test("http4s") {
+      withDeployedExampleCross("http4s-helloworld") {
+        val result = requests.get(baseUrl).text()
+        val expectedResult = "Hello Http4s!"
+        assert(result == expectedResult)
       }
     }
   }

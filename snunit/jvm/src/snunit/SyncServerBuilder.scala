@@ -19,6 +19,7 @@ object SyncServerBuilder {
           def handleRequest(exchange: HttpServerExchange): Unit = {
             handler.handleRequest(new Request {
               def method: Method = methodOf(exchange.getRequestMethod())
+              def version: String = exchange.getProtocol().toString()
               def target: String = {
                 val q = query
                 val querySuffix = if (q.nonEmpty) s"?$q" else q
@@ -71,6 +72,10 @@ object SyncServerBuilder {
                 }
                 exchange.getResponseSender().send(ByteBuffer.wrap(contentRaw))
               }
+              def sendDone(): Unit = ???
+              def sendBatch(data: Array[Byte], off: Int, len: Int): Unit = ???
+              def sendBatch(data: Array[Byte]): Unit = ???
+              def startSend(statusCode: snunit.StatusCode, headers: Seq[(String, String)]): Unit = ???
             })
           }
         }))

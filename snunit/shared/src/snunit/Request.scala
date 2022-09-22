@@ -2,6 +2,7 @@ package snunit
 
 trait Request {
   def method: Method
+  def version: String
   def headers: Seq[(String, String)]
   def headersLength: Int
   def headerName(index: Int): String
@@ -17,4 +18,8 @@ trait Request {
   def send(statusCode: StatusCode, content: String, headers: Seq[(String, String)]): Unit = {
     send(statusCode, content.getBytes(), headers)
   }
+  def startSend(statusCode: StatusCode, headers: Seq[(String, String)]): Unit
+  def sendBatch(data: Array[Byte]): Unit
+  def sendBatch(data: Array[Byte], off: Int, len: Int): Unit
+  def sendDone(): Unit
 }
