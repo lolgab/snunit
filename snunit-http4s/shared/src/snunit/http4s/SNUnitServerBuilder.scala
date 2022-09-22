@@ -5,31 +5,36 @@ import cats.effect.Resource
 import org.http4s.HttpApp
 import org.http4s.Response
 import org.http4s.Status
+import cats.effect.std.Dispatcher
+import cats.effect.kernel.Async
 
-class SNUnitServerBuilder(
-    private val httpApp: HttpApp[IO],
-    private val errorHandler: Throwable => IO[Response[IO]]
+class SNUnitServerBuilder[F[_]: Async](
+    private val httpApp: HttpApp[F],
+    private val errorHandler: Throwable => F[Response[F]]
 ) {
   private def copy(
-      httpApp: HttpApp[IO] = this.httpApp,
-      errorHandler: Throwable => IO[Response[IO]] = this.errorHandler
-  ) = new SNUnitServerBuilder(
+      httpApp: HttpApp[F] = this.httpApp,
+      errorHandler: Throwable => F[Response[F]] = this.errorHandler
+  ) = new SNUnitServerBuilder[F](
     httpApp = httpApp,
     errorHandler = errorHandler
   )
-  def withErrorHandler(errorHandler: Throwable => IO[Response[IO]]): SNUnitServerBuilder =
+  def withErrorHandler(errorHandler: Throwable => F[Response[F]]): SNUnitServerBuilder[F] =
     copy(errorHandler = errorHandler)
-  def withHttpApp(httpApp: HttpApp[IO]): SNUnitServerBuilder = copy(httpApp = httpApp)
-  def build: Resource[IO, snunit.AsyncServer] = Impl.buildServer(httpApp, errorHandler)
+  def withHttpApp(httpApp: HttpApp[F]): SNUnitServerBuilder[F] = copy(httpApp = httpApp)
+  def build: Resource[F, snunit.AsyncServer] = Dispatcher[F].flatMap { dispatcher =>
+    new Impl[F].buildServer(dispatcher, httpApp, errorHandler)
+  }
+
 }
 object SNUnitServerBuilder {
-  def default: SNUnitServerBuilder = {
+  def default[F[_]: Async]: SNUnitServerBuilder[F] = {
     val serverFailure = Response(Status.InternalServerError).putHeaders(org.http4s.headers.`Content-Length`.zero)
-    def errorHandler: Throwable => IO[Response[IO]] = { case (_: Throwable) =>
-      IO.pure(serverFailure.covary[IO])
+    def errorHandler: Throwable => F[Response[F]] = { case (_: Throwable) =>
+      Async[F].pure(serverFailure.covary[F])
     }
-    new SNUnitServerBuilder(
-      httpApp = HttpApp.notFound[IO],
+    new SNUnitServerBuilder[F](
+      httpApp = HttpApp.notFound[F],
       errorHandler = errorHandler
     )
   }

@@ -15,7 +15,8 @@ object Http4sHelloWorld extends LoopIOApp {
   }
 
   def run(args: List[String]): IO[ExitCode] = {
-    SNUnitServerBuilder.default
+    SNUnitServerBuilder
+      .default[IO]
       .withHttpApp(helloWorldRoutes.orNotFound)
       .build
       .useForever
