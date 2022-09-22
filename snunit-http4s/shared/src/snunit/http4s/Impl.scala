@@ -1,6 +1,5 @@
 package snunit.http4s
 
-import cats.effect.IO
 import cats.effect.Resource
 import fs2.Chunk
 import org.http4s
@@ -8,10 +7,13 @@ import org.http4s.HttpApp
 import org.typelevel.ci.CIString
 import org.typelevel.vault.Vault
 import snunit.AsyncServer
+import cats.effect.Async
+import cats.effect.std.Dispatcher
+import cats.syntax.all._
 
-private[http4s] object Impl {
+private[http4s] class Impl[F[_]: Async] {
   @inline
-  private def toHttp4sRequest(req: snunit.Request): http4s.Request[IO] = {
+  private def toHttp4sRequest(req: snunit.Request): http4s.Request[F] = {
     @inline
     def toHttp4sMethod(method: snunit.Method): http4s.Method =
       http4s.Method.fromString(method.name).getOrElse(throw new Exception(s"Method not valid ${method.name}"))
@@ -30,7 +32,7 @@ private[http4s] object Impl {
       http4s.HttpVersion.`HTTP/1.1`
     }
     @inline
-    def toHttp4sBody(req: snunit.Request): http4s.EntityBody[IO] = {
+    def toHttp4sBody(req: snunit.Request): http4s.EntityBody[F] = {
       fs2.Stream.chunk(Chunk.array(req.contentRaw))
     }
     @inline
@@ -38,7 +40,7 @@ private[http4s] object Impl {
       Vault.empty
     }
 
-    http4s.Request[IO](
+    http4s.Request[F](
       toHttp4sMethod(req.method),
       toHttp4sUri(req),
       httpVersion = toHttp4sVersion(req),
@@ -48,15 +50,20 @@ private[http4s] object Impl {
     )
   }
   def buildServer(
-      httpApp: HttpApp[IO],
-      errorHandler: Throwable => IO[http4s.Response[IO]]
-  ): Resource[IO, AsyncServer] = {
+      dispatcher: Dispatcher[F],
+      httpApp: HttpApp[F],
+      errorHandler: Throwable => F[http4s.Response[F]]
+  ): Resource[F, AsyncServer] = {
     Resource.eval(
-      IO(
+      Async[F].delay(
         snunit.AsyncServerBuilder.build(new snunit.Handler {
           def handleRequest(req: snunit.Request): Unit = {
-            httpApp
+            val run = httpApp
               .run(toHttp4sRequest(req))
+              .handleErrorWith(errorHandler)
+              .handleError(_ =>
+                http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
+              )
               .flatMap { response =>
                 response.body.chunkAll
                   .map(chunk =>
@@ -69,11 +76,7 @@ private[http4s] object Impl {
                   .compile
                   .drain
               }
-              .handleErrorWith(errorHandler)
-              .handleError(_ =>
-                http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
-              )
-              .unsafeRunAndForget()(LoopIORuntime.global)
+            dispatcher.unsafeRunAndForget(run)
           }
         })
       )
