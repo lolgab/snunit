@@ -22,7 +22,7 @@ class SNUnitServerBuilder[F[_]: Async](
     copy(errorHandler = errorHandler)
   def withHttpApp(httpApp: HttpApp[F]): SNUnitServerBuilder[F] = copy(httpApp = httpApp)
   def build: Resource[F, snunit.AsyncServer] = Dispatcher[F].flatMap { dispatcher =>
-    new Impl[F].buildServer(dispatcher, httpApp, errorHandler)
+    Impl.buildServer[F](dispatcher, httpApp, errorHandler)
   }
 
 }

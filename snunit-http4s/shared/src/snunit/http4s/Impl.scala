@@ -11,9 +11,9 @@ import org.typelevel.ci.CIString
 import org.typelevel.vault.Vault
 import snunit.AsyncServer
 
-private[http4s] class Impl[F[_]: Async] {
+private[http4s] object Impl {
   @inline
-  private def toHttp4sRequest(req: snunit.Request): http4s.Request[F] = {
+  private def toHttp4sRequest[F[_]](req: snunit.Request): http4s.Request[F] = {
     @inline
     def toHttp4sMethod(method: snunit.Method): http4s.Method =
       http4s.Method.fromString(method.name).getOrElse(throw new Exception(s"Method not valid ${method.name}"))
@@ -46,7 +46,7 @@ private[http4s] class Impl[F[_]: Async] {
       attributes = Vault.empty
     )
   }
-  def buildServer(
+  def buildServer[F[_]: Async](
       dispatcher: Dispatcher[F],
       httpApp: HttpApp[F],
       errorHandler: Throwable => F[http4s.Response[F]]
@@ -56,7 +56,7 @@ private[http4s] class Impl[F[_]: Async] {
         snunit.AsyncServerBuilder.build(new snunit.Handler {
           def handleRequest(req: snunit.Request): Unit = {
             val run = httpApp
-              .run(toHttp4sRequest(req))
+              .run(toHttp4sRequest[F](req))
               .handleErrorWith(errorHandler)
               .handleError(_ =>
                 http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
