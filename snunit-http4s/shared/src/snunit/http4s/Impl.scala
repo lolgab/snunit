@@ -62,16 +62,17 @@ private[http4s] object Impl {
                 http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
               )
               .flatMap { response =>
-                response.body.chunkAll
-                  .map(chunk =>
-                    req.send(
-                      new snunit.StatusCode(response.status.code),
-                      chunk.toArray,
-                      response.headers.headers.map { h => (h.name.toString, h.value) }
-                    )
-                  )
+                req.startSend(
+                  new snunit.StatusCode(response.status.code),
+                  response.headers.headers.map { h => (h.name.toString, h.value) }
+                )
+                response.body.chunks
+                  .map {
+                    case Chunk.ArraySlice(array, offset, length) => req.sendBatch(array, offset, length)
+                    case chunk                                   => req.sendBatch(chunk.toArray)
+                  }
                   .compile
-                  .drain
+                  .drain >> Async[F].delay(req.sendDone())
               }
             dispatcher.unsafeRunAndForget(run)
           }
