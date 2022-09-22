@@ -18,7 +18,8 @@ private[http4s] class Impl[F[_]: Async] {
     def toHttp4sMethod(method: snunit.Method): http4s.Method =
       http4s.Method.fromString(method.name).getOrElse(throw new Exception(s"Method not valid ${method.name}"))
     @inline
-    def toHttp4sUri(req: snunit.Request): http4s.Uri = http4s.Uri()
+    def toHttp4sUri(req: snunit.Request): http4s.Uri =
+      http4s.Uri.fromString(req.target).getOrElse(throw new Exception(s"Uri not valid ${req.target}"))
     @inline
     def toHttp4sHeaders(req: snunit.Request): http4s.Headers = {
       val builder = List.newBuilder[http4s.Header.Raw]
@@ -29,15 +30,11 @@ private[http4s] class Impl[F[_]: Async] {
     }
     @inline
     def toHttp4sVersion(req: snunit.Request): http4s.HttpVersion = {
-      http4s.HttpVersion.`HTTP/1.1`
+      http4s.HttpVersion.fromString(req.version).getOrElse(throw new Exception(s"Version not valid ${req.version}"))
     }
     @inline
     def toHttp4sBody(req: snunit.Request): http4s.EntityBody[F] = {
       fs2.Stream.chunk(Chunk.array(req.contentRaw))
-    }
-    @inline
-    def toHttp4sAttributes(req: snunit.Request): Vault = {
-      Vault.empty
     }
 
     http4s.Request[F](
@@ -46,7 +43,7 @@ private[http4s] class Impl[F[_]: Async] {
       httpVersion = toHttp4sVersion(req),
       headers = toHttp4sHeaders(req),
       body = toHttp4sBody(req),
-      attributes = toHttp4sAttributes(req)
+      attributes = Vault.empty
     )
   }
   def buildServer(
