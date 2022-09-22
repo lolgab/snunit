@@ -1,12 +1,11 @@
 package snunit.http4s
 
-import cats.effect.IO
 import cats.effect.Resource
+import cats.effect.kernel.Async
+import cats.effect.std.Dispatcher
 import org.http4s.HttpApp
 import org.http4s.Response
 import org.http4s.Status
-import cats.effect.std.Dispatcher
-import cats.effect.kernel.Async
 
 class SNUnitServerBuilder[F[_]: Async](
     private val httpApp: HttpApp[F],

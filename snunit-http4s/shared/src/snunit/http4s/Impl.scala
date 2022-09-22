@@ -1,15 +1,15 @@
 package snunit.http4s
 
+import cats.effect.Async
 import cats.effect.Resource
+import cats.effect.std.Dispatcher
+import cats.syntax.all._
 import fs2.Chunk
 import org.http4s
 import org.http4s.HttpApp
 import org.typelevel.ci.CIString
 import org.typelevel.vault.Vault
 import snunit.AsyncServer
-import cats.effect.Async
-import cats.effect.std.Dispatcher
-import cats.syntax.all._
 
 private[http4s] class Impl[F[_]: Async] {
   @inline
