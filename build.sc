@@ -153,7 +153,7 @@ object `snunit-tapir` extends Module {
 object `snunit-http4s` extends Module {
   val http4sServer = ivy"org.http4s::http4s-server::$http4sVersion"
   object native extends Cross[SNUnitTapirNative](scalaVersions: _*)
-  class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform {
+  class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish {
     def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
     def ivyDeps = super.ivyDeps() ++ Agg(http4sServer)
   }
