@@ -149,7 +149,7 @@ object MainTest extends TestSuite {
       }
     }
     test("http4s") {
-      withDeployedExampleCross("http4s-helloworld") {
+      withDeployedExampleHttp4s("http4s-helloworld") {
         val result = requests.get(baseUrl).text()
         val expectedResult = "Hello Http4s!"
         assert(result == expectedResult)

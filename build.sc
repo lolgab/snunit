@@ -12,11 +12,15 @@ import $file.unitd
 
 val upickle = ivy"com.lihaoyi::upickle::2.0.0"
 val undertow = ivy"io.undertow:undertow-core:2.2.19.Final"
-val http4sVersion = "0.23.16"
 
 val scala213 = "2.13.8"
 val scala3 = "3.1.3"
 val scalaVersions = Seq(scala213, scala3)
+
+val http4sVersions = for {
+  scalaV <- scalaVersions
+  http4sV <- Seq("0.23.16", "1.0.0-M37")
+} yield (scalaV, http4sV)
 
 val testServerPort = 8081
 
@@ -151,11 +155,22 @@ object `snunit-tapir` extends Module {
 }
 
 object `snunit-http4s` extends Module {
-  val http4sServer = ivy"org.http4s::http4s-server::$http4sVersion"
-  object native extends Cross[SNUnitTapirNative](scalaVersions: _*)
-  class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish {
+  object native extends Cross[SNUnitTapirNative](http4sVersions: _*)
+  class SNUnitTapirNative(val crossScalaVersion: String, http4sVersion: String)
+      extends Common.Cross
+      with Multiplatform
+      with Publish {
+    val http4sBinaryVersion = http4sVersion match {
+      case s"0.23.$_" => "0.23"
+      case s"1.$_"    => "1"
+    }
+    def artifactName = s"snunit-http4s$http4sBinaryVersion"
+    def millSourcePath = super.millSourcePath / os.up
     def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
-    def ivyDeps = super.ivyDeps() ++ Agg(http4sServer)
+    def ivyDeps = super.ivyDeps() ++ Agg(ivy"org.http4s::http4s-server::$http4sVersion")
+    def sources = T.sources {
+      super.sources() ++ Agg(PathRef(millSourcePath / os.up / s"http4s-$http4sBinaryVersion"))
+    }
   }
 }
 
@@ -279,9 +294,10 @@ object integration extends ScalaModule {
         def moduleDeps = Seq(`snunit-tapir`.native(crossScalaVersion))
       }
     }
-    object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](scalaVersions: _*)
-    class Http4sHelloWorldModule(val crossScalaVersion: String) extends Common.Cross {
-      def moduleDeps = Seq(`snunit-http4s`.native(crossScalaVersion))
+    object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](http4sVersions: _*)
+    class Http4sHelloWorldModule(val crossScalaVersion: String, http4sVersion: String) extends Common.Cross {
+      def millSourcePath = super.millSourcePath / os.up
+      def moduleDeps = Seq(`snunit-http4s`.native(crossScalaVersion, http4sVersion))
       def ivyDeps = super.ivyDeps() ++ Agg(
         ivy"org.http4s::http4s-dsl::$http4sVersion"
       )
@@ -298,7 +314,8 @@ object integration extends ScalaModule {
   object test extends Tests with TestModule.Utest with BuildInfo {
     def buildInfoMembers = Map(
       "port" -> testServerPort.toString,
-      "scalaVersions" -> scalaVersions.mkString(","),
+      "scalaVersions" -> scalaVersions.mkString(":"),
+      "http4sVersions" -> http4sVersions.map { case (a, b) => s"$a,$b" }.mkString(":"),
       "scala213" -> scala213
     )
     def ivyDeps =

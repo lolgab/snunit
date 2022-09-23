@@ -4,7 +4,6 @@ import cats.effect.Async
 import cats.effect.Resource
 import cats.effect.std.Dispatcher
 import cats.syntax.all._
-import fs2.Chunk
 import org.http4s
 import org.http4s.HttpApp
 import org.typelevel.ci.CIString
@@ -32,17 +31,12 @@ private[http4s] object Impl {
     def toHttp4sVersion(req: snunit.Request): http4s.HttpVersion = {
       http4s.HttpVersion.fromString(req.version).getOrElse(throw new Exception(s"Version not valid ${req.version}"))
     }
-    @inline
-    def toHttp4sBody(req: snunit.Request): http4s.EntityBody[F] = {
-      fs2.Stream.chunk(Chunk.array(req.contentRaw))
-    }
-
     http4s.Request[F](
       toHttp4sMethod(req.method),
       toHttp4sUri(req),
       httpVersion = toHttp4sVersion(req),
       headers = toHttp4sHeaders(req),
-      body = toHttp4sBody(req),
+      VersionSpecific.toHttp4sBody(req),
       attributes = Vault.empty
     )
   }
@@ -62,17 +56,9 @@ private[http4s] object Impl {
                 http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
               )
               .flatMap { response =>
-                req.startSend(
-                  new snunit.StatusCode(response.status.code),
-                  response.headers.headers.map { h => (h.name.toString, h.value) }
-                )
-                response.body.chunks
-                  .map {
-                    case Chunk.ArraySlice(array, offset, length) => req.sendBatch(array, offset, length)
-                    case chunk                                   => req.sendBatch(chunk.toArray)
-                  }
-                  .compile
-                  .drain >> Async[F].delay(req.sendDone())
+                val statusCode = new snunit.StatusCode(response.status.code)
+                val headers = response.headers.headers.map { h => (h.name.toString, h.value) }
+                VersionSpecific.writeResponse(req, response, statusCode, headers)
               }
             dispatcher.unsafeRunAndForget(run)
           }
