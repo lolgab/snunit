@@ -162,7 +162,7 @@ object `snunit-http4s` extends Module {
       with Publish {
     val http4sBinaryVersion = http4sVersion match {
       case s"0.23.$_" => "0.23"
-      case s"1.$_" => "1"
+      case s"1.$_"    => "1"
     }
     def artifactName = s"snunit-http4s$http4sBinaryVersion"
     def millSourcePath = super.millSourcePath / os.up
@@ -314,7 +314,8 @@ object integration extends ScalaModule {
   object test extends Tests with TestModule.Utest with BuildInfo {
     def buildInfoMembers = Map(
       "port" -> testServerPort.toString,
-      "scalaVersions" -> scalaVersions.mkString(","),
+      "scalaVersions" -> scalaVersions.mkString(":"),
+      "http4sVersions" -> http4sVersions.map { case (a, b) => s"$a,$b" }.mkString(":"),
       "scala213" -> scala213
     )
     def ivyDeps =

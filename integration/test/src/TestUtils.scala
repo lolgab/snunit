@@ -19,8 +19,13 @@ object TestUtils {
     f
   }
   def withDeployedExampleCross(projectName: String)(f: => Unit) = {
-    BuildInfo.scalaVersions.split(',').foreach { scalaVersion =>
+    BuildInfo.scalaVersions.split(':').foreach { scalaVersion =>
       withDeployedExample(projectName, s"[$scalaVersion]")(f)
+    }
+  }
+  def withDeployedExampleHttp4s(projectName: String)(f: => Unit) = {
+    BuildInfo.http4sVersions.split(':').foreach { versions =>
+      withDeployedExample(projectName, s"[$versions]")(f)
     }
   }
   def withDeployedExampleMultiplatform(projectName: String, crossSuffix: String = "")(f: => Unit) = {
@@ -34,7 +39,7 @@ object TestUtils {
     finally { process.close() }
   }
   def withDeployedExampleMultiplatformCross(projectName: String)(f: => Unit) = {
-    BuildInfo.scalaVersions.split(',').foreach { scalaVersion =>
+    BuildInfo.scalaVersions.split(':').foreach { scalaVersion =>
       withDeployedExampleMultiplatform(projectName, s"[$scalaVersion]")(f)
     }
   }
