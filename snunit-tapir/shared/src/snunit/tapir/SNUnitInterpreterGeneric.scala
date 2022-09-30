@@ -90,8 +90,10 @@ private[tapir] trait SNUnitInterpreterGeneric {
     // Members declared in sttp.model.HasHeaders
     def headers: Seq[Header] = {
       val array = new Array[Header](req.headersLength)
-      for (i <- 0 until req.headersLength) {
+      var i = 0
+      while (i < req.headersLength) {
         array(i) = Header(req.headerNameUnsafe(i), req.headerValueUnsafe(i))
+        i += 1
       }
       ArraySeq.unsafeWrapArray(array)
     }

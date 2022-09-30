@@ -22,8 +22,10 @@ private[http4s] object Impl {
     @inline
     def toHttp4sHeaders(req: snunit.Request): http4s.Headers = {
       val builder = List.newBuilder[http4s.Header.Raw]
-      for (i <- 0 until req.headersLength) {
+      var i = 0
+      while (i < req.headersLength) {
         builder += http4s.Header.Raw(CIString(req.headerNameUnsafe(i)), req.headerValueUnsafe(i))
+        i += 1
       }
       http4s.Headers(builder.result())
     }
