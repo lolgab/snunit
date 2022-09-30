@@ -14,11 +14,13 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
 
   def headers: Seq[(String, String)] = {
     val array = new Array[(String, String)](req.request.fields_count)
-    for (i <- 0 until req.request.fields_count) {
+    var i = 0
+    while (i < req.request.fields_count) {
       val field = req.request.fields + i
       val fieldName = fromCStringAndSize(field.name, field.name_length)
       val fieldValue = fromCStringAndSize(field.value, field.value_length)
       array(i) = fieldName -> fieldValue
+      i += 1
     }
     ArraySeq.unsafeWrapArray(array)
   }
