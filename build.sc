@@ -175,7 +175,7 @@ object `snunit-http4s` extends Module {
 }
 
 object `snunit-tapir-zio` extends Module {
-  val zio = ivy"dev.zio::zio::2.0.0-RC6"
+  val zio = ivy"dev.zio::zio::2.0.2"
   object native extends Cross[SNUnitTapirNative](scala213)
   class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish {
     def moduleDeps = Seq(`snunit-tapir`.native(crossScalaVersion))
