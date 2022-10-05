@@ -1,6 +1,6 @@
 package snunit.tests
 
-import snunit.tapir.SNUnitInterpreter._
+import snunit.tapir.SNUnitIdServerInterpreter._
 import sttp.tapir._
 
 object TapirHelloWorld {

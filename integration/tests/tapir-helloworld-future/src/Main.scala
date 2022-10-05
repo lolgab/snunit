@@ -1,6 +1,6 @@
 package snunit.tests
 
-import snunit.tapir.SNUnitInterpreterFuture._
+import snunit.tapir.SNUnitFutureServerInterpreter._
 import sttp.tapir._
 
 import scala.concurrent.Future

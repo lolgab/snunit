@@ -2,7 +2,7 @@ package snunit.tapir
 
 import sttp.monad._
 
-object SNUnitInterpreter extends SNUnitInterpreterGeneric {
+object SNUnitIdServerInterpreter extends SNUnitGenericServerInterpreter {
   type Id[T] = T
   private[tapir] type F[T] = Id[T]
   private[tapir] implicit val monadError: MonadError[F] = new MonadError[Id] {

@@ -18,7 +18,7 @@ import java.nio.file._
 import scala.collection.immutable.ArraySeq
 import scala.util._
 
-private[tapir] trait SNUnitInterpreterGeneric {
+private[tapir] trait SNUnitGenericServerInterpreter {
   private[tapir] type F[_]
 
   private[tapir] implicit def monadError: MonadError[F]
