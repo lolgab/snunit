@@ -113,17 +113,6 @@ class SNUnitAsyncModule(val crossScalaVersion: String) extends Common.Cross with
     }
 }
 
-object `snunit-routes` extends Common.Scala2Only with Publish {
-  def moduleDeps = Seq(snunit.native(crossScalaVersion))
-
-  def ivyDeps =
-    T {
-      super.ivyDeps() ++ Agg(
-        ivy"tech.sparse::trail::0.3.1"
-      )
-    }
-}
-
 object `snunit-autowire` extends Common.Scala2Only with Publish {
   def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
   def ivyDeps =
@@ -246,10 +235,6 @@ object integration extends ScalaModule {
     object `async-multiple-handlers` extends Cross[AsyncMultipleHandlersModule](scalaVersions: _*)
     class AsyncMultipleHandlersModule(val crossScalaVersion: String) extends Common.Cross {
       def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
-    }
-    object routes extends Common.Scala2Only {
-      def moduleDeps = Seq(`snunit-routes`)
-      def ivyDeps = T { super.ivyDeps() ++ Seq(upickle) }
     }
     object `handlers-composition` extends Cross[HandlersCompositionModule](scalaVersions: _*)
     class HandlersCompositionModule(val crossScalaVersion: String) extends Common.Cross {

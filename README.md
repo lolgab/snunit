@@ -102,29 +102,3 @@ With `AsyncServerBuilder` the server is automatically scheduled to run on the
 (based on the libuv library). This allows you to complete requests asyncronously
 using whatever mechanism you prefer. A process can accept multiple requests concurrently,
 allowing great parallelism.
-
-## Routes support
-
-SNUnit supports routes using the [trail](https://github.com/sparsetech/trail) Scala library.
-You need to import the `snunit-routes` module and you can write handlers for specific routes:
-
-```scala
-import snunit._
-import snunit.routes._
-import trail._
-
-val details  = Root / "details" / Arg[Int]
-val userInfo = Root / "user" / Arg[String] & Param[Boolean]("show")
-
-AsyncServerBuilder()
-  .withRequestHandler(
-    _.withMethod(Method.GET)
-      .withRoute(details) { case (req, details) =>
-        req.send(200, details, Seq.empty)
-      }
-  )
-  .withRequestHandler(_.withRoute(userInfo) { case (req, (user, show)) =>
-    req.send(200, s"User: $user, show: $show", Seq.empty)
-  })
-  .build()
-```
