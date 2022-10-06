@@ -160,6 +160,19 @@ class SNUnitTapirModule(val crossScalaVersion: String) extends CrossPlatform {
   object native extends Shared with Common.Cross
   object jvm extends Shared with Common.CrossJvm
 }
+object `snunit-tapir-cats` extends Module {
+  val tapirCats = ivy"com.softwaremill.sttp.tapir::tapir-cats::$tapir"
+  object native extends Cross[SNUnitTapirNative](scalaVersions: _*)
+  class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish {
+    def moduleDeps = Seq(`snunit-tapir`.native(crossScalaVersion))
+    def ivyDeps = super.ivyDeps() ++ Agg(tapirCats)
+  }
+  object jvm extends Cross[SNUnitTapirJvm](scalaVersions: _*)
+  class SNUnitTapirJvm(val crossScalaVersion: String) extends Common.CrossJvm with Multiplatform with Publish {
+    def moduleDeps = Seq(`snunit-tapir`.jvm(crossScalaVersion))
+    def ivyDeps = super.ivyDeps() ++ Agg(tapirCats)
+  }
+}
 
 object `snunit-http4s` extends Cross[SNUnitHttp4s](http4sVersions: _*)
 class SNUnitHttp4s(val crossScalaVersion: String, http4sVersion: String) extends CrossPlatform {

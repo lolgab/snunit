@@ -4,8 +4,8 @@ import sttp.monad._
 
 object SNUnitIdServerInterpreter extends SNUnitGenericServerInterpreter {
   type Id[T] = T
-  private[tapir] type F[T] = Id[T]
-  private[tapir] implicit val monadError: MonadError[F] = new MonadError[Id] {
+  private[tapir] type Wrapper[T] = Id[T]
+  private[tapir] implicit val monadError: MonadError[Wrapper] = new MonadError[Id] {
     override def unit[T](t: T): Id[T] = t
     override def map[T, T2](fa: Id[T])(f: T => T2): Id[T2] = f(fa)
     override def flatMap[T, T2](fa: Id[T])(f: T => Id[T2]): Id[T2] = f(fa)

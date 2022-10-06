@@ -19,14 +19,14 @@ import scala.collection.immutable.ArraySeq
 import scala.util._
 
 private[tapir] trait SNUnitGenericServerInterpreter {
-  private[tapir] type F[_]
+  private[tapir] type Wrapper[_]
 
-  private[tapir] implicit def monadError: MonadError[F]
+  private[tapir] implicit def monadError: MonadError[Wrapper]
 
-  private val requestBody: RequestBody[F, NoStreams] = new RequestBody[F, NoStreams] {
+  private val requestBody: RequestBody[Wrapper, NoStreams] = new RequestBody[Wrapper, NoStreams] {
     val streams = NoStreams
     def toStream(serverRequest: ServerRequest): streams.BinaryStream = throw new UnsupportedOperationException
-    override def toRaw[RAW](serverRequest: ServerRequest, bodyType: RawBodyType[RAW]): F[RawValue[RAW]] = {
+    override def toRaw[RAW](serverRequest: ServerRequest, bodyType: RawBodyType[RAW]): Wrapper[RawValue[RAW]] = {
       @inline def req = serverRequest.underlying.asInstanceOf[snunit.Request]
 
       // adapted from tapir Netty implementation
@@ -78,12 +78,12 @@ private[tapir] trait SNUnitGenericServerInterpreter {
     ): Array[Byte] = throw new UnsupportedOperationException
   }
 
-  private val interceptors: List[Interceptor[F]] = Nil
+  private val interceptors: List[Interceptor[Wrapper]] = Nil
 
-  private val deleteFile: TapirFile => F[Unit] = _ => monadError.unit(())
+  private val deleteFile: TapirFile => Wrapper[Unit] = _ => monadError.unit(())
 
-  implicit val bodyListener: BodyListener[F, Array[Byte]] = new BodyListener[F, Array[Byte]] {
-    def onComplete(body: Array[Byte])(cb: Try[Unit] => F[Unit]): F[Array[Byte]] = ???
+  implicit val bodyListener: BodyListener[Wrapper, Array[Byte]] = new BodyListener[Wrapper, Array[Byte]] {
+    def onComplete(body: Array[Byte])(cb: Try[Unit] => Wrapper[Unit]): Wrapper[Array[Byte]] = ???
   }
 
   private class SNUnitServerRequest(req: snunit.Request) extends ServerRequest {
@@ -124,8 +124,8 @@ private[tapir] trait SNUnitGenericServerInterpreter {
     def withUnderlying(underlying: Any): sttp.tapir.model.ServerRequest = ???
   }
 
-  def toHandler(endpoints: List[ServerEndpoint[Any, F]]): snunit.Handler = {
-    val interpreter = new ServerInterpreter[Any, F, Array[Byte], NoStreams](
+  def toHandler(endpoints: List[ServerEndpoint[Any, Wrapper]]): snunit.Handler = {
+    val interpreter = new ServerInterpreter[Any, Wrapper, Array[Byte], NoStreams](
       FilterServerEndpoints(endpoints),
       requestBody,
       toResponseBody,
