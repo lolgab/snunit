@@ -18,7 +18,7 @@ private[http4s] object VersionSpecific {
   def writeResponse[F[_]: Async](
       req: snunit.Request,
       response: http4s.Response[F],
-      statusCode: snunit.StatusCode,
+      statusCode: Int,
       headers: Seq[(String, String)]
   ): F[Unit] = {
     response.entity match {

@@ -9,7 +9,7 @@ private[http4s] object Utils {
   def sendStreaming[F[_]: Async](
       req: snunit.Request,
       body: http4s.EntityBody[F],
-      statusCode: snunit.StatusCode,
+      statusCode: Int,
       headers: Seq[(String, String)]
   ) = {
     req.startSend(statusCode, headers)

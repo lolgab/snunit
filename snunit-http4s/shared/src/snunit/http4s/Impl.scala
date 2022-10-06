@@ -58,9 +58,8 @@ private[http4s] object Impl {
                 http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
               )
               .flatMap { response =>
-                val statusCode = new snunit.StatusCode(response.status.code)
                 val headers = response.headers.headers.map { h => (h.name.toString, h.value) }
-                VersionSpecific.writeResponse(req, response, statusCode, headers)
+                VersionSpecific.writeResponse(req, response, response.status.code, headers)
               }
             dispatcher.unsafeRunAndForget(run)
           }

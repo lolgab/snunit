@@ -72,7 +72,7 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
   }
 
   @inline
-  private def startSendUnsafe(statusCode: StatusCode, headers: Seq[(String, String)], contentLength: Int): Unit = {
+  private def startSendUnsafe(statusCode: Int, headers: Seq[(String, String)], contentLength: Int): Unit = {
     var headersLength = 0
     val fieldsSize: Int = {
       var res = 0
@@ -84,7 +84,7 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
     }
 
     locally {
-      val res = nxt_unit_response_init(req, statusCode.value.toShort, headersLength, fieldsSize + contentLength)
+      val res = nxt_unit_response_init(req, statusCode.toShort, headersLength, fieldsSize + contentLength)
       if (res != NXT_UNIT_OK) throw new Exception("Failed to create response")
     }
 
@@ -93,7 +93,7 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
     }
   }
   @inline
-  def startSend(statusCode: StatusCode, headers: Seq[(String, String)]): Unit = startSendUnsafe(statusCode, headers, 0)
+  def startSend(statusCode: Int, headers: Seq[(String, String)]): Unit = startSendUnsafe(statusCode, headers, 0)
   def sendByte(byte: Int): Unit = {
     val bytePtr = stackalloc[Byte]()
     !bytePtr = byte.toByte
@@ -133,7 +133,7 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
   def sendDone(): Unit = {
     nxt_unit_request_done(req, NXT_UNIT_OK)
   }
-  def send(statusCode: StatusCode, content: Array[Byte], headers: Seq[(String, String)]): Unit = {
+  def send(statusCode: Int, content: Array[Byte], headers: Seq[(String, String)]): Unit = {
     val byteArray = content.asInstanceOf[ByteArray]
     val contentLength = byteArray.length
     startSendUnsafe(statusCode, headers, contentLength)
