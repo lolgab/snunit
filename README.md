@@ -60,7 +60,7 @@ to the `unitd` working directory.
 
 This configuration passes all requests sent to the port `8081` to the application `myapp`.
 
-To know more about configuring NGINX Unit, refer to [their documentation](http://unit.nginx.org/configuration).
+To know more about configuring NGINX Unit, refer to [its documentation](http://unit.nginx.org/configuration).
 
 To deploy the setting you can use curl:
 
@@ -102,3 +102,15 @@ With `AsyncServerBuilder` the server is automatically scheduled to run on the
 (based on the libuv library). This allows you to complete requests asyncronously
 using whatever mechanism you prefer. A process can accept multiple requests concurrently,
 allowing great parallelism.
+
+## Tapir support
+
+SNUnit offers interpreters for [Tapir](https://tapir.softwaremill.com) server endpoints.
+You can write all your application using Tapir and the convert your Tapir endpoints
+with logic into a SNUnit `Handler`.
+
+Currently two interpreters are available:
+- `SNUnitIdServerInterpreter` which works best with `SyncServerHandler` for synchronous applications
+  - You can find an example [in tests](./integration/tests/tapir-helloworld/src/Main.scala)
+- `SNUnitFutureServerInterpreter` which requires `AsyncServerHandler` for asynchronous applications
+  - You can find an example [in tests](./integration/tests/tapir-helloworld-future/src/Main.scala)
