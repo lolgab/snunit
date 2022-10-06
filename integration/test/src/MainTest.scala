@@ -85,14 +85,6 @@ object MainTest extends TestSuite {
         assert(asyncResult == "2")
       }
     }
-    test("routes") {
-      withDeployedExample("routes") {
-        val i = 10
-        val getResult = requests.get(s"$baseUrl/test/$i").text()
-        val expectedGetResult = s"Got $i"
-        assert(getResult == expectedGetResult)
-      }
-    }
     test("undertow-helloworld") {
       withDeployedExampleMultiplatformCross("undertow-helloworld") {
         runOnAllPlatforms { baseUrl =>
