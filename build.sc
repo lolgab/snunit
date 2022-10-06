@@ -7,6 +7,8 @@ import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.2.0`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
 import mill.contrib.buildinfo.BuildInfo
+import $ivy.`com.github.lolgab::mill-mima::0.0.13`
+import com.github.lolgab.mill.mima._
 import $file.versions
 import $file.unitd
 
@@ -75,7 +77,7 @@ object Common {
   trait CrossJvm extends Shared with CrossScalaModule
 }
 
-trait Publish extends PublishModule {
+trait Publish extends PublishModule with Mima {
   def pomSettings =
     PomSettings(
       description = "Scala Native server using NGINX Unit",
@@ -88,6 +90,7 @@ trait Publish extends PublishModule {
       )
     )
   def publishVersion = VcsVersion.vcsState().format()
+  def mimaPreviousVersions = Seq("0.1.0")
 }
 trait Multiplatform extends Publish {
   override def artifactName = super.artifactName().split('-').init.mkString("-")
