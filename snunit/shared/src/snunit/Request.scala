@@ -14,11 +14,19 @@ trait Request {
   def target: String
   def path: String
   def query: String
-  def send(statusCode: StatusCode, content: Array[Byte], headers: Seq[(String, String)]): Unit
+  def send(statusCode: Int, content: Array[Byte], headers: Seq[(String, String)]): Unit
+  @inline
+  def send(statusCode: StatusCode, content: Array[Byte], headers: Seq[(String, String)]): Unit = {
+    send(statusCode.value, content, headers)
+  }
   def send(statusCode: StatusCode, content: String, headers: Seq[(String, String)]): Unit = {
     send(statusCode, content.getBytes(), headers)
   }
-  def startSend(statusCode: StatusCode, headers: Seq[(String, String)]): Unit
+  @inline
+  def startSend(statusCode: StatusCode, headers: Seq[(String, String)]): Unit = {
+    startSend(statusCode.value, headers)
+  }
+  def startSend(statusCode: Int, headers: Seq[(String, String)]): Unit
   def sendBatch(data: Array[Byte]): Unit
   def sendBatch(data: Array[Byte], off: Int, len: Int): Unit
   def sendDone(): Unit

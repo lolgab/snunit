@@ -64,8 +64,8 @@ object SyncServerBuilder {
               def headerValue(index: Int): String = headers(index)._2
               def headerValueUnsafe(index: Int): String = headers(index)._2
               def headersLength: Int = headers.length
-              def send(statusCode: StatusCode, contentRaw: Array[Byte], headers: Seq[(String, String)]): Unit = {
-                exchange.setStatusCode(statusCode.value)
+              def send(statusCode: Int, contentRaw: Array[Byte], headers: Seq[(String, String)]): Unit = {
+                exchange.setStatusCode(statusCode)
                 val responseHeaders = exchange.getResponseHeaders()
                 headers.foreach { case (key, value) =>
                   responseHeaders.put(new HttpString(key), value)
@@ -75,7 +75,7 @@ object SyncServerBuilder {
               def sendDone(): Unit = ???
               def sendBatch(data: Array[Byte], off: Int, len: Int): Unit = ???
               def sendBatch(data: Array[Byte]): Unit = ???
-              def startSend(statusCode: snunit.StatusCode, headers: Seq[(String, String)]): Unit = ???
+              def startSend(statusCode: Int, headers: Seq[(String, String)]): Unit = ???
             })
           }
         }))
