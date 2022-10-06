@@ -12,6 +12,7 @@ import $file.unitd
 
 val upickle = ivy"com.lihaoyi::upickle::2.0.0"
 val undertow = ivy"io.undertow:undertow-core:2.2.19.Final"
+val cask = "0.8.3"
 
 val scala213 = "2.13.8"
 val scala3 = "3.1.3"
@@ -179,7 +180,7 @@ object `snunit-tapir-zio` extends Module {
 
 def caskSources = T {
   val dest = T.dest
-  os.proc("git", "clone", "--branch", "0.8.0", "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
+  os.proc("git", "clone", "--branch", cask, "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
   os.proc("git", "apply", os.pwd / "cask.patch").call(cwd = dest / "cask")
   PathRef(dest)
 }
@@ -198,7 +199,7 @@ class SNUnitCaskModule(val crossScalaVersion: String) extends Common.Cross with 
     upickle,
     ivy"com.lihaoyi::castor::0.2.1",
     ivy"org.ekrich::sjavatime::1.1.9",
-    ivy"com.lihaoyi::pprint::0.7.2"
+    ivy"com.lihaoyi::pprint::0.8.0"
   )
 }
 
@@ -258,7 +259,7 @@ object integration extends ScalaModule {
       class CaskHelloWorldJvmModule(val crossScalaVersion: String) extends Common.CrossJvm {
         def millSourcePath = super.millSourcePath / os.up
         def ivyDeps = super.ivyDeps() ++ Agg(
-          ivy"com.lihaoyi::cask:0.7.11"
+          ivy"com.lihaoyi::cask:$cask"
         )
       }
       object native extends Cross[CaskHelloWorldNativeModule](scalaVersions: _*)
