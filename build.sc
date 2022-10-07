@@ -83,7 +83,7 @@ trait Publish extends PublishModule with Mima {
       description = "Scala Native server using NGINX Unit",
       organization = "com.github.lolgab",
       url = "https://github.com/lolgab/snunit",
-      licenses = Seq(License.MIT),
+      licenses = Seq(License.`Apache-2.0`),
       versionControl = VersionControl.github(owner = "lolgab", repo = "snunit"),
       developers = Seq(
         Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lolgab")
