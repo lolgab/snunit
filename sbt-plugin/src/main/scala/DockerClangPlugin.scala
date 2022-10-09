@@ -26,22 +26,24 @@ object DockerClangPlugin extends AutoPlugin {
 
   object autoImport {
     val createDockerClangScripts = taskKey[ClangScripts.Scripts]("create docker clang scripts")
+  }
+
+  import autoImport._
+
+  override lazy val projectSettings: Seq[Setting[_]] = Seq(
     createDockerClangScripts := {
       val dest = target.value
       val cached = Cache.cached[Unit, ClangScripts.Scripts](dest)((_: Unit) =>
         ClangScripts.createAndWriteClangScripts(dest = dest.toString(), pwd = ".")
       )
       cached.apply(())
-    }
-  }
-
-  override lazy val projectSettings: Seq[Setting[_]] = Seq(
+    },
     ScalaNativePlugin.autoImport.nativeClang := {
-      val scripts = autoImport.createDockerClangScripts.value
+      val scripts = createDockerClangScripts.value
       new java.io.File(scripts.clang.path)
     },
     ScalaNativePlugin.autoImport.nativeClangPP := {
-      val scripts = autoImport.createDockerClangScripts.value
+      val scripts = createDockerClangScripts.value
       new java.io.File(scripts.clangpp.path)
     }
   )
