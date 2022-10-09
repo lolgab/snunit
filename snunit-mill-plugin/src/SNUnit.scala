@@ -15,11 +15,11 @@ trait SNUnit extends ScalaNativeModule {
     new SNUnitPluginShared(logger)
   }
 
-  /** Port where to run the SNUnit app
+  /** Port where SNUnit app runs
     */
   def snunitPort: Target[Int] = T { 8080 }
 
-  /** Port where to run the SNUnit app
+  /** Deploy app to NGINX Unit
     */
   def deployToNGINXUnit(): Command[Unit] = T.command {
     val executable = nativeLink()
