@@ -10,6 +10,5 @@ doCallToServer := {
   import sys.process._
   val port = snunitPort.value
   val response = s"curl -sL http://127.0.0.1:$port".!!
-  println(response)
   require(response == "Hello world\n")
 }
