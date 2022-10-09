@@ -28,7 +28,7 @@ private[plugin] class SNUnitPluginShared(logger: Logger) {
       .replaceAll(".+unix:", "")
       .stripSuffix("\"")
   }
-  
+
   private def doCurl(command: String*) = (Seq("curl", "-sL", "--unix-socket", unitControlSocket()) ++ command).!!
   def deployToNGINXUnit(executable: String, port: Int): Unit = {
     require(isUnitInstalled(), "unitd is not installed")
