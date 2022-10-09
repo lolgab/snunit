@@ -21,7 +21,6 @@ private[plugin] object SjsonnewImplicits {
 object DockerClangPlugin extends AutoPlugin {
   import SjsonnewImplicits._
 
-  override def trigger = allRequirements
   override def requires = ScalaNativePlugin
 
   object autoImport {
