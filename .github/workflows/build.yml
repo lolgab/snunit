@@ -59,7 +59,7 @@ jobs:
       run: |
         (
           cd sbt-plugin
-          sbt compile
+          sbt scripted
         )
   check-binary-compatibility:
     runs-on: ubuntu-22.04
