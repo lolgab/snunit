@@ -46,5 +46,10 @@ lazy val snunitSbtPlugin = project
       "oss.sonatype.org",
       sys.env.getOrElse("SONATYPE_USER", "username"),
       sys.env.getOrElse("SONATYPE_PASSWORD", "password")
-    )
+    ),
+    scriptedLaunchOpts := { scriptedLaunchOpts.value ++
+      Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+    },
+    scriptedBufferLog := false
   )
+  .enablePlugins(SbtPlugin)
