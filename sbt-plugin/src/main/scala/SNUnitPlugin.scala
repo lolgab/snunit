@@ -10,9 +10,8 @@ object SNUnitPlugin extends AutoPlugin {
   override def trigger = allRequirements
   override def requires = ScalaNativePlugin
 
+  private val shared = taskKey[SNUnitPluginShared]("")
   object autoImport {
-    private[SNUnitPlugin] val shared = taskKey[SNUnitPluginShared]("")
-
     val snunitPort = settingKey[Int]("Port when app runs")
 
     val deployToNGINXUnit = taskKey[Unit]("Deploy app to NGINX Unit")
@@ -35,7 +34,7 @@ object SNUnitPlugin extends AutoPlugin {
     deployToNGINXUnit := {
       val port = snunitPort.value
       val executable = (Compile / nativeLink).value
-      autoImport.shared.value.deployToNGINXUnit(executable.toString, port)
+      shared.value.deployToNGINXUnit(executable.toString, port)
     }
   )
 }
