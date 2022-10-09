@@ -21,6 +21,25 @@ private[plugin] class SNUnitPluginShared(logger: Logger) {
         false
     }
   }
+  def isUnitRunning(): Boolean = {
+    try {
+      doCurl("http://localhost/config")
+      true
+    } catch {
+      case NonFatal(e) =>
+        logger.error("""NGINX Unit is not running.
+          |You can run it in a separate terminal with:
+          |unitd --log /dev/stdout --no-daemon
+          |
+          |You can also run it as a daemon:
+          |
+          |If you use brew:
+          |brew services start unit
+          |
+          |You can find more instructions here: https://unit.nginx.org/installation""".stripMargin)
+        false
+    }
+  }
   def unitControlSocket(): String = {
     Seq("unitd", "--help").!!.linesIterator
       .find(_.contains("unix:"))
@@ -32,6 +51,7 @@ private[plugin] class SNUnitPluginShared(logger: Logger) {
   private def doCurl(command: String*) = (Seq("curl", "-sL", "--unix-socket", unitControlSocket()) ++ command).!!
   def deployToNGINXUnit(executable: String, port: Int): Unit = {
     require(isUnitInstalled(), "unitd is not installed")
+    require(isUnitRunning(), "unitd is not running")
     val config = s"""{
       "applications": {
         "app": {
