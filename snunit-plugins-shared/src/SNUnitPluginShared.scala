@@ -73,6 +73,7 @@ private[plugin] class SNUnitPluginShared(logger: Logger) {
       "http://localhost/config"
     )
     logger.info(result)
+    restartApp()
   }
 
   def restartApp() = {
