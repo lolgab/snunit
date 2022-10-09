@@ -1,3 +1,4 @@
+import mill.define.Target
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.api.ZincWorkerUtil.isScala3
 import mill.scalalib.publish._
@@ -340,6 +341,8 @@ object `snunit-mill-plugin` extends ScalaModule with Publish {
   def compileIvyDeps = super.compileIvyDeps() ++ Agg(
     ivy"com.lihaoyi::mill-scalanativelib:$millVersion"
   )
+  // TODO: Remove after release
+  def mimaPreviousArtifacts: Target[Agg[Dep]] = Agg.empty[Dep]
 }
 object `snunit-mill-plugin-itest` extends MillIntegrationTestModule {
   def millTestVersion = millVersion
