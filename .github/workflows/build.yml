@@ -60,7 +60,14 @@ jobs:
         (
           cd sbt-plugin
           sudo systemctl start unit.service
-          sudo sbt scripted
+
+          # workaround since we don't support root control socket yet
+          sudo mv /usr/bin/curl /usr/bin/real_curl
+          echo 'sudo real_curl $@' > /usr/bin/curl
+          sudo chmod +x /usr/bin/curl
+          # end workaround
+
+          sbt scripted
         )
   check-binary-compatibility:
     runs-on: ubuntu-22.04
