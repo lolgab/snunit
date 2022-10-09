@@ -59,6 +59,7 @@ jobs:
       run: |
         (
           cd sbt-plugin
+          unitd --log /dev/stdout --no-daemon &
           sbt scripted
         )
   check-binary-compatibility:
