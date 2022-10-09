@@ -5,6 +5,8 @@ import $ivy.`com.goyeau::mill-scalafix::0.2.8`
 import com.goyeau.mill.scalafix.ScalafixModule
 import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.2.0`
 import de.tobiasroeser.mill.vcs.version.VcsVersion
+import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.6.1`
+import de.tobiasroeser.mill.integrationtest._
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
 import mill.contrib.buildinfo.BuildInfo
 import $ivy.`com.github.lolgab::mill-mima::0.0.13`
@@ -330,13 +332,19 @@ class SnunitPluginsShared(val crossScalaVersion: String) extends CrossScalaModul
     )
   }
 }
-
+val millVersion = "0.10.7"
 object `snunit-mill-plugin` extends ScalaModule with Publish {
+  def artifactName = s"mill-snunit_mill${millVersion.split('.').take(2).mkString(".")}"
   def moduleDeps = Seq(`snunit-plugins-shared`(scala213))
   def scalaVersion = scala213
-  def ivyDeps = super.ivyDeps() ++ Agg(
-    ivy"com.lihaoyi::mill-scalanativelib:0.9.8"
+  def compileIvyDeps = super.compileIvyDeps() ++ Agg(
+    ivy"com.lihaoyi::mill-scalanativelib:$millVersion"
   )
+}
+object `snunit-mill-plugin-itest` extends MillIntegrationTestModule {
+  def millTestVersion = millVersion
+  def pluginsUnderTest = Seq(`snunit-mill-plugin`)
+  def temporaryIvyModules = Seq(`snunit-plugins-shared`(scala213))
 }
 
 def buildSources = T(Seq(PathRef(os.pwd / "build.sc")))
