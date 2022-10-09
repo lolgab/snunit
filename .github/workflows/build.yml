@@ -59,8 +59,8 @@ jobs:
       run: |
         (
           cd sbt-plugin
-          unitd --log /dev/stdout --no-daemon &
-          sbt scripted
+          sudo systemctl start unit.service
+          sudo sbt scripted
         )
   check-binary-compatibility:
     runs-on: ubuntu-22.04
