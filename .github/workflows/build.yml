@@ -60,7 +60,7 @@ jobs:
         (
           cd sbt-plugin
           sudo systemctl start unit.service
-          sbt scripted
+          sbt scalafmtCheckAll scalafmtSbtCheck scripted
         )
   check-binary-compatibility:
     runs-on: ubuntu-22.04
