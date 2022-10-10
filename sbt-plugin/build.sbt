@@ -19,7 +19,7 @@ val snunitVersion = Def.setting {
 lazy val snunitSbtPlugin = project
   .in(file("."))
   .settings(
-    name := "snunit-sbt-plugin",
+    name := "sbt-snunit",
     version := snunitVersion.value,
     sbtPlugin := true,
     scalaVersion := Versions.scala212,
