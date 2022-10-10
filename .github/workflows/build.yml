@@ -59,7 +59,8 @@ jobs:
       run: |
         (
           cd sbt-plugin
-          sbt compile
+          sudo systemctl start unit.service
+          sbt scalafmtCheckAll scalafmtSbtCheck scripted
         )
   check-binary-compatibility:
     runs-on: ubuntu-22.04
@@ -110,6 +111,8 @@ jobs:
         with:
           java-version: '8'
           architecture: x64
+      - name: Publish plugin shared locally
+        run: ./mill -i --disable-ticker snunit-plugins-shared.__.publishLocal
       - name: Publish to Maven Central
         run: |
           if [[ $(git tag --points-at HEAD) != '' ]]; then

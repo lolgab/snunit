@@ -19,7 +19,7 @@ val snunitVersion = Def.setting {
 lazy val snunitSbtPlugin = project
   .in(file("."))
   .settings(
-    name := "snunit-sbt-plugin",
+    name := "sbt-snunit",
     version := snunitVersion.value,
     sbtPlugin := true,
     scalaVersion := Versions.scala212,
@@ -46,5 +46,11 @@ lazy val snunitSbtPlugin = project
       "oss.sonatype.org",
       sys.env.getOrElse("SONATYPE_USER", "username"),
       sys.env.getOrElse("SONATYPE_PASSWORD", "password")
-    )
+    ),
+    scriptedLaunchOpts := {
+      scriptedLaunchOpts.value ++
+        Seq("-Xmx1024M", "-Dplugin.version=" + version.value)
+    },
+    scriptedBufferLog := false
   )
+  .enablePlugins(SbtPlugin)
