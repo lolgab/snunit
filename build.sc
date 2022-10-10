@@ -12,20 +12,18 @@ import mill.contrib.buildinfo.BuildInfo
 import $ivy.`com.github.lolgab::mill-mima::0.0.13`
 import com.github.lolgab.mill.mima._
 import $file.versions
+import versions.Versions
 import $file.unitd
 
-val upickle = ivy"com.lihaoyi::upickle::2.0.0"
-val undertow = ivy"io.undertow:undertow-core:2.2.19.Final"
-val cask = "0.8.3"
-
-val scala213 = "2.13.8"
-val scala3 = "3.1.3"
-val scalaVersions = Seq(scala213, scala3)
+val scalaVersions = Seq(Versions.scala213, Versions.scala3)
 
 val http4sVersions = for {
   scalaV <- scalaVersions
-  http4sV <- Seq("0.23.16", "1.0.0-M37")
+  http4sV <- Seq(Versions.http4s023, Versions.http4s1)
 } yield (scalaV, http4sV)
+
+val upickle = ivy"com.lihaoyi::upickle::${Versions.upickle}"
+val undertow = ivy"io.undertow:undertow-core:${Versions.undertow}"
 
 val testServerPort = 8081
 
@@ -72,7 +70,7 @@ object Common {
   }
 
   trait Scala2Only extends SharedNative {
-    def crossScalaVersion = scala213
+    def crossScalaVersion = Versions.scala213
     def scalaVersion = crossScalaVersion
   }
   trait Cross extends SharedNative with CrossScalaModule
@@ -119,7 +117,7 @@ class SNUnitAsyncModule(val crossScalaVersion: String) extends Common.Cross with
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"com.github.lolgab::native-loop-core::0.2.1"
+        ivy"com.github.lolgab::native-loop-core::${Versions.scalaNativeLoop}"
       )
     }
 }
@@ -129,7 +127,7 @@ object `snunit-autowire` extends Common.Scala2Only with Publish {
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"com.lihaoyi::autowire::0.3.3",
+        ivy"com.lihaoyi::autowire::${Versions.autowire}",
         upickle
       )
     }
@@ -141,7 +139,7 @@ class SNUnitUndertow(val crossScalaVersion: String) extends Common.Cross with Pu
 }
 
 object `snunit-tapir` extends Module {
-  val tapirServer = ivy"com.softwaremill.sttp.tapir::tapir-server::1.0.0"
+  val tapirServer = ivy"com.softwaremill.sttp.tapir::tapir-server::${Versions.tapir}"
   object native extends Cross[SNUnitTapirNative](scalaVersions: _*)
   class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish {
     def moduleDeps = Seq(snunit.native(crossScalaVersion))
@@ -175,13 +173,13 @@ object `snunit-http4s` extends Module {
 }
 
 object `snunit-tapir-zio` extends Module {
-  val zio = ivy"dev.zio::zio::2.0.2"
-  object native extends Cross[SNUnitTapirNative](scala213)
+  val zio = ivy"dev.zio::zio::${Versions.zio}"
+  object native extends Cross[SNUnitTapirNative](Versions.scala213)
   class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish {
     def moduleDeps = Seq(`snunit-tapir`.native(crossScalaVersion))
     def ivyDeps = super.ivyDeps() ++ Agg(zio)
   }
-  object jvm extends Cross[SNUnitTapirJvm](scala213)
+  object jvm extends Cross[SNUnitTapirJvm](Versions.scala213)
   class SNUnitTapirJvm(val crossScalaVersion: String) extends Common.CrossJvm with Multiplatform with Publish {
     def moduleDeps = Seq(`snunit-tapir`.jvm(crossScalaVersion))
     def ivyDeps = super.ivyDeps() ++ Agg(zio)
@@ -190,7 +188,7 @@ object `snunit-tapir-zio` extends Module {
 
 def caskSources = T {
   val dest = T.dest
-  os.proc("git", "clone", "--branch", cask, "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
+  os.proc("git", "clone", "--branch", Versions.cask, "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
   os.proc("git", "apply", os.pwd / "cask.patch").call(cwd = dest / "cask")
   PathRef(dest)
 }
@@ -207,9 +205,9 @@ class SNUnitCaskModule(val crossScalaVersion: String) extends Common.Cross with 
   def moduleDeps = Seq(`snunit-undertow`(crossScalaVersion))
   def ivyDeps = super.ivyDeps() ++ Agg(
     upickle,
-    ivy"com.lihaoyi::castor::0.2.1",
-    ivy"org.ekrich::sjavatime::1.1.9",
-    ivy"com.lihaoyi::pprint::0.8.0"
+    ivy"com.lihaoyi::castor::${Versions.castor}",
+    ivy"org.ekrich::sjavatime::${Versions.sjavatime}",
+    ivy"com.lihaoyi::pprint::${Versions.pprint}"
   )
 }
 
@@ -269,7 +267,7 @@ object integration extends ScalaModule {
       class CaskHelloWorldJvmModule(val crossScalaVersion: String) extends Common.CrossJvm {
         def millSourcePath = super.millSourcePath / os.up
         def ivyDeps = super.ivyDeps() ++ Agg(
-          ivy"com.lihaoyi::cask:$cask"
+          ivy"com.lihaoyi::cask:${Versions.cask}"
         )
       }
       object native extends Cross[CaskHelloWorldNativeModule](scalaVersions: _*)
@@ -306,47 +304,46 @@ object integration extends ScalaModule {
       )
     }
   }
-  def scalaVersion = scala213
+  def scalaVersion = Versions.scala213
   object test extends Tests with TestModule.Utest with BuildInfo {
     def buildInfoMembers = Map(
       "port" -> testServerPort.toString,
       "scalaVersions" -> scalaVersions.mkString(":"),
       "http4sVersions" -> http4sVersions.map { case (a, b) => s"$a,$b" }.mkString(":"),
-      "scala213" -> scala213
+      "scala213" -> Versions.scala213
     )
     def ivyDeps =
       Agg(
-        ivy"com.lihaoyi::utest:0.7.7",
-        ivy"com.lihaoyi::os-lib:0.7.8",
-        ivy"com.lihaoyi::requests:0.6.5"
+        ivy"com.lihaoyi::utest:${Versions.utest}",
+        ivy"com.lihaoyi::os-lib:${Versions.osLib}",
+        ivy"com.lihaoyi::requests:${Versions.requests}"
       )
   }
 }
 
-object `snunit-plugins-shared` extends Cross[SnunitPluginsShared](scala213, versions.Versions.scala212)
+object `snunit-plugins-shared` extends Cross[SnunitPluginsShared](Versions.scala213, Versions.scala212)
 class SnunitPluginsShared(val crossScalaVersion: String) extends CrossScalaModule with Publish {
   object test extends Tests with TestModule.Utest {
     def ivyDeps = super.ivyDeps() ++ Agg(
-      ivy"com.lihaoyi::utest:0.7.7",
-      ivy"com.lihaoyi::os-lib:0.7.8"
+      ivy"com.lihaoyi::utest:${Versions.utest}",
+      ivy"com.lihaoyi::os-lib:${Versions.osLib}"
     )
   }
 }
-val millVersion = "0.10.7"
 object `snunit-mill-plugin` extends ScalaModule with Publish {
-  def artifactName = s"mill-snunit_mill${millVersion.split('.').take(2).mkString(".")}"
-  def moduleDeps = Seq(`snunit-plugins-shared`(scala213))
-  def scalaVersion = scala213
+  def artifactName = s"mill-snunit_mill${Versions.mill.split('.').take(2).mkString(".")}"
+  def moduleDeps = Seq(`snunit-plugins-shared`(Versions.scala213))
+  def scalaVersion = Versions.scala213
   def compileIvyDeps = super.compileIvyDeps() ++ Agg(
-    ivy"com.lihaoyi::mill-scalanativelib:$millVersion"
+    ivy"com.lihaoyi::mill-scalanativelib:${Versions.mill}"
   )
   // TODO: Remove after release
   def mimaPreviousArtifacts = Agg.empty[Dep]
 }
 object `snunit-mill-plugin-itest` extends MillIntegrationTestModule {
-  def millTestVersion = millVersion
+  def millTestVersion = Versions.mill
   def pluginsUnderTest = Seq(`snunit-mill-plugin`)
-  def temporaryIvyModules = Seq(`snunit-plugins-shared`(scala213))
+  def temporaryIvyModules = Seq(`snunit-plugins-shared`(Versions.scala213))
 }
 
 def buildSources = T(Seq(PathRef(os.pwd / "build.sc")))
