@@ -4,7 +4,7 @@ import scala.sys.process._
 import java.io.IOException
 import scala.util.control.NonFatal
 
-private[plugin] class SNUnitPluginShared(logger: Logger) {
+private[plugin] class SNUnitPluginShared(logger: Logger, snunitCurlCommand: Seq[String]) {
   def isUnitInstalled(): Boolean = {
     try {
       // collect stderr from unitd
@@ -48,7 +48,8 @@ private[plugin] class SNUnitPluginShared(logger: Logger) {
       .stripSuffix("\"")
   }
 
-  private def doCurl(command: String*) = (Seq("curl", "-sL", "--unix-socket", unitControlSocket()) ++ command).!!
+  private def doCurl(command: String*) =
+    (snunitCurlCommand ++ Seq("-sL", "--unix-socket", unitControlSocket()) ++ command).!!
   def deployToNGINXUnit(executable: String, port: Int): Unit = {
     require(isUnitInstalled(), "unitd is not installed")
     require(isUnitRunning(), "unitd is not running")

@@ -12,7 +12,8 @@ object SNUnitPlugin extends AutoPlugin {
 
   private val shared = taskKey[SNUnitPluginShared]("")
   object autoImport {
-    val snunitPort = settingKey[Int]("Port when app runs")
+    val snunitPort = settingKey[Int]("Port where the SNUnit app runs")
+    val snunitCurlCommand = settingKey[Seq[String]]("curl command to use")
 
     val deployToNGINXUnit = taskKey[Unit]("Deploy app to NGINX Unit")
   }
@@ -28,8 +29,9 @@ object SNUnitPlugin extends AutoPlugin {
         def warn(s: String): Unit = str.log.warn(s)
         def error(s: String): Unit = str.log.error(s)
       }
-      new SNUnitPluginShared(logger)
+      new SNUnitPluginShared(logger, snunitCurlCommand.value)
     },
+    snunitCurlCommand := Seq("curl"),
     snunitPort := 8080,
     deployToNGINXUnit := {
       val port = snunitPort.value

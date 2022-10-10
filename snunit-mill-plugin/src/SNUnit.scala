@@ -5,14 +5,16 @@ import mill.define._
 import mill.scalanativelib._
 
 trait SNUnit extends ScalaNativeModule {
-  private val shared = T.worker {
+  def snunitCurlCommand: Target[Seq[String]] = T { Seq("curl") }
+
+  private def shared = T.worker {
     val log = T.log
     val logger = new snunit.plugin.Logger {
       def info(s: String): Unit = log.info(s)
       def warn(s: String): Unit = log.error(s)
       def error(s: String): Unit = log.error(s)
     }
-    new SNUnitPluginShared(logger)
+    new SNUnitPluginShared(logger, snunitCurlCommand())
   }
 
   /** Port where SNUnit app runs
