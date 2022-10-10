@@ -16,5 +16,5 @@ object module extends ScalaNativeModule with SNUnit {
 }
 def verify() = T.command {
   module.deployToNGINXUnit()()
-  requests.get(s"http://127.0.0.1:$port").text
+  assert(requests.get(s"http://127.0.0.1:$port").text == "Hello world")
 }
