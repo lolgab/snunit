@@ -109,7 +109,7 @@ class SNUnitModule(val crossScalaVersion: String) extends CrossPlatform {
 
 object `snunit-async` extends Cross[SNUnitAsyncModule](scalaVersions: _*)
 class SNUnitAsyncModule(val crossScalaVersion: String) extends Common.Cross with Publish {
-  // def moduleDeps = super.moduleDeps ++ Seq(snunit(crossScalaVersion).native)
+  def moduleDeps = super.moduleDeps ++ Seq(snunit(crossScalaVersion).native)
 
   def ivyDeps =
     T {
