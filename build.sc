@@ -158,7 +158,7 @@ class SNUnitHttp4s(val crossScalaVersion: String, http4sVersion: String) extends
     def moduleDeps = super.moduleDeps ++ Seq(`snunit-async`(crossScalaVersion))
     def ivyDeps = super.ivyDeps() ++ Agg(ivy"org.http4s::http4s-server::$http4sVersion")
     def sources = T.sources {
-      super.sources() ++ Agg(PathRef(millSourcePath / os.up / s"http4s-$http4sBinaryVersion"))
+      super.sources() ++ Agg(PathRef(millSourcePath / s"http4s-$http4sBinaryVersion" / "src"))
     }
   }
 }
@@ -169,7 +169,7 @@ class SNUnitTapirZio(val crossScalaVersion: String) extends CrossPlatform {
   trait Shared extends CrossPlatformCrossScalaModule with Publish {
     def ivyDeps = super.ivyDeps() ++ Agg(ivy"dev.zio::zio::${Versions.zio}")
   }
-  object native extends Shared with Common.Cross  {
+  object native extends Shared with Common.Cross {
     def moduleDeps = super.moduleDeps ++ Seq(`snunit-tapir`(crossScalaVersion).native)
   }
   object jvm extends Shared with Common.CrossJvm {
