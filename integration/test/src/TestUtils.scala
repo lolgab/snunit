@@ -29,9 +29,9 @@ object TestUtils {
     }
   }
   def withDeployedExampleMultiplatform(projectName: String, crossSuffix: String = "")(f: => Unit) = {
-    val projectPrefix = s"integration.tests.$projectName"
-    runMillCommand(s"$projectPrefix.native$crossSuffix.deployTestApp")
-    val result = runMillCommand(s"$projectPrefix.jvm$crossSuffix.launcher").out.lines().head
+    val projectPrefix = s"integration.tests.$projectName$crossSuffix"
+    runMillCommand(s"$projectPrefix.native.deployTestApp")
+    val result = runMillCommand(s"$projectPrefix.jvm.launcher").out.lines().head
     val s""""ref:$_:$path"""" = result
     val process = os.proc(path).spawn()
     Thread.sleep(1000)
