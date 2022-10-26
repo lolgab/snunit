@@ -244,17 +244,14 @@ object integration extends ScalaModule {
         def ivyDeps = super.ivyDeps() ++ Agg(undertow)
       }
     }
-    object `cask-helloworld` extends Module {
-      object jvm extends Cross[CaskHelloWorldJvmModule](scalaVersions: _*)
-      class CaskHelloWorldJvmModule(val crossScalaVersion: String) extends Common.CrossJvm {
-        def millSourcePath = super.millSourcePath / os.up
+    object `cask-helloworld` extends Cross[CaskHelloWorld](scalaVersions: _*)
+    class CaskHelloWorld(val crossScalaVersion: String) extends CrossPlatform {
+      object jvm extends CrossPlatformCrossScalaModule with Common.CrossJvm {
         def ivyDeps = super.ivyDeps() ++ Agg(
           ivy"com.lihaoyi::cask:${Versions.cask}"
         )
       }
-      object native extends Cross[CaskHelloWorldNativeModule](scalaVersions: _*)
-      class CaskHelloWorldNativeModule(val crossScalaVersion: String) extends Common.Cross {
-        def millSourcePath = super.millSourcePath / os.up
+      object native extends CrossPlatformCrossScalaModule with Common.Cross {
         def moduleDeps = super.moduleDeps ++ Seq(`snunit-cask`(crossScalaVersion))
       }
     }
