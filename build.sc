@@ -246,10 +246,6 @@ object integration extends ScalaModule {
     class AsyncModule(val crossScalaVersion: String) extends Common.Cross {
       def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
     }
-    object `async-epollcat` extends Cross[AsyncEpollcatModule](scalaVersions: _*)
-    class AsyncEpollcatModule(val crossScalaVersion: String) extends Common.Cross {
-      def moduleDeps = Seq(`snunit-async-epollcat`(crossScalaVersion))
-    }
     object `async-multiple-handlers` extends Cross[AsyncMultipleHandlersModule](scalaVersions: _*)
     class AsyncMultipleHandlersModule(val crossScalaVersion: String) extends Common.Cross {
       def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))

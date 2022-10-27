@@ -6,7 +6,7 @@ import org.http4s._
 import org.http4s.dsl._
 import snunit.http4s._
 
-object Http4sHelloWorld extends EpollApp {
+object Http4sHelloWorld extends EpollApp.Simple {
   def helloWorldRoutes: HttpRoutes[IO] = {
     val dsl = new Http4sDsl[IO] {}
     import dsl._
@@ -15,12 +15,11 @@ object Http4sHelloWorld extends EpollApp {
     }
   }
 
-  def run(args: List[String]): IO[ExitCode] = {
+  def run: IO[Unit] = {
     SNUnitServerBuilder
       .default[IO]
       .withHttpApp(helloWorldRoutes.orNotFound)
       .build
       .useForever
-      .as(ExitCode.Success)
   }
 }
