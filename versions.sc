@@ -13,6 +13,7 @@ object Versions {
   val cask = "0.8.3"
   val http4s023 = "0.23.16"
   val http4s1 = "1.0.0-M37"
+  val catsEffect = "3.3.14"
   val mill = "0.10.8"
   val utest = "0.8.1"
   val osLib = "0.8.1"
@@ -21,4 +22,5 @@ object Versions {
   val castor = "0.2.1"
   val sjavatime = "1.1.9"
   val zio = "2.0.2"
+  val epollcat = "0.1.1"
 }

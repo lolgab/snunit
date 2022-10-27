@@ -5,7 +5,6 @@ import snunit.unsafe.CApiOps._
 
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.string.strerror
-import scala.scalanative.loop.Poll
 import scala.scalanative.posix.fcntl.F_SETFL
 import scala.scalanative.posix.fcntl.O_NONBLOCK
 import scala.scalanative.posix.fcntl.fcntl
@@ -41,11 +40,13 @@ object AsyncServerBuilder {
       }
       if (result == NXT_UNIT_OK) {
         try {
-          val poll = Poll(port.in_fd)
-          poll.startRead { _ =>
-            nxt_unit_process_port_msg(ctx, port)
-          }
-          ctx.data = poll.ptr
+          val runnable = EventPollingExecutorScheduler.monitor(
+            port.in_fd,
+            reads = true,
+            writes = false,
+            (_, _) => nxt_unit_process_port_msg(ctx, port)
+          )
+          ctx.data = RunnableUtils.toPtr(runnable)
           NXT_UNIT_OK
         } catch {
           case NonFatal(e @ _) =>
@@ -57,7 +58,6 @@ object AsyncServerBuilder {
   }
 
   private val remove_port: remove_port_t = (_: Ptr[nxt_unit_t], port: Ptr[nxt_unit_port_t]) => {
-    val poll = new Poll(port.data)
-    poll.stop()
+    RunnableUtils.fromPtr(port.data).run()
   }
 }
