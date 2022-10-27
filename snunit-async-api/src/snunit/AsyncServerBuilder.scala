@@ -40,12 +40,9 @@ object AsyncServerBuilder {
       }
       if (result == NXT_UNIT_OK) {
         try {
-          val runnable = EventPollingExecutorScheduler.monitor(
-            port.in_fd,
-            reads = true,
-            writes = false,
-            (_, _) => nxt_unit_process_port_msg(ctx, port)
-          )
+          val runnable = EventPollingExecutorScheduler.monitor(port.in_fd, reads = true, writes = false) { (_, _) =>
+            nxt_unit_process_port_msg(ctx, port)
+          }
           ctx.data = RunnableUtils.toPtr(runnable)
           NXT_UNIT_OK
         } catch {

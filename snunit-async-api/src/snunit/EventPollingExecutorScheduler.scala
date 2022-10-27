@@ -7,7 +7,7 @@ object EventPollingExecutorScheduler {
     def removeRoot(o: AnyRef): Unit = references.remove(o)
   }
 
-  def monitor(fd: Int, reads: Boolean, writes: Boolean, cb: EventNotificationCallback): Runnable = {
+  def monitor(fd: Int, reads: Boolean, writes: Boolean)(cb: EventNotificationCallback): Runnable = {
     val newCB: EventNotificationCallback = new EventNotificationCallback {
       def notifyEvents(readReady: Boolean, writeReady: Boolean): Unit = {
         GCRoots.removeRoot(unmonitorCallback)
@@ -32,9 +32,11 @@ object EventPollingExecutorScheduler {
 
   trait EventNotificationCallback {
     private var _unmonitorCallback: Runnable = null
+    private [EventPollingExecutorScheduler] def unmonitorCallback: Runnable = _unmonitorCallback
+    private [EventPollingExecutorScheduler] def unmonitorCallback_=(runnable: Runnable): Unit = {
+      _unmonitorCallback = runnable
+    }
 
     def notifyEvents(readReady: Boolean, writeReady: Boolean): Unit
-    def unmonitorCallback: Runnable = _unmonitorCallback
-    def unmonitorCallback_=(runnable: Runnable): Unit = _unmonitorCallback = runnable
   }
 }

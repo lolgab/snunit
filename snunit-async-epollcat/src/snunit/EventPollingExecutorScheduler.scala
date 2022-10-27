@@ -8,6 +8,6 @@ object EventPollingExecutorSchedulerImpl {
       writes: Boolean,
       cb: EventPollingExecutorScheduler.EventNotificationCallback
   ): Runnable = {
-    scheduler.monitor(fd = fd, reads = reads, writes = writes)(toEpollcat(cb))
+    epollcat.snunit.EventPollingExecutorScheduler.monitor(fd, reads, writes)(cb)
   }
 }

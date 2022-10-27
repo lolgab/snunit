@@ -4,13 +4,13 @@ import epollcat.unsafe.EpollRuntime
 import epollcat.unsafe.EventNotificationCallback
 
 object EventPollingExecutorScheduler {
-  val scheduler = EpollRuntime.global.scheduler.asInstanceOf[epollcat.unsafe.EventPollingExecutorScheduler]
+  private val scheduler = EpollRuntime.global.compute.asInstanceOf[epollcat.unsafe.EventPollingExecutorScheduler]
 
-  def toEpollcat(cb: snunit.EventPollingExecutorScheduler.EventNotificationCallback): EventNotificationCallback = {
-    new EventNotificationCallback {
-      protected[epollcat] def notifyEvents(readReady: Boolean, writeReady: Boolean): Unit = {
-        cb.notifyEvents(readReady = readReady, writeReady = writeReady)
-      }
+  def monitor(fd: Int, reads: Boolean, writes: Boolean)(
+      cb: snunit.EventPollingExecutorScheduler.EventNotificationCallback
+  ): Runnable = {
+    scheduler.monitor(fd, reads, writes) { (readReady: Boolean, writeReady: Boolean) =>
+      cb.notifyEvents(readReady = readReady, writeReady = writeReady)
     }
   }
 }
