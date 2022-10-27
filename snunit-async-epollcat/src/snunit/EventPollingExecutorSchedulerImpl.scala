@@ -1,7 +1,6 @@
 package snunit
 
 object EventPollingExecutorSchedulerImpl {
-  import epollcat.snunit.EventPollingExecutorScheduler._
   def monitor(
       fd: Int,
       reads: Boolean,
