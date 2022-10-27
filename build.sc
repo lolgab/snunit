@@ -107,14 +107,9 @@ class SNUnitModule(val crossScalaVersion: String) extends CrossPlatform {
   }
 }
 
-object `snunit-async-api` extends Cross[SNUnitAsyncApiModule](scalaVersions: _*)
-class SNUnitAsyncApiModule(val crossScalaVersion: String) extends Common.Cross with Publish {
-  def moduleDeps = Seq(snunit(crossScalaVersion).native)
-}
-
-object `snunit-async` extends Cross[SNUnitAsyncModule](scalaVersions: _*)
+object `snunit-async-loop` extends Cross[SNUnitAsyncModule](scalaVersions: _*)
 class SNUnitAsyncModule(val crossScalaVersion: String) extends Common.Cross with Publish {
-  def moduleDeps = Seq(`snunit-async-api`(crossScalaVersion))
+  def moduleDeps = Seq(`snunit`(crossScalaVersion).native)
 
   def ivyDeps =
     T {
@@ -126,7 +121,7 @@ class SNUnitAsyncModule(val crossScalaVersion: String) extends Common.Cross with
 
 object `snunit-async-epollcat` extends Cross[SNUnitAsyncEpollcatModule](scalaVersions: _*)
 class SNUnitAsyncEpollcatModule(val crossScalaVersion: String) extends Common.Cross with Publish {
-  def moduleDeps = Seq(`snunit-async-api`(crossScalaVersion))
+  def moduleDeps = Seq(`snunit`(crossScalaVersion).native)
 
   def ivyDeps =
     T {
@@ -137,7 +132,7 @@ class SNUnitAsyncEpollcatModule(val crossScalaVersion: String) extends Common.Cr
 }
 
 object `snunit-autowire` extends Common.Scala2Only with Publish {
-  def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
+  def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
@@ -165,6 +160,7 @@ class SNUnitTapirModule(val crossScalaVersion: String) extends CrossPlatform {
 
 object `snunit-http4s` extends Cross[SNUnitHttp4s](http4sVersions: _*)
 class SNUnitHttp4s(val crossScalaVersion: String, http4sVersion: String) extends CrossPlatform {
+  def moduleDeps = Seq(`snunit`(crossScalaVersion))
   object native extends CrossPlatformCrossScalaModule with Common.Cross with Publish {
     val http4sBinaryVersion = http4sVersion match {
       case s"0.23.$_" => "0.23"
@@ -172,7 +168,6 @@ class SNUnitHttp4s(val crossScalaVersion: String, http4sVersion: String) extends
     }
     def artifactName = s"snunit-http4s$http4sBinaryVersion"
     def millSourcePath = super.millSourcePath / os.up
-    def moduleDeps = Seq(`snunit-async-api`(crossScalaVersion))
     def ivyDeps = super.ivyDeps() ++ Agg(ivy"org.http4s::http4s-server::$http4sVersion")
     def sources = T.sources {
       super.sources() ++ Agg(PathRef(millSourcePath / s"http4s-$http4sBinaryVersion" / "src"))
@@ -183,7 +178,7 @@ class SNUnitHttp4s(val crossScalaVersion: String, http4sVersion: String) extends
 object `snunit-http4s-loop` extends Cross[SNUnitHttp4sLoop](scalaVersions: _*)
 class SNUnitHttp4sLoop(val crossScalaVersion: String) extends CrossPlatform {
   object native extends CrossPlatformCrossScalaModule with Common.Cross with Publish {
-    def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
+    def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
     def ivyDeps = super.ivyDeps() ++ Agg(ivy"org.typelevel::cats-effect::${Versions.catsEffect}")
   }
 }
@@ -249,11 +244,15 @@ object integration extends ScalaModule {
     }
     object async extends Cross[AsyncModule](scalaVersions: _*)
     class AsyncModule(val crossScalaVersion: String) extends Common.Cross {
-      def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
+      def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
+    }
+    object `async-epollcat` extends Cross[AsyncEpollcatModule](scalaVersions: _*)
+    class AsyncEpollcatModule(val crossScalaVersion: String) extends Common.Cross {
+      def moduleDeps = Seq(`snunit-async-epollcat`(crossScalaVersion))
     }
     object `async-multiple-handlers` extends Cross[AsyncMultipleHandlersModule](scalaVersions: _*)
     class AsyncMultipleHandlersModule(val crossScalaVersion: String) extends Common.Cross {
-      def moduleDeps = Seq(`snunit-async`(crossScalaVersion))
+      def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
     }
     object `handlers-composition` extends Cross[HandlersCompositionModule](scalaVersions: _*)
     class HandlersCompositionModule(val crossScalaVersion: String) extends Common.Cross {
@@ -311,7 +310,7 @@ object integration extends ScalaModule {
     object `tapir-helloworld-future` extends Cross[TapirHelloWorldFutureNative](scalaVersions: _*)
     class TapirHelloWorldFutureNative(val crossScalaVersion: String) extends Common.Cross {
       def moduleDeps = Seq(
-        `snunit-async`(crossScalaVersion),
+        `snunit-async-loop`(crossScalaVersion),
         `snunit-tapir`(crossScalaVersion).native
       )
     }

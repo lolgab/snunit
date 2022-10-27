@@ -1,6 +1,6 @@
 package snunit
 
-object EventPollingExecutorScheduler {
+private [snunit] object EventPollingExecutorScheduler {
   private object GCRoots {
     private val references = new java.util.IdentityHashMap[AnyRef, Unit]
     def addRoot(o: AnyRef): Unit = references.put(o, ())
