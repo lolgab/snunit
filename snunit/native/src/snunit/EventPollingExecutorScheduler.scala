@@ -1,6 +1,7 @@
 package snunit
 
-private [snunit] object EventPollingExecutorScheduler {
+// TODO: Move in unsafe package
+object EventPollingExecutorScheduler {
   private object GCRoots {
     private val references = new java.util.IdentityHashMap[AnyRef, Unit]
     def addRoot(o: AnyRef): Unit = references.put(o, ())
