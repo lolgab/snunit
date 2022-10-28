@@ -8,7 +8,10 @@ import scala.scalanative.libc.string.strerror
 import scala.scalanative.posix.fcntl.F_SETFL
 import scala.scalanative.posix.fcntl.O_NONBLOCK
 import scala.scalanative.posix.fcntl.fcntl
-import scala.scalanative.runtime.{ByteArray, fromRawPtr, toRawPtr, Intrinsics}
+import scala.scalanative.runtime.ByteArray
+import scala.scalanative.runtime.Intrinsics
+import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.runtime.toRawPtr
 import scala.scalanative.unsafe._
 import scala.util.control.NonFatal
 

@@ -77,7 +77,15 @@ object Common {
   trait CrossJvm extends Shared with CrossScalaModule
 }
 
-trait Publish extends PublishModule with Mima {
+trait Publish extends PublishJava with Mima {
+  def mimaPreviousVersions = Seq("0.1.0")
+  def mimaBinaryIssueFilters = Seq(
+    // snunit.Request is not meant for extension. The only
+    // valid implementations are `RequestImpl`s in this repo.
+    ProblemFilter.exclude[ReversedMissingMethodProblem]("snunit.Request.*")
+  )
+}
+trait PublishJava extends PublishModule {
   def pomSettings =
     PomSettings(
       description = "Scala Native server using NGINX Unit",
@@ -90,18 +98,15 @@ trait Publish extends PublishModule with Mima {
       )
     )
   def publishVersion = VcsVersion.vcsState().format()
-  def mimaPreviousVersions = Seq("0.1.0")
-  def mimaBinaryIssueFilters = Seq(
-    // snunit.Request is not meant for extension. The only
-    // valid implementations are `RequestImpl`s in this repo.
-    ProblemFilter.exclude[ReversedMissingMethodProblem]("snunit.Request.*")
-  )
 }
+object `snunit-internal-api` extends JavaModule with PublishJava
 object snunit extends Cross[SNUnitModule](scalaVersions: _*)
 class SNUnitModule(val crossScalaVersion: String) extends CrossPlatform {
   trait Shared extends CrossPlatformCrossScalaModule with Publish
 
-  object native extends Shared with Common.Cross
+  object native extends Shared with Common.Cross {
+    def compileModuleDeps = Seq(`snunit-internal-api`)
+  }
   object jvm extends Shared with Common.CrossJvm {
     def ivyDeps = super.ivyDeps() ++ Agg(undertow)
   }
@@ -281,8 +286,8 @@ object integration extends ScalaModule {
     class Http4sHelloWorldModule(val crossScalaVersion: String, http4sVersion: String) extends Common.Cross {
       def millSourcePath = super.millSourcePath / os.up
       def moduleDeps = Seq(
-        `snunit-async-epollcat`(crossScalaVersion),
-        `snunit-http4s`(crossScalaVersion, http4sVersion).native
+        `snunit-http4s`(crossScalaVersion, http4sVersion).native,
+        `snunit-async-epollcat`(crossScalaVersion)
       )
       def ivyDeps = super.ivyDeps() ++ Agg(
         ivy"org.http4s::http4s-dsl::$http4sVersion"
