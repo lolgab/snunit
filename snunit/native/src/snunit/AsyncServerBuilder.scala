@@ -87,7 +87,7 @@ object AsyncServerBuilder {
   
     def stop() = {
       stopped = true
-      stopMonitorCallback.run()
+      if (stopMonitorCallback != null) { stopMonitorCallback.run() }
       if (stopNextProcessCallback != null) { stopNextProcessCallback.run() }
     }
   }
