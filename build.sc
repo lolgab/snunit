@@ -77,15 +77,7 @@ object Common {
   trait CrossJvm extends Shared with CrossScalaModule
 }
 
-trait Publish extends PublishJava with Mima {
-  def mimaPreviousVersions = Seq("0.1.0")
-  def mimaBinaryIssueFilters = Seq(
-    // snunit.Request is not meant for extension. The only
-    // valid implementations are `RequestImpl`s in this repo.
-    ProblemFilter.exclude[ReversedMissingMethodProblem]("snunit.Request.*")
-  )
-}
-trait PublishJava extends PublishModule {
+trait Publish extends PublishModule with Mima {
   def pomSettings =
     PomSettings(
       description = "Scala Native server using NGINX Unit",
@@ -98,8 +90,14 @@ trait PublishJava extends PublishModule {
       )
     )
   def publishVersion = VcsVersion.vcsState().format()
+  def mimaPreviousVersions = Seq("0.2.0")
+  def mimaBinaryIssueFilters = Seq(
+    // snunit.Request is not meant for extension. The only
+    // valid implementations are `RequestImpl`s in this repo.
+    ProblemFilter.exclude[ReversedMissingMethodProblem]("snunit.Request.*")
+  )
 }
-object `snunit-internal-api` extends JavaModule with PublishJava
+object `snunit-internal-api` extends JavaModule
 object snunit extends Cross[SNUnitModule](scalaVersions: _*)
 class SNUnitModule(val crossScalaVersion: String) extends CrossPlatform {
   trait Shared extends CrossPlatformCrossScalaModule with Publish
