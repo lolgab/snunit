@@ -1,7 +1,7 @@
 package snunit
 
-import scala.scalanative.loop._
 import scala.concurrent.duration._
+import scala.scalanative.loop._
 
 private[snunit] object EventPollingExecutorScheduler {
   def monitorReads(fd: Int, cb: Runnable): Runnable = {

@@ -1,7 +1,7 @@
 package snunit.tests
 
-import epollcat.EpollApp
 import cats.effect._
+import epollcat.EpollApp
 import org.http4s._
 import org.http4s.dsl._
 import snunit.http4s._
