@@ -21,4 +21,5 @@ object Versions {
   val castor = "0.2.1"
   val sjavatime = "1.1.9"
   val zio = "2.0.2"
+  val epollcat = "0.1.1"
 }

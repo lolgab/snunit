@@ -5,11 +5,13 @@ import snunit.unsafe.CApiOps._
 
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.string.strerror
-import scala.scalanative.loop.Poll
 import scala.scalanative.posix.fcntl.F_SETFL
 import scala.scalanative.posix.fcntl.O_NONBLOCK
 import scala.scalanative.posix.fcntl.fcntl
 import scala.scalanative.runtime.ByteArray
+import scala.scalanative.runtime.Intrinsics
+import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.runtime.toRawPtr
 import scala.scalanative.unsafe._
 import scala.util.control.NonFatal
 
@@ -41,11 +43,11 @@ object AsyncServerBuilder {
       }
       if (result == NXT_UNIT_OK) {
         try {
-          val poll = Poll(port.in_fd)
-          poll.startRead { _ =>
-            nxt_unit_process_port_msg(ctx, port)
-          }
-          ctx.data = poll.ptr
+          val portData = new PortData(ctx, port)
+          val stopMonitorCallback =
+            EventPollingExecutorScheduler.monitorReads(port.in_fd, () => portData.process_port_msg())
+          portData.stopMonitorCallback = stopMonitorCallback
+          ctx.data = portData.toPtr()
           NXT_UNIT_OK
         } catch {
           case NonFatal(e @ _) =>
@@ -57,7 +59,48 @@ object AsyncServerBuilder {
   }
 
   private val remove_port: remove_port_t = (_: Ptr[nxt_unit_t], port: Ptr[nxt_unit_port_t]) => {
-    val poll = new Poll(port.data)
-    poll.stop()
+    PortData.fromPtr(port.data).stop()
+  }
+  private class PortData(
+      val ctx: Ptr[nxt_unit_ctx_t],
+      val port: Ptr[nxt_unit_port_t]
+  ) {
+    var stopped: Boolean = false
+    var scheduled: Boolean = false
+    var stopMonitorCallback: Runnable = null
+    var stopNextProcessCallback: Runnable = null
+
+    def toPtr(): Ptr[Byte] = {
+      PortData.references.put(this, ())
+      fromRawPtr(Intrinsics.castObjectToRawPtr(this))
+    }
+
+    def process_port_msg(): Unit = {
+      val rc = nxt_unit_process_port_msg(ctx, port)
+      if (rc == NXT_UNIT_OK && !scheduled && !stopped) {
+        stopNextProcessCallback = EventPollingExecutorScheduler.execute { () =>
+          scheduled = false
+          if (!stopped) {
+            process_port_msg()
+          }
+        }
+        scheduled = true
+      }
+    }
+
+    def stop() = {
+      stopped = true
+      if (stopMonitorCallback != null) { stopMonitorCallback.run() }
+      if (stopNextProcessCallback != null) { stopNextProcessCallback.run() }
+    }
+  }
+  private object PortData {
+    private val references = new java.util.IdentityHashMap[PortData, Unit]
+
+    def fromPtr(ptr: Ptr[Byte]): PortData = {
+      val result = Intrinsics.castRawPtrToObject(toRawPtr(ptr)).asInstanceOf[PortData]
+      references.remove(result)
+      result
+    }
   }
 }
