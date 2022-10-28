@@ -1,6 +1,8 @@
 package snunit;
 
-class EventPollingExecutorScheduler {
+final class EventPollingExecutorScheduler {
+  private EventPollingExecutorScheduler() {}
+
   public static Runnable monitorReads(int fd, Runnable cb) {
     throw new AssertionError("stub");
   }

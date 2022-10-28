@@ -175,14 +175,6 @@ class SNUnitHttp4s(val crossScalaVersion: String, http4sVersion: String) extends
   }
 }
 
-object `snunit-http4s-loop` extends Cross[SNUnitHttp4sLoop](scalaVersions: _*)
-class SNUnitHttp4sLoop(val crossScalaVersion: String) extends CrossPlatform {
-  object native extends CrossPlatformCrossScalaModule with Common.Cross with Publish {
-    def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
-    def ivyDeps = super.ivyDeps() ++ Agg(ivy"org.typelevel::cats-effect::${Versions.catsEffect}")
-  }
-}
-
 object `snunit-tapir-zio` extends Cross[SNUnitTapirZio](Versions.scala213)
 class SNUnitTapirZio(val crossScalaVersion: String) extends CrossPlatform {
   def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion))
@@ -285,23 +277,12 @@ object integration extends ScalaModule {
       object jvm extends CrossPlatformCrossScalaModule with Common.CrossJvm
       object native extends CrossPlatformCrossScalaModule with Common.Cross
     }
-    object `http4s-loop-helloworld` extends Cross[Http4sLoopHelloWorldModule](http4sVersions: _*)
-    class Http4sLoopHelloWorldModule(val crossScalaVersion: String, http4sVersion: String) extends Common.Cross {
+    object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](http4sVersions: _*)
+    class Http4sHelloWorldModule(val crossScalaVersion: String, http4sVersion: String) extends Common.Cross {
       def millSourcePath = super.millSourcePath / os.up
       def moduleDeps = Seq(
-        `snunit-http4s`(crossScalaVersion, http4sVersion).native,
-        `snunit-http4s-loop`(crossScalaVersion).native
-      )
-      def ivyDeps = super.ivyDeps() ++ Agg(
-        ivy"org.http4s::http4s-dsl::$http4sVersion"
-      )
-    }
-    object `http4s-epollcat-helloworld` extends Cross[Http4sHelloWorldEpollcatModule](http4sVersions: _*)
-    class Http4sHelloWorldEpollcatModule(val crossScalaVersion: String, http4sVersion: String) extends Common.Cross {
-      def millSourcePath = super.millSourcePath / os.up
-      def moduleDeps = Seq(
-        `snunit-http4s`(crossScalaVersion, http4sVersion).native,
-        `snunit-async-epollcat`(crossScalaVersion)
+        `snunit-async-epollcat`(crossScalaVersion),
+        `snunit-http4s`(crossScalaVersion, http4sVersion).native
       )
       def ivyDeps = super.ivyDeps() ++ Agg(
         ivy"org.http4s::http4s-dsl::$http4sVersion"
@@ -348,7 +329,6 @@ object `snunit-mill-plugin` extends ScalaModule with Publish {
   def compileIvyDeps = super.compileIvyDeps() ++ Agg(
     ivy"com.lihaoyi::mill-scalanativelib:${Versions.mill}"
   )
-  // TODO: Remove after release
   def mimaPreviousArtifacts = Agg.empty[Dep]
 }
 object `snunit-mill-plugin-itest` extends MillIntegrationTestModule {

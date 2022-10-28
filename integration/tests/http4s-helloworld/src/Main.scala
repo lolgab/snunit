@@ -11,7 +11,7 @@ object Http4sHelloWorld extends EpollApp.Simple {
     val dsl = new Http4sDsl[IO] {}
     import dsl._
     HttpRoutes.of[IO] { case GET -> Root =>
-      Ok("Hello Http4s Epollcat!")
+      Ok("Hello Http4s!")
     }
   }
 

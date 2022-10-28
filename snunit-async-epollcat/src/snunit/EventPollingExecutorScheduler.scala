@@ -7,11 +7,10 @@ private[snunit] object EventPollingExecutorScheduler {
       fd: Int,
       cb: Runnable
   ): Runnable = {
-    epollcat.snunit.EventPollingExecutorScheduler.monitorReads(fd, cb)
+    epollcat.snunit.InternalEventPollingExecutorSchedulerImpl.monitorReads(fd, cb)
   }
 
-  private val zero = FiniteDuration(0, SECONDS)
   def execute(runnable: Runnable): Runnable = {
-    epollcat.unsafe.EpollRuntime.global.scheduler.sleep(zero, runnable)
+    epollcat.unsafe.EpollRuntime.global.scheduler.sleep(FiniteDuration(0, SECONDS), runnable)
   }
 }
