@@ -140,17 +140,10 @@ object MainTest extends TestSuite {
         tapirHelloWorldTest(baseUrl)
       }
     }
-    test("http4s-loop") {
-      withDeployedExampleHttp4s("http4s-loop-helloworld") {
+    test("http4s") {
+      withDeployedExampleHttp4s("http4s-helloworld") {
         val result = requests.get(baseUrl).text()
-        val expectedResult = "Hello Http4s Loop!"
-        assert(result == expectedResult)
-      }
-    }
-    test("http4s-epollcat") {
-      withDeployedExampleHttp4s("http4s-epollcat-helloworld") {
-        val result = requests.get(baseUrl).text()
-        val expectedResult = "Hello Http4s Epollcat!"
+        val expectedResult = "Hello Http4s!"
         assert(result == expectedResult)
       }
     }
