@@ -58,47 +58,46 @@ object AsyncServerBuilder {
   private val remove_port: remove_port_t = (_: Ptr[nxt_unit_t], port: Ptr[nxt_unit_port_t]) => {
     PortData.fromPtr(port.data).stop()
   }
-}
-
-class PortData(
-    val ctx: Ptr[nxt_unit_ctx_t],
-    val port: Ptr[nxt_unit_port_t]
-) {
-  var stopped: Boolean = false
-  var scheduled: Boolean = false
-  var stopMonitorCallback: Runnable = null
-  var stopNextProcessCallback: Runnable = null
-
-  def toPtr(): Ptr[Byte] = {
-    PortData.references.put(this, ())
-    fromRawPtr(Intrinsics.castObjectToRawPtr(this))
-  }
-
-  def process_port_msg(): Unit = {
-    val rc = nxt_unit_process_port_msg(ctx, port)
-    if (rc == NXT_UNIT_OK && !scheduled && !stopped) {
-      stopNextProcessCallback = EventPollingExecutorScheduler.execute { () =>
-        scheduled = false
-        if (!stopped) {
-          process_port_msg()
+  private class PortData(
+      val ctx: Ptr[nxt_unit_ctx_t],
+      val port: Ptr[nxt_unit_port_t]
+  ) {
+    var stopped: Boolean = false
+    var scheduled: Boolean = false
+    var stopMonitorCallback: Runnable = null
+    var stopNextProcessCallback: Runnable = null
+  
+    def toPtr(): Ptr[Byte] = {
+      PortData.references.put(this, ())
+      fromRawPtr(Intrinsics.castObjectToRawPtr(this))
+    }
+  
+    def process_port_msg(): Unit = {
+      val rc = nxt_unit_process_port_msg(ctx, port)
+      if (rc == NXT_UNIT_OK && !scheduled && !stopped) {
+        stopNextProcessCallback = EventPollingExecutorScheduler.execute { () =>
+          scheduled = false
+          if (!stopped) {
+            process_port_msg()
+          }
         }
+        scheduled = true
       }
-      scheduled = true
+    }
+  
+    def stop() = {
+      stopped = true
+      stopMonitorCallback.run()
+      if (stopNextProcessCallback != null) { stopNextProcessCallback.run() }
     }
   }
-
-  def stop() = {
-    stopped = true
-    stopMonitorCallback.run()
-    stopNextProcessCallback.run()
-  }
-}
-object PortData {
-  private val references = new java.util.IdentityHashMap[PortData, Unit]
-
-  def fromPtr(ptr: Ptr[Byte]): PortData = {
-    val result = Intrinsics.castRawPtrToObject(toRawPtr(ptr)).asInstanceOf[PortData]
-    references.remove(result)
-    result
+  private object PortData {
+    private val references = new java.util.IdentityHashMap[PortData, Unit]
+  
+    def fromPtr(ptr: Ptr[Byte]): PortData = {
+      val result = Intrinsics.castRawPtrToObject(toRawPtr(ptr)).asInstanceOf[PortData]
+      references.remove(result)
+      result
+    }
   }
 }
