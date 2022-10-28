@@ -2,7 +2,7 @@ package snunit
 
 import scala.concurrent.duration._
 
-object EventPollingExecutorScheduler {
+private [snunit] object EventPollingExecutorScheduler {
   def monitorReads(
       fd: Int,
       cb: Runnable
