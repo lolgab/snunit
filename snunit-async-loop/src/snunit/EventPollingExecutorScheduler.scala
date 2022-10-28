@@ -3,12 +3,10 @@ package snunit
 import scala.scalanative.loop._
 import scala.concurrent.duration._
 
-private [snunit] object EventPollingExecutorScheduler {
+private[snunit] object EventPollingExecutorScheduler {
   def monitorReads(fd: Int, cb: Runnable): Runnable = {
     val poll = Poll(fd)
-    poll.startRead(_ =>
-      cb.run()
-    )
+    poll.startRead(_ => cb.run())
     () => poll.stop()
   }
 

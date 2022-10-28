@@ -66,12 +66,12 @@ object AsyncServerBuilder {
     var scheduled: Boolean = false
     var stopMonitorCallback: Runnable = null
     var stopNextProcessCallback: Runnable = null
-  
+
     def toPtr(): Ptr[Byte] = {
       PortData.references.put(this, ())
       fromRawPtr(Intrinsics.castObjectToRawPtr(this))
     }
-  
+
     def process_port_msg(): Unit = {
       val rc = nxt_unit_process_port_msg(ctx, port)
       if (rc == NXT_UNIT_OK && !scheduled && !stopped) {
@@ -84,7 +84,7 @@ object AsyncServerBuilder {
         scheduled = true
       }
     }
-  
+
     def stop() = {
       stopped = true
       if (stopMonitorCallback != null) { stopMonitorCallback.run() }
@@ -93,7 +93,7 @@ object AsyncServerBuilder {
   }
   private object PortData {
     private val references = new java.util.IdentityHashMap[PortData, Unit]
-  
+
     def fromPtr(ptr: Ptr[Byte]): PortData = {
       val result = Intrinsics.castRawPtrToObject(toRawPtr(ptr)).asInstanceOf[PortData]
       references.remove(result)
