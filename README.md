@@ -97,11 +97,14 @@ anything else while listening.
 Moreover, all the request handlers need to respond directly and can't be implemented
 using `Future`s or any other asyncronous mechanism since no `Future` will run, being
 the process stuck on the `listen()` Unit event loop.
-With `AsyncServerBuilder` the server is automatically scheduled to run on the
+With `AsyncServerBuilder` the server is automatically scheduled to run either on the
 [scala-native-loop](https://github.com/scala-native/scala-native-loop) event loop
-(based on the libuv library). This allows you to complete requests asyncronously
-using whatever mechanism you prefer. A process can accept multiple requests concurrently,
-allowing great parallelism.
+(based on the libuv library) or [epollcat](https://github.com/armanbilge/epollcat) event
+loop, based on epoll/kqueue.
+This allows you to complete requests asyncronously using whatever mechanism you prefer.
+A process can accept multiple requests concurrently, allowing great parallelism.
+Add either `snunit-async-loop` or `snunit-async-epollcat` to decide what implementation
+you want to use.
 
 ## Tapir support
 
