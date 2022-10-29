@@ -44,9 +44,8 @@ object AsyncServerBuilder {
       if (result == NXT_UNIT_OK) {
         try {
           val portData = new PortData(ctx, port)
-          val stopMonitorCallback =
-            EventPollingExecutorScheduler.monitorReads(port.in_fd, () => portData.process_port_msg())
-          portData.stopMonitorCallback = stopMonitorCallback
+          portData.stopMonitorCallback =
+            EventPollingExecutorScheduler.monitorReads(port.in_fd, portData.process_port_msg)
           port.data = portData.toPtr()
           NXT_UNIT_OK
         } catch {
@@ -71,32 +70,45 @@ object AsyncServerBuilder {
     var stopped: Boolean = false
     var scheduled: Boolean = false
     var stopMonitorCallback: Runnable = null
-    var stopNextProcessCallback: Runnable = null
 
     def toPtr(): Ptr[Byte] = {
       PortData.references.put(this, ())
       fromRawPtr(Intrinsics.castObjectToRawPtr(this))
     }
 
-    def process_port_msg(): Unit = {
-      val rc = nxt_unit_process_port_msg(ctx, port)
-      if (rc == NXT_UNIT_OK && !scheduled && !stopped) {
-        stopNextProcessCallback = EventPollingExecutorScheduler.execute { () =>
-          scheduled = false
-          if (!stopped) {
-            process_port_msg()
-          }
+    val timer_callback: Runnable = new Runnable {
+      def run(): Unit = {
+        scheduled = false
+        if (!stopped) {
+          process_port_msg.run()
         }
-        scheduled = true
+      }
+    }
+
+    val process_port_msg: Runnable = new Runnable {
+      def run(): Unit = {
+        val rc = nxt_unit_process_port_msg(ctx, port)
+        if (rc == NXT_UNIT_OK && !scheduled && !stopped) {
+          scheduled = true
+          // The NGINX Unit implementation uses a cancelable timer
+          // so it can cancel this callback in stop()
+          // We don't do that here, also because doing that would
+          // allocate a new Lambda for every process_port_msg
+          // and it's hard to cancel since it happens immediately
+          EventPollingExecutorScheduler.execute(timer_callback)
+        }
       }
     }
 
     def stop(): Unit = {
-      stopped = true
+      // The NGINX Unit implementation sets `stopped = true` here
+      // https://github.com/nginx/unit/blob/bba97134e983541e94cf73e93900729e3a3e61fc/src/nodejs/unit-http/unit.cpp#L90
+      // But doing so breaks http4s server which doesn't restart properly
+      // stopped = true
       stopMonitorCallback.run()
-      if (stopNextProcessCallback != null) { stopNextProcessCallback.run() }
     }
   }
+
   private object PortData {
     private val references = new java.util.IdentityHashMap[PortData, Unit]
 

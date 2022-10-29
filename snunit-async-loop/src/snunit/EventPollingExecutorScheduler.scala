@@ -10,11 +10,7 @@ private[snunit] object EventPollingExecutorScheduler {
     () => poll.stop()
   }
 
-  private val zero = FiniteDuration(0, SECONDS)
-
-  def execute(runnable: Runnable): Runnable = {
-    val timer = Timer.timeout(zero)(() => runnable.run())
-
-    () => timer.clear()
+  def execute(runnable: Runnable): Unit = {
+    scala.concurrent.ExecutionContext.global.execute(runnable)
   }
 }
