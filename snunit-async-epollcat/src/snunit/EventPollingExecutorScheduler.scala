@@ -1,7 +1,5 @@
 package snunit
 
-import scala.concurrent.duration._
-
 private[snunit] object EventPollingExecutorScheduler {
   def monitorReads(
       fd: Int,
@@ -11,6 +9,8 @@ private[snunit] object EventPollingExecutorScheduler {
   }
 
   def execute(runnable: Runnable): Runnable = {
-    epollcat.unsafe.EpollRuntime.global.scheduler.sleep(FiniteDuration(0, SECONDS), runnable)
+    implicit val runtime = epollcat.unsafe.EpollRuntime.global
+    val callback = cats.effect.IO(runnable.run()).unsafeRunCancelable()
+    () => callback.apply()
   }
 }
