@@ -8,9 +8,7 @@ private[snunit] object EventPollingExecutorScheduler {
     epollcat.snunit.InternalEventPollingExecutorSchedulerImpl.monitorReads(fd, cb)
   }
 
-  def execute(runnable: Runnable): Runnable = {
-    implicit val runtime = epollcat.unsafe.EpollRuntime.global
-    val callback = cats.effect.IO(runnable.run()).unsafeRunCancelable()
-    () => callback.apply()
+  def execute(runnable: Runnable): Unit = {
+    epollcat.unsafe.EpollRuntime.global.compute.execute(runnable)
   }
 }

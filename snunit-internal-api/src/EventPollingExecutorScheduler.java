@@ -6,7 +6,7 @@ final class EventPollingExecutorScheduler {
   public static Runnable monitorReads(int fd, Runnable cb) {
     throw new AssertionError("stub");
   }
-  public static Runnable execute(Runnable runnable) {
+  public static void execute(Runnable runnable) {
     throw new AssertionError("stub");
   }
 }
