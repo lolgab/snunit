@@ -47,7 +47,7 @@ object AsyncServerBuilder {
           val stopMonitorCallback =
             EventPollingExecutorScheduler.monitorReads(port.in_fd, () => portData.process_port_msg())
           portData.stopMonitorCallback = stopMonitorCallback
-          ctx.data = portData.toPtr()
+          port.data = portData.toPtr()
           NXT_UNIT_OK
         } catch {
           case NonFatal(e @ _) =>
@@ -58,9 +58,12 @@ object AsyncServerBuilder {
     } else NXT_UNIT_OK
   }
 
-  private val remove_port: remove_port_t = (_: Ptr[nxt_unit_t], port: Ptr[nxt_unit_port_t]) => {
-    PortData.fromPtr(port.data).stop()
-  }
+  private val remove_port: remove_port_t = (_: Ptr[nxt_unit_t], ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]) =>
+    {
+      if (port.data != null && ctx != null) {
+        PortData.fromPtr(port.data).stop()
+      }
+    }
   private class PortData(
       val ctx: Ptr[nxt_unit_ctx_t],
       val port: Ptr[nxt_unit_port_t]
@@ -88,9 +91,9 @@ object AsyncServerBuilder {
       }
     }
 
-    def stop() = {
+    def stop(): Unit = {
       stopped = true
-      if (stopMonitorCallback != null) { stopMonitorCallback.run() }
+      stopMonitorCallback.run()
       if (stopNextProcessCallback != null) { stopNextProcessCallback.run() }
     }
   }

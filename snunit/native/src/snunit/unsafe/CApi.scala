@@ -79,7 +79,7 @@ object CApi {
   type data_handler_t = CFuncPtr1[Ptr[nxt_unit_request_info_t], Unit]
   type websocket_handler_t = CFuncPtr1[Ptr[nxt_unit_websocket_frame_t], Unit]
   type add_port_t = CFuncPtr2[Ptr[nxt_unit_ctx_t], Ptr[nxt_unit_port_t], CInt]
-  type remove_port_t = CFuncPtr2[Ptr[nxt_unit_t], Ptr[nxt_unit_port_t], Unit]
+  type remove_port_t = CFuncPtr3[Ptr[nxt_unit_t], Ptr[nxt_unit_ctx_t], Ptr[nxt_unit_port_t], Unit]
   type quit_t = CFuncPtr1[Ptr[nxt_unit_ctx_t], Unit]
 
   // TODO Implement properly
