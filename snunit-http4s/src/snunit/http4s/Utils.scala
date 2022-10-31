@@ -12,15 +12,15 @@ private[http4s] object Utils {
       statusCode: Int,
       headers: Seq[(String, String)]
   ) = {
-    req.startSend(statusCode, headers)
-    body.chunks
-      .map {
-        case fs2.Chunk.ArraySlice(array, offset, length) =>
-          req.sendBatch(array, offset, length)
-        case chunk =>
-          req.sendBatch(chunk.toArray)
-      }
-      .compile
-      .drain >> Async[F].delay(req.sendDone())
+    Async[F].delay(req.startSend(statusCode, headers)) *>
+      body.chunks
+        .foreach {
+          case fs2.Chunk.ArraySlice(array, offset, length) =>
+            Async[F].delay(req.sendBatch(array, offset, length))
+          case chunk =>
+            Async[F].delay(req.sendBatch(chunk.toArray))
+        }
+        .compile
+        .drain *> Async[F].delay(req.sendDone())
   }
 }

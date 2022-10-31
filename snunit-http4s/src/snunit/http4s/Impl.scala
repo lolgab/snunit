@@ -3,12 +3,15 @@ package snunit.http4s
 import cats.effect.Async
 import cats.effect.Resource
 import cats.effect.std.Dispatcher
+import cats.effect.syntax.all._
 import cats.syntax.all._
 import org.http4s
 import org.http4s.HttpApp
 import org.typelevel.ci.CIString
 import org.typelevel.vault.Vault
 import snunit.AsyncServer
+
+import java.util.concurrent.CancellationException
 
 private[http4s] object Impl {
   @inline
@@ -53,6 +56,8 @@ private[http4s] object Impl {
           def handleRequest(req: snunit.Request): Unit = {
             val run = httpApp
               .run(toHttp4sRequest[F](req))
+              .start
+              .flatMap(_.joinWith(Async[F].raiseError(new CancellationException)))
               .handleErrorWith(errorHandler)
               .handleError(_ =>
                 http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
