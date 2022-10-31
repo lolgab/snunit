@@ -90,11 +90,12 @@ trait Publish extends PublishModule with Mima {
       )
     )
   def publishVersion = VcsVersion.vcsState().format()
-  def mimaPreviousVersions = Seq("0.2.0")
+  def mimaPreviousVersions = Seq("0.2.1")
   def mimaBinaryIssueFilters = Seq(
     // snunit.Request is not meant for extension. The only
     // valid implementations are `RequestImpl`s in this repo.
-    ProblemFilter.exclude[ReversedMissingMethodProblem]("snunit.Request.*")
+    ProblemFilter.exclude[ReversedMissingMethodProblem]("snunit.Request.*"),
+    ProblemFilter.exclude[Problem]("snunit.unsafe.*")
   )
 }
 object `snunit-internal-api` extends JavaModule
