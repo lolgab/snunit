@@ -10,6 +10,7 @@ import org.http4s.HttpApp
 import org.typelevel.ci.CIString
 import org.typelevel.vault.Vault
 import snunit.AsyncServer
+
 import java.util.concurrent.CancellationException
 
 private[http4s] object Impl {
