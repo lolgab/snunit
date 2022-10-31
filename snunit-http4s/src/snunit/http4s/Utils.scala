@@ -12,7 +12,7 @@ private[http4s] object Utils {
       statusCode: Int,
       headers: Seq[(String, String)]
   ) = {
-    Async[F].delay(req.startSend(statusCode, headers)) >>
+    Async[F].delay(req.startSend(statusCode, headers)) *>
       body.chunks
         .foreach {
           case fs2.Chunk.ArraySlice(array, offset, length) =>
@@ -21,6 +21,6 @@ private[http4s] object Utils {
             Async[F].delay(req.sendBatch(chunk.toArray))
         }
         .compile
-        .drain >> Async[F].delay(req.sendDone())
+        .drain *> Async[F].delay(req.sendDone())
   }
 }
