@@ -1,18 +1,26 @@
 package snunit.plugin
 
 import scala.sys.process._
-import java.io.IOException
+import java.io._
 import scala.util.control.NonFatal
 
-private[plugin] class SNUnitPluginShared(logger: Logger, snunitCurlCommand: Seq[String]) {
+private[plugin] class SNUnitPluginShared(buildTool: BuildTool, logger: Logger, snunitCurlCommand: Seq[String]) {
+  private def unitControlSocket(): File = {
+    val stringPath = Seq("unitd", "--help").!!.linesIterator
+      .find(_.contains("unix:"))
+      .get
+      .replaceAll(".+unix:", "")
+      .stripSuffix("\"")
+    new File(stringPath)
+  }
   def isUnitInstalled(): Boolean = {
     try {
       // collect stderr from unitd
-      var err = ""
-      val processLogger = ProcessLogger(_ => (), err += _)
+      val err = new StringBuilder
+      val processLogger = ProcessLogger(_ => (), err ++= _)
 
       Seq("unitd", "--version").!!(processLogger)
-      err.contains("unit version:")
+      err.containsSlice("unit version:")
     } catch {
       case NonFatal(e) =>
         logger.error("""Can't find unitd in the path.
@@ -21,38 +29,58 @@ private[plugin] class SNUnitPluginShared(logger: Logger, snunitCurlCommand: Seq[
         false
     }
   }
-  def isUnitRunning(): Boolean = {
+  private final val notRunningErrorMessage = """NGINX Unit is not running.
+    |You can run it in a separate terminal with:
+    |unitd --log /dev/stdout --no-daemon
+    |
+    |You can also run it as a daemon:
+    |
+    |If you use brew:
+    |brew services start unit
+    |
+    |If you use systemd:
+    |sudo systemctl start unit.service
+    |
+    |You can find more instructions here: https://unit.nginx.org/installation""".stripMargin
+
+  private def controlSocketExists(control: File): Boolean = {
+    val exists = control.exists()
+    if (!exists) {
+      logger.error(s"""Control socket doesn't exist in the default path (${control.toString}).
+           |This means that $notRunningErrorMessage""".stripMargin)
+    }
+    exists
+  }
+  def isUnitRunning(control: File): Boolean = {
     try {
-      doCurl("http://localhost/config")
+      doCurl(control, "http://localhost/config")
       true
     } catch {
       case NonFatal(e) =>
-        logger.error("""NGINX Unit is not running.
-          |You can run it in a separate terminal with:
-          |unitd --log /dev/stdout --no-daemon
-          |
-          |You can also run it as a daemon:
-          |
-          |If you use brew:
-          |brew services start unit
-          |
-          |You can find more instructions here: https://unit.nginx.org/installation""".stripMargin)
+        if (control.canRead() && control.canWrite()) {
+          val setting = buildTool match {
+            case BuildTool.Sbt  => """snunitCurlCommand := Seq("sudo", "curl")"""
+            case BuildTool.Mill => """override def snunitCurlCommand = Seq("sudo", "curl")"""
+          }
+          logger.error(s"""You don't seem to have permissions to read/write the control socket.
+            |For security reasons NGINX Unit doesn't allow non-root users to change Unit's configuration.
+            |You can perform Unit commands by changing the curl command used by snunit to connect to Unit:
+            |  $setting
+            |""".stripMargin)
+        } else {
+          logger.error(notRunningErrorMessage)
+        }
         false
     }
   }
-  def unitControlSocket(): String = {
-    Seq("unitd", "--help").!!.linesIterator
-      .find(_.contains("unix:"))
-      .get
-      .replaceAll(".+unix:", "")
-      .stripSuffix("\"")
-  }
 
-  private def doCurl(command: String*) =
-    (snunitCurlCommand ++ Seq("-sL", "--unix-socket", unitControlSocket()) ++ command).!!
+  private def doCurl(control: File, command: String*) =
+    (snunitCurlCommand ++ Seq("-sL", "--unix-socket", control.toString) ++ command).!!
   def deployToNGINXUnit(executable: String, port: Int): Unit = {
     require(isUnitInstalled(), "unitd is not installed")
-    require(isUnitRunning(), "unitd is not running")
+    val control = unitControlSocket()
+    require(controlSocketExists(control), "control socket doesn't exist")
+    require(isUnitRunning(control), "unitd is not available")
     val config = s"""{
       "applications": {
         "app": {
@@ -67,6 +95,7 @@ private[plugin] class SNUnitPluginShared(logger: Logger, snunitCurlCommand: Seq[
       }
     }"""
     val result = doCurl(
+      control,
       "-X",
       "PUT",
       "-d",
@@ -74,11 +103,11 @@ private[plugin] class SNUnitPluginShared(logger: Logger, snunitCurlCommand: Seq[
       "http://localhost/config"
     )
     logger.info(result)
-    restartApp()
+    restartApp(control)
   }
 
-  def restartApp() = {
-    val result = doCurl("http://localhost/control/applications/app/restart")
+  private def restartApp(control: File) = {
+    val result = doCurl(control, "http://localhost/control/applications/app/restart")
 
     logger.info(result)
   }

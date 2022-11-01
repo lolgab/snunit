@@ -318,7 +318,11 @@ object integration extends ScalaModule {
 }
 
 object `snunit-plugins-shared` extends Cross[SnunitPluginsShared](Versions.scala213, Versions.scala212)
-class SnunitPluginsShared(val crossScalaVersion: String) extends CrossScalaModule with Publish {
+class SnunitPluginsShared(val crossScalaVersion: String) extends CrossScalaModule with Publish with BuildInfo {
+  def buildInfoMembers = Map(
+    "snunitVersion" -> publishVersion()
+  )
+  def buildInfoPackageName = Some("snunit.plugin.internal")
   object test extends Tests with TestModule.Utest {
     def ivyDeps = super.ivyDeps() ++ Agg(
       ivy"com.lihaoyi::utest:${Versions.utest}",
