@@ -52,9 +52,9 @@ jobs:
       run: |
         sudo systemctl stop unit.service
         ./mill -i --disable-ticker -j 0 integration.test
-    - name: Publish plugin shared locally
+    - name: Publish libraries locally
       run: 
-        ./mill -i --disable-ticker -j 0 snunit-plugins-shared.__.publishLocal
+        ./mill -i --disable-ticker -j 0 __.publishLocal
     - name: Compile Sbt plugin
       run: |
         (

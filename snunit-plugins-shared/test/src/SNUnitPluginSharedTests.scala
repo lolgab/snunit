@@ -3,7 +3,7 @@ package snunit.plugin
 import utest._
 
 object SNUnitPluginSharedTests extends TestSuite {
-  val snunitPluginShared = new SNUnitPluginShared(Logger.stderr, Seq("curl"))
+  val snunitPluginShared = new SNUnitPluginShared(BuildTool.Sbt, Logger.stderr, Seq("curl"))
   import snunitPluginShared._
   val tests = Tests {
     test("isUnitInstalled should return true if unitd is available") {
