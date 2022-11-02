@@ -80,8 +80,8 @@ jobs:
     needs: build
     runs-on: ubuntu-22.04
     env:
-      SONATYPE_PGP_PRIVATE_KEY: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY }}
-      SONATYPE_PGP_PRIVATE_KEY_PASSWORD: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY_PASSWORD }}
+      PGP_PASSPHRASE: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY_PASSWORD }}
+      PGP_SECRET: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY }}
       SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       LANG: "en_US.UTF-8"
@@ -113,22 +113,15 @@ jobs:
           architecture: x64
       - name: Publish plugin shared locally
         run: ./mill -i --disable-ticker snunit-plugins-shared.__.publishLocal
-      - name: Publish to Maven Central
+      - run: ./mill -i io.kipp.mill.ci.release.ReleaseModule/publishAll
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      - name: Publish Sbt Plugin
         run: |
           if [[ $(git tag --points-at HEAD) != '' ]]; then
-            echo $SONATYPE_PGP_PRIVATE_KEY | base64 --decode > gpg_key
-            gpg --import --no-tty --batch --yes gpg_key
-            rm gpg_key
-            ./mill -i --disable-ticker mill.scalalib.PublishModule/publishAll \
-              --sonatypeCreds $SONATYPE_USER:$SONATYPE_PASSWORD \
-              --gpgArgs --passphrase=$SONATYPE_PGP_PRIVATE_KEY_PASSWORD,--no-tty,--pinentry-mode,loopback,--batch,--yes,-a,-b \
-              --publishArtifacts __.publishArtifacts \
-              --readTimeout 600000 \
-              --awaitTimeout 600000 \
-              --release true \
-              --signed true
-            (
-              cd sbt-plugin
-              sbt publishSigned sonatypeBundleRelease
-            )
+            cd sbt-plugin
+            sbt publishSigned sonatypeBundleRelease
           fi
