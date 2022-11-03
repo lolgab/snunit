@@ -3,8 +3,8 @@ import mill.scalalib.api.ZincWorkerUtil.isScala3
 import mill.scalalib.publish._
 import $ivy.`com.goyeau::mill-scalafix::0.2.11`
 import com.goyeau.mill.scalafix.ScalafixModule
-import $ivy.`de.tototec::de.tobiasroeser.mill.vcs.version::0.2.0`
-import de.tobiasroeser.mill.vcs.version.VcsVersion
+import $ivy.`io.chris-kipp::mill-ci-release::0.1.3`
+import io.kipp.mill.ci.release.CiReleaseModule
 import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.6.1`
 import de.tobiasroeser.mill.integrationtest._
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
@@ -77,7 +77,7 @@ object Common {
   trait CrossJvm extends Shared with CrossScalaModule
 }
 
-trait Publish extends PublishModule with Mima {
+trait Publish extends CiReleaseModule with Mima {
   def pomSettings =
     PomSettings(
       description = "Scala Native server using NGINX Unit",
@@ -89,7 +89,6 @@ trait Publish extends PublishModule with Mima {
         Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lolgab")
       )
     )
-  def publishVersion = VcsVersion.vcsState().format()
   def mimaPreviousVersions = Seq("0.2.1")
   def mimaBinaryIssueFilters = Seq(
     // snunit.Request is not meant for extension. The only
