@@ -14,6 +14,8 @@ object SNUnitPlugin extends AutoPlugin {
   object autoImport {
     val snunitPort = settingKey[Int]("Port where the SNUnit app runs")
     val snunitCurlCommand = settingKey[Seq[String]]("curl command to use")
+    val snunitAppName = settingKey[String]("app name in NGINX Unit config")
+    val snunitConfig = settingKey[String]("NGINX Unit configuration")
     val snunitVersion: String = snunit.plugin.internal.BuildInfo.snunitVersion
 
     val deployToNGINXUnit = taskKey[Unit]("Deploy app to NGINX Unit")
@@ -34,10 +36,17 @@ object SNUnitPlugin extends AutoPlugin {
     },
     snunitCurlCommand := Seq("curl"),
     snunitPort := 8080,
-    deployToNGINXUnit := {
+    snunitAppName := name.value,
+    snunitConfig := {
+      val appName = snunitAppName.value
       val port = snunitPort.value
+      SNUnitPluginShared.defaultConfig(appName, port)
+    },
+    deployToNGINXUnit := {
+      val config = snunitConfig.value
       val executable = (Compile / nativeLink).value
-      shared.value.deployToNGINXUnit(executable.toString, port)
+      val appName = snunitAppName.value
+      shared.value.deployToNGINXUnit(appName = appName, config = config, executable = executable.toString)
     }
   )
 }
