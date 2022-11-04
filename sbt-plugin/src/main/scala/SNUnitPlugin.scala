@@ -15,7 +15,7 @@ object SNUnitPlugin extends AutoPlugin {
     val snunitPort = settingKey[Int]("Port where the SNUnit app runs")
     val snunitCurlCommand = settingKey[Seq[String]]("curl command to use")
     val snunitAppName = settingKey[String]("app name in NGINX Unit config")
-    val snunitConfig = settingKey[String]("NGINX Unit configuration")
+    val snunitConfig = taskKey[String]("NGINX Unit configuration")
     val snunitVersion: String = snunit.plugin.internal.BuildInfo.snunitVersion
 
     val deployToNGINXUnit = taskKey[Unit]("Deploy app to NGINX Unit")
