@@ -20,8 +20,15 @@ import scala.util._
 
 private[tapir] trait SNUnitGenericServerInterpreter {
   private[tapir] type Wrapper[_]
+  private[tapir] type HandlerWrapper[_]
 
   private[tapir] implicit def monadError: MonadError[Wrapper]
+  private[tapir] trait WrapperDispatcher {
+    @inline def dispatch[T](f: => Wrapper[T]): Unit
+  }
+  private[tapir] val dispatcher: WrapperDispatcher
+  @inline private[tapir] def createHandleWrapper[T](f: => T): HandlerWrapper[T]
+  @inline private[tapir] def wrapSideEffect[T](f: => T): Wrapper[T]
 
   private val requestBody: RequestBody[Wrapper, NoStreams] = new RequestBody[Wrapper, NoStreams] {
     val streams = NoStreams
@@ -124,7 +131,7 @@ private[tapir] trait SNUnitGenericServerInterpreter {
     def withUnderlying(underlying: Any): sttp.tapir.model.ServerRequest = ???
   }
 
-  def toHandler(endpoints: List[ServerEndpoint[Any, Wrapper]]): snunit.Handler = {
+  def toHandler(endpoints: List[ServerEndpoint[Any, Wrapper]]): HandlerWrapper[snunit.Handler] = {
     val interpreter = new ServerInterpreter[Any, Wrapper, Array[Byte], NoStreams](
       FilterServerEndpoints(endpoints),
       requestBody,
@@ -132,24 +139,29 @@ private[tapir] trait SNUnitGenericServerInterpreter {
       interceptors,
       deleteFile
     )
-    new snunit.Handler {
-      def handleRequest(req: Request): Unit = {
-        interpreter
-          .apply(new SNUnitServerRequest(req))
-          .map {
-            case RequestResult.Failure(_) =>
-              req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, Seq.empty)
-            case RequestResult.Response(response) =>
-              val body = response.body.getOrElse(Array.emptyByteArray)
-              req.send(response.code.code, body, response.headers.map(h => h.name -> h.value))
+    val res: HandlerWrapper[snunit.Handler] = createHandleWrapper {
+      new snunit.Handler {
+        def handleRequest(req: Request): Unit = {
+          dispatcher.dispatch {
+            interpreter
+              .apply(new SNUnitServerRequest(req))
+              .flatMap {
+                case RequestResult.Failure(_) =>
+                  wrapSideEffect(req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, Seq.empty))
+                case RequestResult.Response(response) =>
+                  val body = response.body.getOrElse(Array.emptyByteArray)
+                  wrapSideEffect(req.send(response.code.code, body, response.headers.map(h => h.name -> h.value)))
+              }
+              .handleError { case ex: Exception =>
+                System.err.println(s"Error while processing the request")
+                ex.printStackTrace()
+                req.send(snunit.StatusCode.InternalServerError, Array.emptyByteArray, Seq.empty)
+                monadError.unit(())
+              }
           }
-          .handleError { case ex: Exception =>
-            System.err.println(s"Error while processing the request")
-            ex.printStackTrace()
-            req.send(snunit.StatusCode.InternalServerError, Array.emptyByteArray, Seq.empty)
-            monadError.unit(())
-          }
+        }
       }
     }
+    res
   }
 }

@@ -35,7 +35,9 @@ object Common {
     def name = "snunit"
     def crossScalaVersion: String
 
-    def scalacOptions = super.scalacOptions() ++ (if (isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
+    def scalacOptions = super.scalacOptions() ++
+      Seq("-deprecation") ++
+      (if (isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
 
     def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.6.0")
   }
@@ -160,18 +162,14 @@ class SNUnitTapirModule(val crossScalaVersion: String) extends CrossPlatform {
   object native extends Shared with Common.Cross
   object jvm extends Shared with Common.CrossJvm
 }
-object `snunit-tapir-cats` extends Module {
-  val tapirCats = ivy"com.softwaremill.sttp.tapir::tapir-cats::$tapir"
-  object native extends Cross[SNUnitTapirNative](scalaVersions: _*)
-  class SNUnitTapirNative(val crossScalaVersion: String) extends Common.Cross with Multiplatform with Publish {
-    def moduleDeps = Seq(`snunit-tapir`.native(crossScalaVersion))
-    def ivyDeps = super.ivyDeps() ++ Agg(tapirCats)
+object `snunit-tapir-cats` extends Cross[SNUnitTapirCats](scalaVersions: _*)
+class SNUnitTapirCats(val crossScalaVersion: String) extends CrossPlatform {
+  def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion))
+  trait Shared extends CrossPlatformCrossScalaModule with Publish {
+    def ivyDeps = super.ivyDeps() ++ Agg(ivy"com.softwaremill.sttp.tapir::tapir-cats::${Versions.tapir}")
   }
-  object jvm extends Cross[SNUnitTapirJvm](scalaVersions: _*)
-  class SNUnitTapirJvm(val crossScalaVersion: String) extends Common.CrossJvm with Multiplatform with Publish {
-    def moduleDeps = Seq(`snunit-tapir`.jvm(crossScalaVersion))
-    def ivyDeps = super.ivyDeps() ++ Agg(tapirCats)
-  }
+  object native extends Shared with Common.Cross
+  object jvm extends Shared with Common.CrossJvm
 }
 
 object `snunit-http4s` extends Cross[SNUnitHttp4s](http4sVersions: _*)
@@ -197,12 +195,8 @@ class SNUnitTapirZio(val crossScalaVersion: String) extends CrossPlatform {
   trait Shared extends CrossPlatformCrossScalaModule with Publish {
     def ivyDeps = super.ivyDeps() ++ Agg(ivy"dev.zio::zio::${Versions.zio}")
   }
-  object native extends Shared with Common.Cross {
-    def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion).native)
-  }
-  object jvm extends Shared with Common.CrossJvm {
-    def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion).jvm)
-  }
+  object native extends Shared with Common.Cross
+  object jvm extends Shared with Common.CrossJvm
 }
 
 def caskSources = T {
@@ -309,6 +303,13 @@ object integration extends ScalaModule {
       def moduleDeps = Seq(
         `snunit-async-loop`(crossScalaVersion),
         `snunit-tapir`(crossScalaVersion).native
+      )
+    }
+    object `tapir-helloworld-cats` extends Cross[TapirHelloWorldCatsNative](scalaVersions: _*)
+    class TapirHelloWorldCatsNative(val crossScalaVersion: String) extends Common.Cross {
+      def moduleDeps = Seq(
+        `snunit-async-epollcat`(crossScalaVersion),
+        `snunit-tapir-cats`(crossScalaVersion).native
       )
     }
   }
