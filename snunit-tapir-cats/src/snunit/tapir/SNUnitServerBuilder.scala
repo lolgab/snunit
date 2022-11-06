@@ -18,7 +18,7 @@ class SNUnitServerBuilder[F[_]: Async] private (serverEndpoints: List[ServerEndp
   }
 
   def build: Resource[F, snunit.AsyncServer] = Dispatcher[F].flatMap { dispatcher =>
-    val interpreter = SNUnitCatsServerInterpreter[F](dispatcher)
+    val interpreter = new SNUnitCatsServerInterpreter[F](dispatcher)
     Resource.eval {
       for {
         handler <- interpreter.toHandler(serverEndpoints)
@@ -30,7 +30,7 @@ class SNUnitServerBuilder[F[_]: Async] private (serverEndpoints: List[ServerEndp
 object SNUnitServerBuilder {
   def default[F[_]: Async]: SNUnitServerBuilder[F] = {
     new SNUnitServerBuilder[F](
-      serverEndpoints = endpoint.out(statusCode(StatusCode.NotFound)).serverLogicSuccess(_ => ???) :: Nil
+      serverEndpoints = endpoint.out(statusCode(StatusCode.NotFound)).serverLogicSuccess(_ => Async[F].pure(())) :: Nil
     )
   }
 }
