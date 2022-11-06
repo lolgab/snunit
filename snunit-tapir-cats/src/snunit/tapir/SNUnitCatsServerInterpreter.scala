@@ -1,8 +1,8 @@
 package snunit.tapir
 
 import cats.effect._
-import sttp.tapir.integ.cats.CatsMonadError
 import cats.effect.std.Dispatcher
+import sttp.tapir.integ.cats.CatsMonadError
 
 private[tapir] class SNUnitCatsServerInterpreter[F[_]: Async](ceDispatcher: Dispatcher[F])
     extends SNUnitGenericServerInterpreter {

@@ -1,11 +1,11 @@
 package snunit.tapir
 
+import cats.effect._
 import cats.effect.std.Dispatcher
 import cats.implicits._
-import cats.effect._
+import sttp.model._
 import sttp.tapir._
 import sttp.tapir.server._
-import sttp.model._
 
 class SNUnitServerBuilder[F[_]: Async] private (serverEndpoints: List[ServerEndpoint[Any, F]]) {
 
