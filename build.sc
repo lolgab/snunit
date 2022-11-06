@@ -101,7 +101,7 @@ trait Publish extends CiReleaseModule with Mima {
         Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lolgab")
       )
     )
-  def mimaPreviousVersions = Seq("0.2.1")
+  def mimaPreviousVersions = Seq("0.2.1", "0.2.3")
   def mimaBinaryIssueFilters = Seq(
     // snunit.Request is not meant for extension. The only
     // valid implementations are `RequestImpl`s in this repo.
@@ -174,6 +174,7 @@ class SNUnitTapirModule(val crossScalaVersion: String) extends CrossPlatform {
 }
 object `snunit-tapir-cats` extends Cross[SNUnitTapirCats](scalaVersions: _*)
 class SNUnitTapirCats(val crossScalaVersion: String) extends Common.Cross with Publish {
+  def mimaPreviousArtifacts = Agg.empty[Dep]
   def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion).native)
   def ivyDeps = super.ivyDeps() ++ Agg(ivy"com.softwaremill.sttp.tapir::tapir-cats::${Versions.tapir}")
 }
@@ -347,7 +348,6 @@ object `snunit-mill-plugin` extends ScalaModule with Publish {
   def compileIvyDeps = super.compileIvyDeps() ++ Agg(
     ivy"com.lihaoyi::mill-scalanativelib:${Versions.mill}"
   )
-  def mimaPreviousArtifacts = Agg.empty[Dep]
 }
 object `snunit-mill-plugin-itest` extends MillIntegrationTestModule {
   def millTestVersion = Versions.mill
