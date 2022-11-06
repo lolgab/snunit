@@ -139,7 +139,7 @@ private[tapir] trait SNUnitGenericServerInterpreter {
       interceptors,
       deleteFile
     )
-    val res: HandlerWrapper[snunit.Handler] = createHandleWrapper {
+    createHandleWrapper {
       new snunit.Handler {
         def handleRequest(req: Request): Unit = {
           dispatcher.dispatch {
@@ -162,6 +162,5 @@ private[tapir] trait SNUnitGenericServerInterpreter {
         }
       }
     }
-    res
   }
 }
