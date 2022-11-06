@@ -1,6 +1,7 @@
 package snunit.tapir
 
 import sttp.monad._
+import sttp.tapir.server._
 
 object SNUnitIdServerInterpreter extends SNUnitGenericServerInterpreter {
   type Id[T] = T
@@ -9,6 +10,8 @@ object SNUnitIdServerInterpreter extends SNUnitGenericServerInterpreter {
   private[tapir] val dispatcher = new WrapperDispatcher {
     @inline def dispatch[T](f: => Id[T]): Unit = f
   }
+  // TODO: Remove once in bin-compat breaking window
+  @inline override def toHandler(endpoints: List[ServerEndpoint[Any, Id]]): snunit.Handler = super.toHandler(endpoints)
   @inline private[tapir] def wrapSideEffect[T](f: => T): Wrapper[T] = f
   @inline private[tapir] def createHandleWrapper[T](f: => T): HandlerWrapper[T] = f
   private[tapir] implicit val monadError: MonadError[Wrapper] = new MonadError[Id] {
