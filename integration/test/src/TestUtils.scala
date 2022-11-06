@@ -18,11 +18,6 @@ object TestUtils {
     runMillCommand(s"integration.tests.$projectName$crossSuffix.deployTestApp")
     f
   }
-  def withDeployedExampleCross(projectName: String)(f: => Unit) = {
-    BuildInfo.scalaVersions.split(':').foreach { scalaVersion =>
-      withDeployedExample(projectName, s"[$scalaVersion]")(f)
-    }
-  }
   def withDeployedExampleHttp4s(projectName: String)(f: => Unit) = {
     BuildInfo.http4sVersions.split(':').foreach { versions =>
       withDeployedExample(projectName, s"[$versions]")(f)

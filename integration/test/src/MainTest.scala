@@ -38,7 +38,7 @@ object MainTest extends TestSuite {
       }
     }
     test("async") {
-      withDeployedExampleCross("async") {
+      withDeployedExample("async") {
         val result = requests.get(baseUrl, readTimeout = 10000).text()
         val expectedResult = "Hello world async!\n"
         assert(result == expectedResult)
@@ -58,7 +58,7 @@ object MainTest extends TestSuite {
       }
     }
     test("async-multiple-handlers") {
-      withDeployedExampleCross("async-multiple-handlers") {
+      withDeployedExample("async-multiple-handlers") {
         val getResult = requests.get(baseUrl).text()
         val expectedGetResult = "Hello world async multiple handlers!\n"
         assert(getResult == expectedGetResult)
@@ -86,7 +86,7 @@ object MainTest extends TestSuite {
       }
     }
     test("undertow-helloworld") {
-      withDeployedExampleMultiplatformCross("undertow-helloworld") {
+      withDeployedExampleMultiplatform("undertow-helloworld") {
         runOnAllPlatforms { baseUrl =>
           val result = requests.get(baseUrl).text()
           val expectedResult = "Hello World"
@@ -95,7 +95,7 @@ object MainTest extends TestSuite {
       }
     }
     test("cask-helloworld") {
-      withDeployedExampleMultiplatformCross("cask-helloworld") {
+      withDeployedExampleMultiplatform("cask-helloworld") {
         runOnAllPlatforms { baseUrl =>
           locally {
             val result = requests.get(baseUrl).text()
@@ -129,14 +129,14 @@ object MainTest extends TestSuite {
       }
     }
     test("tapir-helloworld") {
-      withDeployedExampleMultiplatformCross("tapir-helloworld") {
+      withDeployedExampleMultiplatform("tapir-helloworld") {
         runOnAllPlatforms { baseUrl =>
           tapirHelloWorldTest(baseUrl)
         }
       }
     }
     test("tapir-helloworld-future") {
-      withDeployedExampleCross("tapir-helloworld-future") {
+      withDeployedExample("tapir-helloworld-future") {
         tapirHelloWorldTest(baseUrl)
       }
     }
