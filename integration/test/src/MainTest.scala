@@ -140,6 +140,11 @@ object MainTest extends TestSuite {
         tapirHelloWorldTest(baseUrl)
       }
     }
+    test("tapir-helloworld-cats") {
+      withDeployedExample("tapir-helloworld-cats") {
+        tapirHelloWorldTest(baseUrl)
+      }
+    }
     test("http4s") {
       withDeployedExampleHttp4s("http4s-helloworld") {
         val result = requests.get(baseUrl).text()
