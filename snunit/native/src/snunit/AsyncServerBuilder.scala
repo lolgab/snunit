@@ -8,7 +8,6 @@ import scala.scalanative.libc.string.strerror
 import scala.scalanative.posix.fcntl.F_SETFL
 import scala.scalanative.posix.fcntl.O_NONBLOCK
 import scala.scalanative.posix.fcntl.fcntl
-import scala.scalanative.runtime.ByteArray
 import scala.scalanative.runtime.Intrinsics
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.toRawPtr
@@ -18,7 +17,7 @@ import scala.util.control.NonFatal
 object AsyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)
   private val init: Ptr[nxt_unit_init_t] = {
-    initArray.asInstanceOf[ByteArray].at(0).asInstanceOf[Ptr[nxt_unit_init_t]]
+    initArray.at(0).asInstanceOf[Ptr[nxt_unit_init_t]]
   }
   def build(handler: Handler): AsyncServer = {
     ServerBuilder.setBaseHandlers(init, handler)
