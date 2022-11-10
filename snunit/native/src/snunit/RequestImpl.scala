@@ -5,7 +5,6 @@ import snunit.unsafe.CApiOps._
 import snunit.unsafe.Utils._
 
 import scala.collection.immutable.ArraySeq
-import scala.scalanative.runtime.ByteArray
 import scala.scalanative.unsafe._
 
 class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]) extends Request {
@@ -52,7 +51,7 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
     if (contentLength > 0) {
       val array = new Array[Byte](contentLength.toInt)
 
-      nxt_unit_request_read(req, array.asInstanceOf[ByteArray].at(0), contentLength)
+      nxt_unit_request_read(req, array.at(0), contentLength)
       array
     } else Array.emptyByteArray
   }
@@ -65,8 +64,8 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
 
   @inline
   private def addHeader(name: String, value: String): Unit = {
-    val n = name.getBytes().asInstanceOf[ByteArray]
-    val v = value.getBytes().asInstanceOf[ByteArray]
+    val n = name.getBytes()
+    val v = value.getBytes()
     val res = nxt_unit_response_add_field(req, n.at(0), n.length.toByte, v.at(0), v.length)
     if (res != 0) throw new Exception("Failed to add field")
   }
@@ -111,7 +110,7 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
   private def sendBatchUnsafe(data: Array[Byte], off: Int, len: Int): Unit = {
     val res = nxt_unit_response_write_nb(
       req,
-      if (len > 0) data.asInstanceOf[ByteArray].at(off) else null,
+      if (len > 0) data.at(off) else null,
       len,
       0L
     )
@@ -134,7 +133,7 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
     nxt_unit_request_done(req, NXT_UNIT_OK)
   }
   def send(statusCode: Int, content: Array[Byte], headers: Seq[(String, String)]): Unit = {
-    val byteArray = content.asInstanceOf[ByteArray]
+    val byteArray = content
     val contentLength = byteArray.length
     startSendUnsafe(statusCode, headers, contentLength)
     if (contentLength > 0) {
