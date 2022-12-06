@@ -44,11 +44,11 @@ jobs:
         run: ./mill --disable-ticker -j 0 __.compile
       - name: Build Integration test binaries
         run: |
-          ./mill --disable-ticker -j 0 integration.tests.__.nativeLink
+          ./mill --disable-ticker integration.tests.__.nativeLink
       - name: Integration Test
         run: |
           sudo systemctl stop unit.service
-          ./mill --disable-ticker -j 0 integration.test
+          ./mill --disable-ticker integration.test
       - name: Publish libraries locally
         run: ./mill --disable-ticker -j 0 __.publishLocal
       - name: Compile Sbt plugin
