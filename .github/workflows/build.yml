@@ -33,7 +33,7 @@ jobs:
           distribution: "temurin"
       - name: Download dependencies
         run:
-          ./mill --disable-ticker s
+          ./mill --disable-ticker __.prepareOffline
           # ./mill -j 0 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll --sources buildSources
       - name: Check formatting
         run:
