@@ -260,9 +260,6 @@ object integration extends ScalaModule {
     object `async-multiple-handlers` extends Common.Scala3Only {
       def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
     }
-    object `handlers-composition` extends Common.Scala3Only {
-      def moduleDeps = Seq(snunit(crossScalaVersion).native)
-    }
     object `undertow-helloworld` extends CrossPlatform {
       def moduleDeps = Seq(snunit(Versions.scala3))
       object native extends CrossPlatformScalaModule with Common.Scala3Only {
