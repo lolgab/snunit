@@ -12,15 +12,12 @@ jobs:
         with:
           path: ~/.cache/mill
           key: mill-${{ hashFiles('.mill-version') }}
-      - name: Coursier cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/coursier/v1
-          key: coursier
-      - name: Compilation cache
+      - uses: coursier/cache-action@v6
+      - name: out folder cache
         uses: actions/cache@v3
         with:
           path: ./out
+          key: out-folder-cache
       - name: Install Dependencies
         run: |
           curl -sL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
