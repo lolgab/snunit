@@ -18,14 +18,16 @@ jobs:
         with:
           path: ./out
           key: out-folder-cache
-      - name: Install Dependencies
+      - name: Add NGINX Unit repository
         run: |
           curl -sL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
           echo "deb https://packages.nginx.org/unit/ubuntu/ jammy unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
           echo "deb-src https://packages.nginx.org/unit/ubuntu/ jammy unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
           sudo apt-get update
-          unit_version="1.28*"
-          sudo apt-get install -y libuv1-dev libidn2-dev unit=$unit_version unit-dev=$unit_version
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: unit unit-dev libuv1-dev libidn2-dev
+          version: 1.0
       - uses: actions/setup-java@v3
         with:
           java-version: "8"
