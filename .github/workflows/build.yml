@@ -42,6 +42,9 @@ jobs:
         run: ./mill --disable-ticker __.fix --check
       - name: Compile
         run: ./mill --disable-ticker -j 0 __.compile
+      - name: Build Integration test binaries
+        run: |
+          ./mill --disable-ticker -j 0 integration.tests.__.nativeLink
       - name: Integration Test
         run: |
           sudo systemctl stop unit.service
