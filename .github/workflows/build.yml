@@ -7,11 +7,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - name: Mill cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/mill
-          key: mill-${{ hashFiles('.mill-version') }}
       - uses: coursier/cache-action@v6
       - name: out folder cache
         uses: actions/cache@v3
@@ -81,29 +76,19 @@ jobs:
       LC_MESSAGES: "en_US.UTF-8"
       LC_ALL: "en_US.UTF-8"
     steps:
-      - uses: actions/checkout@v2
-      - name: Mill cache
-        uses: actions/cache@v2
+      - uses: actions/checkout@v3
         with:
-          path: ~/.mill
-          key: mill-${{ hashFiles('.mill-version') }}
-      - name: Ivy cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/coursier
-          key: ivy-${{ hashFiles('build.sc') }}
-          restore-keys: |
-            ivy-${{ hashFiles('build.sc') }}
-            ivy
+          fetch-depth: 0
+      - uses: coursier/cache-action@v6
       - name: Compilation cache
         uses: actions/cache@v2
         with:
           path: ./out
           key: out
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v3
         with:
-          java-version: "8"
-          architecture: x64
+          distribution: "temurin"
+          java-version: 8
       - name: Publish plugin shared locally
         run: ./mill --disable-ticker snunit-plugins-shared.__.publishLocal
       - run: ./mill io.kipp.mill.ci.release.ReleaseModule/publishAll
