@@ -1,7 +1,7 @@
 // This file is system-linked in sbt-plugin/project/Versions.scala
 // It needs to be a valid Scala file so we can't use top level `val`s
 object Versions {
-  val scalaNative = "0.4.8"
+  val scalaNative = "0.4.10"
   val upickle = "2.0.0"
   val undertow = "2.2.20.Final"
   val scala212 = "2.12.17"
