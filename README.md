@@ -110,8 +110,10 @@ SNUnit offers interpreters for [Tapir](https://tapir.softwaremill.com) server en
 You can write all your application using Tapir and the convert your Tapir endpoints
 with logic into a SNUnit `Handler`.
 
-Currently two interpreters are available:
+Currently three interpreters are available:
 - `SNUnitIdServerInterpreter` which works best with `SyncServerHandler` for synchronous applications
   - You can find an example [in tests](./integration/tests/tapir-helloworld/src/Main.scala)
 - `SNUnitFutureServerInterpreter` which requires `AsyncServerHandler` for asynchronous applications
   - You can find an example [in tests](./integration/tests/tapir-helloworld-future/src/Main.scala)
+- An interpreter for cats hidden behind `snunit.tapir.SNUnitServerBuilder` in the `snunit-tapir-cats` artifact.
+  - You can find an example [in tests](./integration/tests/tapir-helloworld-cats/src/Main.scala)
