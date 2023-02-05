@@ -313,13 +313,15 @@ object CApiOps {
 
     def remote_length: Byte = !(ptr.asInstanceOf[Ptr[Byte]] + 2).asInstanceOf[Ptr[Byte]]
 
-    def local_length: Byte = !(ptr.asInstanceOf[Ptr[Byte]] + 3).asInstanceOf[Ptr[Byte]]
+    def local_addr_length: Byte = !(ptr.asInstanceOf[Ptr[Byte]] + 3).asInstanceOf[Ptr[Byte]]
 
-    def tls: Byte = !(ptr.asInstanceOf[Ptr[Byte]] + 4).asInstanceOf[Ptr[Byte]]
+    def local_port_length: Byte = !(ptr.asInstanceOf[Ptr[Byte]] + 4).asInstanceOf[Ptr[Byte]]
 
-    def websocket_handshake: Byte = !(ptr.asInstanceOf[Ptr[Byte]] + 5).asInstanceOf[Ptr[Byte]]
+    def tls: Byte = !(ptr.asInstanceOf[Ptr[Byte]] + 5).asInstanceOf[Ptr[Byte]]
 
-    def app_target: Byte = !(ptr.asInstanceOf[Ptr[Byte]] + 6).asInstanceOf[Ptr[Byte]]
+    def websocket_handshake: Byte = !(ptr.asInstanceOf[Ptr[Byte]] + 6).asInstanceOf[Ptr[Byte]]
+
+    def app_target: Byte = !(ptr.asInstanceOf[Ptr[Byte]] + 7).asInstanceOf[Ptr[Byte]]
 
     def server_name_length: CInt = !(ptr.asInstanceOf[Ptr[Byte]] + 8).asInstanceOf[Ptr[CInt]]
 
@@ -348,21 +350,23 @@ object CApiOps {
 
     def remote: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 64).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def local: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 68).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def local_addr: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 68).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+
+    def local_port: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 72).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
     def server_name: Ptr[Byte] =
-      nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 72).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+      nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 76).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def target: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 76).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def target: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 80).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def path: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 80).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def path: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 84).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def query: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 84).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+    def query: Ptr[Byte] = nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 88).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
     def preread_content: Ptr[Byte] =
-      nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 88).asInstanceOf[Ptr[nxt_unit_sptr_t]])
+      nxt_unit_sptr_get((ptr.asInstanceOf[Ptr[Byte]] + 92).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
-    def fields: Ptr[nxt_unit_field_t] = (ptr.asInstanceOf[Ptr[Byte]] + 92).asInstanceOf[Ptr[nxt_unit_field_t]]
+    def fields: Ptr[nxt_unit_field_t] = (ptr.asInstanceOf[Ptr[Byte]] + 96).asInstanceOf[Ptr[nxt_unit_field_t]]
   }
 
   implicit class nxt_unit_response_t_ops(private val ptr: Ptr[nxt_unit_response_t]) extends AnyVal {
