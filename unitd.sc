@@ -43,6 +43,7 @@ def runBackground(config: ujson.Obj): Unit = {
       stderr = os.ProcessOutput.Readlines(line => {
         line match {
           case s"$_ unit $_ started" =>
+            Thread.sleep(100)
             started.set(true)
           case _ =>
         }
