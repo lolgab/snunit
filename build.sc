@@ -101,13 +101,7 @@ trait Publish extends CiReleaseModule with Mima {
         Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lolgab")
       )
     )
-  def mimaPreviousVersions = Seq("0.2.1", "0.2.3")
-  def mimaBinaryIssueFilters = Seq(
-    // snunit.Request is not meant for extension. The only
-    // valid implementations are `RequestImpl`s in this repo.
-    ProblemFilter.exclude[ReversedMissingMethodProblem]("snunit.Request.*"),
-    ProblemFilter.exclude[Problem]("snunit.unsafe.*")
-  )
+  def mimaPreviousVersions = Seq("0.3.0")
 }
 object `snunit-internal-api` extends JavaModule
 object snunit extends Cross[SNUnitModule](scalaVersions: _*)
