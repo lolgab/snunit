@@ -1,5 +1,5 @@
 package snunit
 
-trait Handler {
+trait RequestHandler {
   def handleRequest(req: Request): Unit
 }

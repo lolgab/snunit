@@ -52,23 +52,25 @@ private[http4s] object Impl {
   ): Resource[F, AsyncServer] = {
     Resource.eval(
       Async[F].delay(
-        snunit.AsyncServerBuilder.build(new snunit.Handler {
-          def handleRequest(req: snunit.Request): Unit = {
-            val run = httpApp
-              .run(toHttp4sRequest[F](req))
-              .start
-              .flatMap(_.joinWith(Async[F].raiseError(new CancellationException)))
-              .handleErrorWith(errorHandler)
-              .handleError(_ =>
-                http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
-              )
-              .flatMap { response =>
-                val headers = response.headers.headers.map { h => (h.name.toString, h.value) }
-                VersionSpecific.writeResponse(req, response, response.status.code, headers)
-              }
-            dispatcher.unsafeRunAndForget(run)
-          }
-        })
+        snunit.AsyncServerBuilder
+          .setRequestHandler(new snunit.RequestHandler {
+            def handleRequest(req: snunit.Request): Unit = {
+              val run = httpApp
+                .run(toHttp4sRequest[F](req))
+                .start
+                .flatMap(_.joinWith(Async[F].raiseError(new CancellationException)))
+                .handleErrorWith(errorHandler)
+                .handleError(_ =>
+                  http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
+                )
+                .flatMap { response =>
+                  val headers = response.headers.headers.map { h => (h.name.toString, h.value) }
+                  VersionSpecific.writeResponse(req, response, response.status.code, headers)
+                }
+              dispatcher.unsafeRunAndForget(run)
+            }
+          })
+          .build()
       )
     )
   }

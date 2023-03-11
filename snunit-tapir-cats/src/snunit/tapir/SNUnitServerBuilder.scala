@@ -22,7 +22,7 @@ class SNUnitServerBuilder[F[_]: Async] private (serverEndpoints: List[ServerEndp
     Resource.eval {
       for {
         handler <- interpreter.toHandler(serverEndpoints)
-        _ <- Async[F].delay(snunit.AsyncServerBuilder.build(handler))
+        _ <- Async[F].delay(snunit.AsyncServerBuilder.setRequestHandler(handler).build())
       } yield new SNUnitServer
     }
   }

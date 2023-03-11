@@ -5,13 +5,14 @@ import snunit._
 object HelloWorldExample {
   def main(args: Array[String]): Unit = {
     SyncServerBuilder
-      .build(req =>
+      .setRequestHandler(req =>
         req.send(
           statusCode = StatusCode.OK,
           content = s"Hello world!\n",
           headers = Seq("Content-Type" -> "text/plain")
         )
       )
+      .build()
       .listen()
   }
 }

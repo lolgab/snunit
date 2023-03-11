@@ -19,8 +19,12 @@ object AsyncServerBuilder {
   private val init: Ptr[nxt_unit_init_t] = {
     initArray.at(0).asInstanceOf[Ptr[nxt_unit_init_t]]
   }
-  def build(handler: Handler): AsyncServer = {
-    ServerBuilder.setBaseHandlers(init, handler)
+  def setRequestHandler(requestHandler: RequestHandler): this.type = {
+    ServerBuilder.setRequestHandler(requestHandler)
+    this
+  }
+  def build(): AsyncServer = {
+    ServerBuilder.setBaseHandlers(init)
     init.callbacks.add_port = AsyncServerBuilder.add_port
     init.callbacks.remove_port = AsyncServerBuilder.remove_port
     val ctx: Ptr[nxt_unit_ctx_t] = nxt_unit_init(init)

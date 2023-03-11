@@ -8,7 +8,7 @@ import scala.scalanative.loop.Timer
 object Async {
   def main(args: Array[String]): Unit = {
     AsyncServerBuilder
-      .build(req => {
+      .setRequestHandler(req => {
         req.method match {
           case Method.GET =>
             var t: Timer = null.asInstanceOf[Timer]
@@ -28,5 +28,6 @@ object Async {
             )
         }
       })
+      .build()
   }
 }
