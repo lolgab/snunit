@@ -16,7 +16,9 @@ object MyApiImpl extends MyApi {
 
 object Autowire {
   def main(args: Array[String]): Unit = {
-    val fallback: snunit.Handler = _.send(StatusCode.NotFound, "Not found", Seq.empty)
-    AsyncServerBuilder.build(new AutowireHandler(UpickleAutowireServer.route[MyApi](MyApiImpl), fallback))
+    val fallback: snunit.RequestHandler = _.send(StatusCode.NotFound, "Not found", Seq.empty)
+    AsyncServerBuilder
+      .setRequestHandler(new AutowireHandler(UpickleAutowireServer.route[MyApi](MyApiImpl), fallback))
+      .build()
   }
 }

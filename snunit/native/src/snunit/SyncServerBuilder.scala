@@ -9,8 +9,12 @@ object SyncServerBuilder {
   private val init: Ptr[nxt_unit_init_t] = {
     initArray.at(0).asInstanceOf[Ptr[nxt_unit_init_t]]
   }
-  def build(handler: Handler): SyncServer = {
-    ServerBuilder.setBaseHandlers(init, handler)
+  def setRequestHandler(requestHandler: RequestHandler): this.type = {
+    ServerBuilder.setRequestHandler(requestHandler)
+    this
+  }
+  def build(): SyncServer = {
+    ServerBuilder.setBaseHandlers(init)
     val ctx: Ptr[nxt_unit_ctx_t] = nxt_unit_init(init)
     if (ctx == null) {
       throw new Exception("Failed to create Unit object")

@@ -8,7 +8,8 @@ class Undertow private (builder: Undertow.Builder) {
 
   def start(): Unit = {
     SyncServerBuilder
-      .build(req => handler.handleRequest(new HttpServerExchange(req)))
+      .setRequestHandler(req => handler.handleRequest(new HttpServerExchange(req)))
+      .build()
       .listen()
   }
 }

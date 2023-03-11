@@ -11,7 +11,8 @@ object UpickleAutowireServer extends autowire.Server[String, Reader, Writer] {
   override def write[Result: Writer](r: Result): String = upickle.default.write(r)
   override def read[Result: Reader](p: String): Result = upickle.default.read[Result](p)
 }
-class AutowireHandler(router: autowire.Server[String, Reader, Writer]#Router, next: Handler) extends Handler {
+class AutowireHandler(router: autowire.Server[String, Reader, Writer]#Router, next: RequestHandler)
+    extends RequestHandler {
   protected def onError(req: Request, e: Exception): Unit = e match {
     case _: ujson.ParsingFailedException =>
       req.send(

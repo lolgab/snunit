@@ -9,7 +9,14 @@ import java.nio.ByteBuffer
 import scala.jdk.CollectionConverters._
 
 object SyncServerBuilder {
-  def build(handler: Handler): SyncServer = {
+  private var requestHandler: RequestHandler = null
+
+  def setRequestHandler(requestHandler: RequestHandler): this.type = {
+    this.requestHandler = requestHandler
+    this
+  }
+
+  def build(): SyncServer = {
     val port = sys.env.get("SNUNIT_PORT").map(_.toInt).getOrElse(8080)
     new SyncServer {
       private val server = Undertow
@@ -17,7 +24,7 @@ object SyncServerBuilder {
         .addHttpListener(port, "127.0.0.1")
         .setHandler(new BlockingHandler(new HttpHandler() {
           def handleRequest(exchange: HttpServerExchange): Unit = {
-            handler.handleRequest(new Request {
+            requestHandler.handleRequest(new Request {
               def method: Method = methodOf(exchange.getRequestMethod())
               def version: String = exchange.getProtocol().toString()
               def target: String = {

@@ -2,7 +2,7 @@ package snunit.tests
 
 import snunit._
 
-object MyHandler extends Handler {
+object MyHandler extends RequestHandler {
   val res = "Hello world!\n".getBytes
   def handleRequest(req: Request): Unit = {
     req.method match {
@@ -30,7 +30,9 @@ object MyHandler extends Handler {
 
 object HelloWorld {
   def main(args: Array[String]): Unit = {
-    val s = SyncServerBuilder.build(MyHandler)
-    s.listen()
+    SyncServerBuilder
+      .setRequestHandler(MyHandler)
+      .build()
+      .listen()
   }
 }

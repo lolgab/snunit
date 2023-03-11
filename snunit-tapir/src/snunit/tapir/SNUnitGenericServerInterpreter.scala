@@ -27,7 +27,7 @@ private[tapir] trait SNUnitGenericServerInterpreter {
     @inline def dispatch(f: => Wrapper[Unit]): Unit
   }
   private[tapir] val dispatcher: WrapperDispatcher
-  @inline private[tapir] def createHandleWrapper(f: => snunit.Handler): HandlerWrapper
+  @inline private[tapir] def createHandleWrapper(f: => snunit.RequestHandler): HandlerWrapper
   @inline private[tapir] def wrapSideEffect[T](f: => T): Wrapper[T]
 
   private val requestBody: RequestBody[Wrapper, NoStreams] = new RequestBody[Wrapper, NoStreams] {
@@ -140,7 +140,7 @@ private[tapir] trait SNUnitGenericServerInterpreter {
       deleteFile
     )
     createHandleWrapper {
-      new snunit.Handler {
+      new snunit.RequestHandler {
         def handleRequest(req: Request): Unit = {
           dispatcher.dispatch {
             interpreter
