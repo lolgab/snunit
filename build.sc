@@ -302,7 +302,7 @@ object integration extends ScalaModule {
       )
     }
   }
-  def scalaVersion = Versions.scala213
+  def scalaVersion = Versions.scala3
   object test extends Tests with TestModule.Utest with BuildInfo {
     def buildInfoMembers = Map(
       "port" -> testServerPort.toString,
@@ -310,11 +310,12 @@ object integration extends ScalaModule {
       "http4sVersions" -> http4sVersions.mkString(":"),
       "scala213" -> Versions.scala213
     )
+    def buildInfoPackageName = Some("snunit.test")
     def ivyDeps =
       Agg(
         ivy"com.lihaoyi::utest:${Versions.utest}",
         ivy"com.lihaoyi::os-lib:${Versions.osLib}",
-        ivy"com.lihaoyi::requests:${Versions.requests}"
+        ivy"com.softwaremill.sttp.client3::core:${Versions.sttp}"
       )
   }
 }
