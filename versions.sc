@@ -16,7 +16,7 @@ object Versions {
   val mill = "0.10.11"
   val utest = "0.8.1"
   val osLib = "0.9.0"
-  val requests = "0.8.0"
+  val sttp = "3.8.13"
   val pprint = "0.8.1"
   val castor = "0.2.1"
   val sjavatime = "1.1.9"
