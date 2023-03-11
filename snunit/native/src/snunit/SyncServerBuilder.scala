@@ -13,6 +13,10 @@ object SyncServerBuilder {
     ServerBuilder.setRequestHandler(requestHandler)
     this
   }
+  def setWebsocketHandler(websocketHandler: WebsocketHandler): this.type = {
+    ServerBuilder.setWebsocketHandler(websocketHandler)
+    this
+  }
   def build(): SyncServer = {
     ServerBuilder.setBaseHandlers(init)
     val ctx: Ptr[nxt_unit_ctx_t] = nxt_unit_init(init)

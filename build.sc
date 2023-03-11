@@ -49,13 +49,13 @@ object Common {
     def baseTestConfig(binary: os.Path) = {
       val appName = "app"
       ujson.Obj(
+        "access_log" -> ujson.Obj(
+          "path" -> "/dev/stdout"
+        ),
         "applications" -> ujson.Obj(
           appName -> ujson.Obj(
             "type" -> "external",
-            "executable" -> binary.toString,
-            "limits" -> ujson.Obj(
-              "timeout" -> 1
-            )
+            "executable" -> binary.toString
           )
         ),
         "listeners" -> ujson.Obj(
@@ -232,6 +232,9 @@ object integration extends ScalaModule {
       def moduleDeps = Seq(snunit(crossScalaVersion))
       object native extends CrossPlatformCrossScalaModule with Common.Cross
       object jvm extends CrossPlatformCrossScalaModule with Common.CrossJvm
+    }
+    object `websocket-echo` extends Common.Scala3Only {
+      def moduleDeps = Seq(snunit(crossScalaVersion).native)
     }
     object `empty-response` extends Common.Scala2Only {
       def moduleDeps = Seq(snunit(crossScalaVersion).native)

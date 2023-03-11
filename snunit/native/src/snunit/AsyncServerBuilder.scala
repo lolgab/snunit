@@ -23,6 +23,10 @@ object AsyncServerBuilder {
     ServerBuilder.setRequestHandler(requestHandler)
     this
   }
+  def setWebsocketHandler(websocketHandler: WebsocketHandler): this.type = {
+    ServerBuilder.setWebsocketHandler(websocketHandler)
+    this
+  }
   def build(): AsyncServer = {
     ServerBuilder.setBaseHandlers(init)
     init.callbacks.add_port = AsyncServerBuilder.add_port

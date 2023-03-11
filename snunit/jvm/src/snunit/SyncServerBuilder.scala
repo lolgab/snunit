@@ -10,9 +10,15 @@ import scala.jdk.CollectionConverters._
 
 object SyncServerBuilder {
   private var requestHandler: RequestHandler = null
+  private var websocketHandler: WebsocketHandler = null
 
   def setRequestHandler(requestHandler: RequestHandler): this.type = {
     this.requestHandler = requestHandler
+    this
+  }
+
+  def setWebsocketHandler(websocketHandler: WebsocketHandler): this.type = {
+    ServerBuilder.setWebsocketHandler(websocketHandler)
     this
   }
 

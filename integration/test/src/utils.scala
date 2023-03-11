@@ -6,6 +6,7 @@ import scala.util.chaining._
 import scala.util.control.NonFatal
 import scala.util.Try
 import sttp.client3.quick._
+import sttp.client3.HttpClientFutureBackend
 
 private def runMillCommand(command: String) = os
   .proc(
@@ -17,7 +18,7 @@ private def runMillCommand(command: String) = os
   )
   .call()
 
-def withDeployedExample(projectName: String, crossSuffix: String = "")(f: => Unit) = {
+def withDeployedExample[T](projectName: String, crossSuffix: String = "")(f: => T): T = {
   runMillCommand(s"integration.tests.$projectName$crossSuffix.deployTestApp")
   f
 }
@@ -42,7 +43,10 @@ def withDeployedExampleMultiplatformCross(projectName: String)(f: => Unit) = {
   }
 }
 
+private val futureBackend = HttpClientFutureBackend()
+
 val baseUrl = uri"http://localhost:${BuildInfo.port}"
+val websocketBaseUrl = uri"ws://localhost:${BuildInfo.port}"
 
 def runOnAllPlatforms(f: Uri => Unit) = {
   Seq(uri"http://localhost:8080", baseUrl).foreach(f)
@@ -57,7 +61,17 @@ private def sendReq(req: Req) = simpleHttpClient.send(req)
 extension (req: Req)
   def text() = sendReq(req).body
   def statusCode() = sendReq(req).code.code
+  def websocket() =
+    req
+      .response(asWebSocketAlwaysUnsafe[Future])
+      .send(futureBackend)
 
 export sttp.client3.quick.UriContext
 
 export sttp.model.Uri
+
+export scala.concurrent.Future
+
+export sttp.ws.{WebSocketFrame as Frame}
+
+export scala.concurrent.ExecutionContext.Implicits.global
