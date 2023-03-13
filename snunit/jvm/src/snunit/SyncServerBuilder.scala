@@ -18,7 +18,7 @@ object SyncServerBuilder {
   }
 
   def setWebsocketHandler(websocketHandler: WebsocketHandler): this.type = {
-    ServerBuilder.setWebsocketHandler(websocketHandler)
+    this.websocketHandler = websocketHandler
     this
   }
 
@@ -89,6 +89,8 @@ object SyncServerBuilder {
               def sendBatch(data: Array[Byte], off: Int, len: Int): Unit = ???
               def sendBatch(data: Array[Byte]): Unit = ???
               def startSend(statusCode: Int, headers: Seq[(String, String)]): Unit = ???
+              def isWebsocketHandshake: Boolean = ???
+              def upgrade(): Unit = ???
             })
           }
         }))
