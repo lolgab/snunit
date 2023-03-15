@@ -14,5 +14,5 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: "temurin"
-          java-version: "17"
+          java-version: "11"
       - uses: ckipp01/mill-dependency-submission@v1

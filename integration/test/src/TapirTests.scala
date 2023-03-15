@@ -1,6 +1,6 @@
-import utest._
+package snunit.test
 
-import TestUtils._
+import utest._
 
 object TapirTests extends TestSuite {
   val tests = Tests {
@@ -22,15 +22,15 @@ object TapirTests extends TestSuite {
       }
     }
   }
-  def tapirHelloWorldTest(baseUrl: String) = {
+  def tapirHelloWorldTest(baseUrl: Uri) = {
     locally {
-      val result = requests.get(s"$baseUrl/hello?name=Lorenzo").text()
+      val result = request.get(uri"$baseUrl/hello?name=Lorenzo").text()
       val expectedResult = "Hello Lorenzo!"
       assert(result == expectedResult)
     }
     locally {
-      val resultResponse = requests.get(s"$baseUrl/inexistent", check = false)
-      assert(resultResponse.statusCode == 404)
+      val resultResponse = request.get(uri"$baseUrl/inexistent")
+      assert(resultResponse.statusCode() == 404)
     }
   }
 }

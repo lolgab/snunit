@@ -49,13 +49,13 @@ object Common {
     def baseTestConfig(binary: os.Path) = {
       val appName = "app"
       ujson.Obj(
+        "access_log" -> ujson.Obj(
+          "path" -> "/dev/stdout"
+        ),
         "applications" -> ujson.Obj(
           appName -> ujson.Obj(
             "type" -> "external",
-            "executable" -> binary.toString,
-            "limits" -> ujson.Obj(
-              "timeout" -> 1
-            )
+            "executable" -> binary.toString
           )
         ),
         "listeners" -> ujson.Obj(
@@ -233,6 +233,9 @@ object integration extends ScalaModule {
       object native extends CrossPlatformCrossScalaModule with Common.Cross
       object jvm extends CrossPlatformCrossScalaModule with Common.CrossJvm
     }
+    object `websocket-echo` extends Common.Scala3Only {
+      def moduleDeps = Seq(snunit(crossScalaVersion).native)
+    }
     object `empty-response` extends Common.Scala2Only {
       def moduleDeps = Seq(snunit(crossScalaVersion).native)
     }
@@ -302,7 +305,7 @@ object integration extends ScalaModule {
       )
     }
   }
-  def scalaVersion = Versions.scala213
+  def scalaVersion = Versions.scala3
   object test extends Tests with TestModule.Utest with BuildInfo {
     def buildInfoMembers = Map(
       "port" -> testServerPort.toString,
@@ -310,11 +313,12 @@ object integration extends ScalaModule {
       "http4sVersions" -> http4sVersions.mkString(":"),
       "scala213" -> Versions.scala213
     )
+    def buildInfoPackageName = Some("snunit.test")
     def ivyDeps =
       Agg(
         ivy"com.lihaoyi::utest:${Versions.utest}",
         ivy"com.lihaoyi::os-lib:${Versions.osLib}",
-        ivy"com.lihaoyi::requests:${Versions.requests}"
+        ivy"com.softwaremill.sttp.client3::core:${Versions.sttp}"
       )
   }
 }

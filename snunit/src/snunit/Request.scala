@@ -30,4 +30,6 @@ trait Request {
   def sendBatch(data: Array[Byte]): Unit
   def sendBatch(data: Array[Byte], off: Int, len: Int): Unit
   def sendDone(): Unit
+  def isWebsocketHandshake: Boolean
+  def upgrade(): Unit
 }

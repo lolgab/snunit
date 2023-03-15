@@ -23,7 +23,7 @@ jobs:
           sudo apt-get install -y libuv1-dev libidn2-dev unit=$unit_version unit-dev=$unit_version
       - uses: actions/setup-java@v3
         with:
-          java-version: "8"
+          java-version: "11"
           architecture: "x64"
           distribution: "temurin"
       - name: Download dependencies
@@ -59,7 +59,7 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: "temurin"
-          java-version: 8
+          java-version: "11"
       - name: Check Binary Compatibility
         run: ./mill --disable-ticker __.mimaReportBinaryIssues
 
@@ -88,7 +88,7 @@ jobs:
       - uses: actions/setup-java@v3
         with:
           distribution: "temurin"
-          java-version: 8
+          java-version: "11"
       - name: Publish plugin shared locally
         run: ./mill --disable-ticker snunit-plugins-shared.__.publishLocal
       - run: ./mill io.kipp.mill.ci.release.ReleaseModule/publishAll

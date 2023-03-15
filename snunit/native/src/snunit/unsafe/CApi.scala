@@ -122,12 +122,7 @@ object CApi {
     CInt
   ]
 
-  type nxt_websocket_header_t = CStruct8[
-    Byte,
-    Byte,
-    Byte,
-    Byte,
-    Byte,
+  type nxt_websocket_header_t = CStruct3[
     Byte,
     Byte,
     CArray[Byte, _8]
@@ -192,6 +187,10 @@ object CApi {
   def nxt_unit_response_send(req: Ptr[nxt_unit_request_info_t]): CInt = extern
 
   def nxt_unit_response_buf_alloc(req: Ptr[nxt_unit_request_info_t], size: CInt): Ptr[nxt_unit_buf_t] = extern
+
+  def nxt_unit_request_is_websocket_handshake(req: Ptr[nxt_unit_request_info_t]): CInt = extern
+
+  def nxt_unit_response_upgrade(req: Ptr[nxt_unit_request_info_t]): CInt = extern
 
   def nxt_unit_response_write_nb(
       req: Ptr[nxt_unit_request_info_t],
@@ -482,14 +481,23 @@ object CApiOps {
   }
 
   implicit class nxt_websocket_header_t_ops(private val ptr: Ptr[nxt_websocket_header_t]) extends AnyVal {
-    def opcode: Byte = ptr._1
-    def rsv3: Byte = ptr._2
-    def rsv2: Byte = ptr._3
-    def rsv1: Byte = ptr._4
-    def fin: Byte = ptr._5
-    def payload_len: Byte = ptr._6
-    def mask: Byte = ptr._7
-    def payload_len_ : Ptr[CArray[Byte, _8]] = ptr.at8
+    // Assuming little endianess
+    // Check NGINX Unit codebase to support big endian platforms as well
+    def opcode: Byte =
+      (ptr._1 & ((1 << 4) - 1)).toByte
+    def rsv3: Byte =
+      ((ptr._1 & (1 << 4)) >> 4).toByte
+    def rsv2: Byte =
+      ((ptr._1 & (1 << 5)) >> 5).toByte
+    def rsv1: Byte =
+      ((ptr._1 & (1 << 6)) >> 6).toByte
+    def fin: Byte =
+      ((ptr._1 & (1 << 7)) >> 7).toByte
+    def payload_len: Byte =
+      (ptr._2 & ((1 << 7) - 1)).toByte
+    def mask: Byte =
+      ((ptr._2 & (1 << 7)) >> 7).toByte
+    def payload_len_ : Ptr[CArray[Byte, _8]] = ptr.at3
   }
 
   implicit class nxt_unit_websocket_frame_t_ops(private val ptr: Ptr[nxt_unit_websocket_frame_t]) extends AnyVal {

@@ -147,4 +147,19 @@ class RequestImpl private[snunit] (private val req: Ptr[nxt_unit_request_info_t]
     override def write(b: Array[Byte]): Unit = sendBatch(b)
     override def write(b: Array[Byte], off: Int, len: Int): Unit = sendBatch(b, off, len)
   }
+
+  def isWebsocketHandshake: Boolean = nxt_unit_request_is_websocket_handshake(req) != 0
+  def upgrade(): Unit = {
+    locally {
+      val res = nxt_unit_response_init(req, 101, 0, 0)
+      if (res != NXT_UNIT_OK) throw new Exception("Failed to create response")
+    }
+
+    locally {
+      val res = nxt_unit_response_upgrade(req)
+      if (res != 0) throw new Exception("Failed to upgrade connection")
+    }
+
+    nxt_unit_response_send(req)
+  }
 }

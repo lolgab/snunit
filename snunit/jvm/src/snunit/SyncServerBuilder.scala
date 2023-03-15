@@ -10,9 +10,15 @@ import scala.jdk.CollectionConverters._
 
 object SyncServerBuilder {
   private var requestHandler: RequestHandler = null
+  private var websocketHandler: WebsocketHandler = null
 
   def setRequestHandler(requestHandler: RequestHandler): this.type = {
     this.requestHandler = requestHandler
+    this
+  }
+
+  def setWebsocketHandler(websocketHandler: WebsocketHandler): this.type = {
+    this.websocketHandler = websocketHandler
     this
   }
 
@@ -83,6 +89,8 @@ object SyncServerBuilder {
               def sendBatch(data: Array[Byte], off: Int, len: Int): Unit = ???
               def sendBatch(data: Array[Byte]): Unit = ???
               def startSend(statusCode: Int, headers: Seq[(String, String)]): Unit = ???
+              def isWebsocketHandshake: Boolean = ???
+              def upgrade(): Unit = ???
             })
           }
         }))
