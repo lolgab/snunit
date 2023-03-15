@@ -18,12 +18,13 @@ object BaseTests extends TestSuite {
             assert(result == expectedResult)
           }
           locally {
-            val result = request.get(uri"$baseUrl/target/%2F%2f%5C%5c").text()
+            val result = request.get(baseUrl.withPath("target", "%2F%2f%5C%5c").pathSegmentsEncoding(identity)).text()
             val expectedResult = "/target/%2F%2f%5C%5c"
             assert(result == expectedResult)
           }
           locally {
-            val result = request.get(uri"$baseUrl/path/foo%2Fbar%2f%5C%5c").text()
+            val result =
+              request.get(baseUrl.withPath("path", "foo%2Fbar%2f%5C%5c").pathSegmentsEncoding(identity)).text()
             val expectedResult = """/path/foo/bar/\\"""
             assert(result == expectedResult)
           }
