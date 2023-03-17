@@ -5,37 +5,33 @@ import utest._
 object BaseTests extends TestSuite {
   val tests = Tests {
     test("hello-world") {
-      withDeployedExampleMultiplatformCross("hello-world") {
-        runOnAllPlatforms { baseUrl =>
-          locally {
-            val result = request.get(baseUrl).text()
-            val expectedResult = "Hello world!\n"
-            assert(result == expectedResult)
-          }
-          locally {
-            val result = request.get(uri"$baseUrl/version").text()
-            val expectedResult = "HTTP/1.1"
-            assert(result == expectedResult)
-          }
-          locally {
-            val result = request.get(baseUrl.withPath("target", "%2F%2f%5C%5c").pathSegmentsEncoding(identity)).text()
-            val expectedResult = "/target/%2F%2f%5C%5c"
-            assert(result == expectedResult)
-          }
-          locally {
-            val result =
-              request.get(baseUrl.withPath("path", "foo%2Fbar%2f%5C%5c").pathSegmentsEncoding(identity)).text()
-            val expectedResult = """/path/foo/bar/\\"""
-            assert(result == expectedResult)
-          }
+      withDeployedExampleCross("hello-world") {
+        locally {
+          val result = request.get(baseUrl).text()
+          val expectedResult = "Hello world!\n"
+          assert(result == expectedResult)
         }
-      }
-    }
-    test("empty-response") {
-      withDeployedExample("empty-response") {
-        val result = request.get(baseUrl).text()
-        val expectedResult = ""
-        assert(result == expectedResult)
+        locally {
+          val result = request.get(uri"$baseUrl/version").text()
+          val expectedResult = "HTTP/1.1"
+          assert(result == expectedResult)
+        }
+        locally {
+          val result = request.get(baseUrl.withPath("target", "%2F%2f%5C%5c").pathSegmentsEncoding(identity)).text()
+          val expectedResult = "/target/%2F%2f%5C%5c"
+          assert(result == expectedResult)
+        }
+        locally {
+          val result =
+            request.get(baseUrl.withPath("path", "foo%2Fbar%2f%5C%5c").pathSegmentsEncoding(identity)).text()
+          val expectedResult = """/path/foo/bar/\\"""
+          assert(result == expectedResult)
+        }
+        locally {
+          val result = request.get(uri"$baseUrl/empty").text()
+          val expectedResult = ""
+          assert(result == expectedResult)
+        }
       }
     }
     test("async") {

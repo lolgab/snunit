@@ -37,10 +37,10 @@ jobs:
         run: ./mill --disable-ticker __.fix --check
       - name: Compile
         run: ./mill --disable-ticker -j 0 __.compile
-      - name: Integration Test
+      - name: Test
         run: |
           sudo systemctl stop unit.service
-          ./mill --disable-ticker integration.test
+          ./mill --disable-ticker __.test
       - name: Publish libraries locally
         run: ./mill --disable-ticker -j 0 __.publishLocal
       - name: Compile Sbt plugin

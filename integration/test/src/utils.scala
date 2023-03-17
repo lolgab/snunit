@@ -42,6 +42,11 @@ def withDeployedExampleMultiplatformCross(projectName: String)(f: => Unit) = {
     withDeployedExampleMultiplatform(projectName, s"[$scalaVersion]")(f)
   }
 }
+def withDeployedExampleCross(projectName: String)(f: => Unit) = {
+  BuildInfo.scalaVersions.split(':').foreach { scalaVersion =>
+    withDeployedExample(projectName, s"[$scalaVersion]")(f)
+  }
+}
 
 private val futureBackend = HttpClientFutureBackend()
 

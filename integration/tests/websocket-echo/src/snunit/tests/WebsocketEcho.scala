@@ -5,7 +5,7 @@ object MyRequestHandler extends RequestHandler {
     if (req.isWebsocketHandshake) {
       req.upgrade()
     } else {
-      req.send(404, Array.emptyByteArray, Seq.empty)
+      req.send(StatusCode.NotFound, Array.emptyByteArray, Seq.empty[(String, String)])
     }
   }
 }
@@ -13,12 +13,12 @@ object MyRequestHandler extends RequestHandler {
 object MyWebsocketHandler extends WebsocketHandler {
   def handleFrame(frame: Frame): Unit = {
     if (frame.opcode == 9 /* PONG */ ) {
-      frame.sendDone()
+      frame.sendFrameDone()
     } else {
-      frame.send(frame.opcode, frame.fin, frame.contentRaw)
-      frame.sendDone()
+      frame.sendFrame(frame.opcode, frame.fin, frame.frameContentRaw())
+      frame.sendFrameDone()
       if (frame.opcode == 8 /* CLOSE */ ) {
-        frame.request.sendDone()
+        frame.frameRequest.sendDone()
       }
     }
   }

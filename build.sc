@@ -17,7 +17,7 @@ import $file.versions
 import versions.Versions
 import $file.unitd
 
-val scalaVersions = Seq(Versions.scala213, Versions.scala3)
+val scalaVersions = Seq(Versions.scala3)
 
 val http4sVersions = Seq(Versions.http4s023, Versions.http4s1)
 
@@ -26,8 +26,10 @@ val http4sAndScalaVersions = for {
   http4sV <- http4sVersions
 } yield (scalaV, http4sV)
 
+val osLib = ivy"com.lihaoyi::os-lib:${Versions.osLib}"
 val upickle = ivy"com.lihaoyi::upickle::${Versions.upickle}"
 val undertow = ivy"io.undertow:undertow-core:${Versions.undertow}"
+val utest = ivy"com.lihaoyi::utest::${Versions.utest}"
 
 val testServerPort = 8081
 
@@ -49,9 +51,6 @@ object Common {
     def baseTestConfig(binary: os.Path) = {
       val appName = "app"
       ujson.Obj(
-        "access_log" -> ujson.Obj(
-          "path" -> "/dev/stdout"
-        ),
         "applications" -> ujson.Obj(
           appName -> ujson.Obj(
             "type" -> "external",
@@ -73,10 +72,6 @@ object Common {
 
   }
 
-  trait Scala2Only extends SharedNative {
-    def crossScalaVersion = Versions.scala213
-    def scalaVersion = crossScalaVersion
-  }
   trait Scala3Only extends SharedNative {
     def crossScalaVersion = Versions.scala3
     def scalaVersion = crossScalaVersion
@@ -85,8 +80,8 @@ object Common {
     def crossScalaVersion = Versions.scala3
     def scalaVersion = crossScalaVersion
   }
-  trait Cross extends SharedNative with CrossScalaModule
-  trait CrossJvm extends Shared with CrossScalaModule
+  trait Cross extends CrossScalaModule with SharedNative
+  trait CrossJvm extends CrossScalaModule with Shared
 }
 
 trait Publish extends CiReleaseModule with Mima {
@@ -105,20 +100,16 @@ trait Publish extends CiReleaseModule with Mima {
 }
 object `snunit-internal-api` extends JavaModule
 object snunit extends Cross[SNUnitModule](scalaVersions: _*)
-class SNUnitModule(val crossScalaVersion: String) extends CrossPlatform {
-  trait Shared extends CrossPlatformCrossScalaModule with Publish
-
-  object native extends Shared with Common.Cross {
-    def compileModuleDeps = Seq(`snunit-internal-api`)
-  }
-  object jvm extends Shared with Common.CrossJvm {
-    def ivyDeps = super.ivyDeps() ++ Agg(undertow)
+class SNUnitModule(val crossScalaVersion: String) extends Common.Cross with Publish {
+  def compileModuleDeps = Seq(`snunit-internal-api`)
+  object test extends Tests with TestModule.Utest {
+    def ivyDeps = super.ivyDeps() ++ Agg(utest)
   }
 }
 
 object `snunit-async-loop` extends Cross[SNUnitAsyncModule](scalaVersions: _*)
 class SNUnitAsyncModule(val crossScalaVersion: String) extends Common.Cross with Publish {
-  def moduleDeps = Seq(`snunit`(crossScalaVersion).native)
+  def moduleDeps = Seq(snunit())
 
   def ivyDeps =
     T {
@@ -130,7 +121,7 @@ class SNUnitAsyncModule(val crossScalaVersion: String) extends Common.Cross with
 
 object `snunit-async-epollcat` extends Cross[SNUnitAsyncEpollcatModule](scalaVersions: _*)
 class SNUnitAsyncEpollcatModule(val crossScalaVersion: String) extends Common.Cross with Publish {
-  def moduleDeps = Seq(`snunit`(crossScalaVersion).native)
+  def moduleDeps = Seq(snunit())
 
   def ivyDeps =
     T {
@@ -140,64 +131,36 @@ class SNUnitAsyncEpollcatModule(val crossScalaVersion: String) extends Common.Cr
     }
 }
 
-object `snunit-autowire` extends Common.Scala2Only with Publish {
-  def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
-  def ivyDeps =
-    T {
-      super.ivyDeps() ++ Agg(
-        ivy"com.lihaoyi::autowire::${Versions.autowire}",
-        upickle
-      )
-    }
-}
-
 object `snunit-undertow` extends Cross[SNUnitUndertow](scalaVersions: _*)
 class SNUnitUndertow(val crossScalaVersion: String) extends Common.Cross with Publish {
-  def moduleDeps = Seq(snunit(crossScalaVersion).native)
+  def moduleDeps = Seq(snunit())
 }
 
 object `snunit-tapir` extends Cross[SNUnitTapirModule](scalaVersions: _*)
-class SNUnitTapirModule(val crossScalaVersion: String) extends CrossPlatform {
-  def moduleDeps = Seq(snunit(crossScalaVersion))
-  trait Shared extends CrossPlatformCrossScalaModule with Publish {
-    def ivyDeps = super.ivyDeps() ++ Agg(ivy"com.softwaremill.sttp.tapir::tapir-server::${Versions.tapir}")
-  }
-
-  object native extends Shared with Common.Cross
-  object jvm extends Shared with Common.CrossJvm
+class SNUnitTapirModule(val crossScalaVersion: String) extends Common.Cross with Publish {
+  def moduleDeps = Seq(snunit())
+  def ivyDeps = super.ivyDeps() ++ Agg(ivy"com.softwaremill.sttp.tapir::tapir-server::${Versions.tapir}")
 }
 object `snunit-tapir-cats` extends Cross[SNUnitTapirCats](scalaVersions: _*)
 class SNUnitTapirCats(val crossScalaVersion: String) extends Common.Cross with Publish {
   def mimaPreviousArtifacts = Agg.empty[Dep]
-  def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion).native)
+  def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion))
   def ivyDeps = super.ivyDeps() ++ Agg(ivy"com.softwaremill.sttp.tapir::tapir-cats::${Versions.tapir}")
 }
 
 object `snunit-http4s` extends Cross[SNUnitHttp4s](http4sAndScalaVersions: _*)
-class SNUnitHttp4s(val crossScalaVersion: String, http4sVersion: String) extends CrossPlatform {
-  def moduleDeps = Seq(`snunit`(crossScalaVersion))
-  object native extends CrossPlatformCrossScalaModule with Common.Cross with Publish {
-    val http4sBinaryVersion = http4sVersion match {
-      case s"0.23.$_" => "0.23"
-      case s"1.$_"    => "1"
-    }
-    def artifactName = s"snunit-http4s$http4sBinaryVersion"
-    def millSourcePath = super.millSourcePath / os.up
-    def ivyDeps = super.ivyDeps() ++ Agg(ivy"org.http4s::http4s-server::$http4sVersion")
-    def sources = T.sources {
-      super.sources() ++ Agg(PathRef(millSourcePath / s"http4s-$http4sBinaryVersion" / "src"))
-    }
+class SNUnitHttp4s(val crossScalaVersion: String, http4sVersion: String) extends Common.Cross with Publish {
+  def moduleDeps = Seq(snunit())
+  val http4sBinaryVersion = http4sVersion match {
+    case s"0.23.$_" => "0.23"
+    case s"1.$_"    => "1"
   }
-}
-
-object `snunit-tapir-zio` extends Cross[SNUnitTapirZio](Versions.scala213)
-class SNUnitTapirZio(val crossScalaVersion: String) extends CrossPlatform {
-  def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion))
-  trait Shared extends CrossPlatformCrossScalaModule with Publish {
-    def ivyDeps = super.ivyDeps() ++ Agg(ivy"dev.zio::zio::${Versions.zio}")
+  def artifactName = s"snunit-http4s$http4sBinaryVersion"
+  def millSourcePath = super.millSourcePath / os.up
+  def ivyDeps = super.ivyDeps() ++ Agg(ivy"org.http4s::http4s-server::$http4sVersion")
+  def sources = T.sources {
+    super.sources() ++ Agg(PathRef(millSourcePath / s"http4s-$http4sBinaryVersion" / "src"))
   }
-  object native extends Shared with Common.Cross
-  object jvm extends Shared with Common.CrossJvm
 }
 
 def caskSources = T {
@@ -228,25 +191,14 @@ class SNUnitCaskModule(val crossScalaVersion: String) extends Common.Cross with 
 object integration extends ScalaModule {
   object tests extends Module {
     object `hello-world` extends Cross[HelloWorld](scalaVersions: _*)
-    class HelloWorld(val crossScalaVersion: String) extends CrossPlatform {
-      def moduleDeps = Seq(snunit(crossScalaVersion))
-      object native extends CrossPlatformCrossScalaModule with Common.Cross
-      object jvm extends CrossPlatformCrossScalaModule with Common.CrossJvm
+    class HelloWorld(val crossScalaVersion: String) extends Common.Cross {
+      def moduleDeps = Seq(snunit())
     }
     object `websocket-echo` extends Common.Scala3Only {
-      def moduleDeps = Seq(snunit(crossScalaVersion).native)
+      def moduleDeps = Seq(snunit(crossScalaVersion))
     }
-    object `empty-response` extends Common.Scala2Only {
-      def moduleDeps = Seq(snunit(crossScalaVersion).native)
-    }
-    object `multiple-handlers` extends Common.Scala2Only {
-      def moduleDeps = Seq(snunit(crossScalaVersion).native)
-    }
-    object autowire extends Common.Scala2Only {
-      def moduleDeps = Seq(`snunit-autowire`)
-    }
-    object `autowire-int` extends Common.Scala2Only {
-      def moduleDeps = Seq(`snunit-autowire`)
+    object `multiple-handlers` extends Common.Scala3Only {
+      def moduleDeps = Seq(snunit(crossScalaVersion))
     }
     object async extends Common.Scala3Only {
       def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
@@ -258,7 +210,6 @@ object integration extends ScalaModule {
       def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
     }
     object `undertow-helloworld` extends CrossPlatform {
-      def moduleDeps = Seq(snunit(Versions.scala3))
       object native extends CrossPlatformScalaModule with Common.Scala3Only {
         def moduleDeps = Seq(`snunit-undertow`(crossScalaVersion))
       }
@@ -276,16 +227,14 @@ object integration extends ScalaModule {
         def moduleDeps = Seq(`snunit-cask`(crossScalaVersion))
       }
     }
-    object `tapir-helloworld` extends CrossPlatform {
-      override def moduleDeps = Seq(`snunit-tapir`(Versions.scala3))
-      object jvm extends CrossPlatformScalaModule with Common.Scala3OnlyJvm
-      object native extends CrossPlatformScalaModule with Common.Scala3Only
+    object `tapir-helloworld` extends Common.Scala3Only {
+      override def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion))
     }
     object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](http4sVersions: _*)
     class Http4sHelloWorldModule(http4sVersion: String) extends Common.Scala3Only {
       def millSourcePath = super.millSourcePath / os.up
       def moduleDeps = Seq(
-        `snunit-http4s`(crossScalaVersion, http4sVersion).native,
+        `snunit-http4s`(crossScalaVersion, http4sVersion),
         `snunit-async-epollcat`(crossScalaVersion)
       )
       def ivyDeps = super.ivyDeps() ++ Agg(
@@ -295,7 +244,7 @@ object integration extends ScalaModule {
     object `tapir-helloworld-future` extends Common.Scala3Only {
       def moduleDeps = Seq(
         `snunit-async-loop`(crossScalaVersion),
-        `snunit-tapir`(crossScalaVersion).native
+        `snunit-tapir`(crossScalaVersion)
       )
     }
     object `tapir-helloworld-cats` extends Common.Scala3Only {
@@ -316,8 +265,8 @@ object integration extends ScalaModule {
     def buildInfoPackageName = Some("snunit.test")
     def ivyDeps =
       Agg(
-        ivy"com.lihaoyi::utest:${Versions.utest}",
-        ivy"com.lihaoyi::os-lib:${Versions.osLib}",
+        utest,
+        osLib,
         ivy"com.softwaremill.sttp.client3::core:${Versions.sttp}"
       )
   }
@@ -331,8 +280,8 @@ class SnunitPluginsShared(val crossScalaVersion: String) extends CrossScalaModul
   def buildInfoPackageName = Some("snunit.plugin.internal")
   object test extends Tests with TestModule.Utest {
     def ivyDeps = super.ivyDeps() ++ Agg(
-      ivy"com.lihaoyi::utest:${Versions.utest}",
-      ivy"com.lihaoyi::os-lib:${Versions.osLib}"
+      utest,
+      osLib
     )
   }
 }

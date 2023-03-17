@@ -10,7 +10,7 @@ import snunit._
 import java.io.InputStream
 import java.io.OutputStream
 
-final class HttpServerExchange private[undertow] (private[undertow] val req: Request) {
+final class HttpServerExchange private[undertow] (private[undertow] val req: snunit.Request) {
   private var state = 200
 
   private val responseHeaders = new HeaderMap
@@ -19,7 +19,7 @@ final class HttpServerExchange private[undertow] (private[undertow] val req: Req
 
   def getRequestHeaders(): HeaderMap = new HeaderMap(req.headers.toMap)
   def getResponseHeaders(): HeaderMap = responseHeaders
-  def getRequestMethod(): String = req.method.name
+  def getRequestMethod(): String = req.method
   def getInputStream(): InputStream = {
     blockingHttpExchange.getInputStream()
   }
@@ -90,7 +90,7 @@ object HttpServerExchange {
 
     def getInputStream(): InputStream = {
       if (inputStream == null) {
-        inputStream = new java.io.ByteArrayInputStream(exchange.req.contentRaw)
+        inputStream = new java.io.ByteArrayInputStream(exchange.req.contentRaw())
       }
       inputStream
     }
@@ -110,7 +110,7 @@ object HttpServerExchange {
           override def flush(): Unit = ???
 
           override def close(): Unit = {
-            exchange.req.send(exchange.state, responseData, exchange.responseHeaders.asScala)
+            exchange.req.send(StatusCode(exchange.state), responseData, exchange.responseHeaders.asScala)
           }
         }
       }

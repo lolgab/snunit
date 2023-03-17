@@ -5,10 +5,8 @@ import utest._
 object TapirTests extends TestSuite {
   val tests = Tests {
     test("tapir-helloworld") {
-      withDeployedExampleMultiplatform("tapir-helloworld") {
-        runOnAllPlatforms { baseUrl =>
-          tapirHelloWorldTest(baseUrl)
-        }
+      withDeployedExample("tapir-helloworld") {
+        tapirHelloWorldTest(baseUrl)
       }
     }
     test("tapir-helloworld-future") {

@@ -1,14 +1,14 @@
 package snunit
 
-import snunit.unsafe.CApi._
-import snunit.unsafe.CApiOps._
+import snunit.unsafe.{*, given}
 
 import scala.scalanative.unsafe._
 
 private[snunit] object ServerBuilder {
 
   private var requestHandler: RequestHandler = new RequestHandler {
-    def handleRequest(req: Request) = req.send(500, Array.emptyByteArray, Seq.empty)
+    def handleRequest(req: Request) =
+      send(req)(StatusCode.InternalServerError, Array.emptyByteArray, Seq.empty[(String, String)])
   }
 
   private var websocketHandler: WebsocketHandler = null
@@ -27,16 +27,23 @@ private[snunit] object ServerBuilder {
     init.callbacks.quit = quit
   }
 
-  protected[snunit] val request_handler: request_handler_t = (req: Ptr[nxt_unit_request_info_t]) => {
-    requestHandler.handleRequest(new RequestImpl(req))
+  protected[snunit] val request_handler: request_handler_t = request_handler_t { (req: Ptr[nxt_unit_request_info_t]) =>
+    {
+      requestHandler.handleRequest(Request(req))
+    }
   }
 
-  protected[snunit] val websocket_handler: websocket_handler_t = (frame: Ptr[nxt_unit_websocket_frame_t]) => {
-    websocketHandler.handleFrame(new FrameImpl(frame))
+  protected[snunit] val websocket_handler: websocket_handler_t = websocket_handler_t {
+    (frame: Ptr[nxt_unit_websocket_frame_t]) =>
+      {
+        websocketHandler.handleFrame(Frame(frame))
+      }
   }
 
-  protected[snunit] val quit: quit_t = (ctx: Ptr[nxt_unit_ctx_t]) => {
-    nxt_unit_done(ctx)
-    ()
+  protected[snunit] val quit: quit_t = quit_t { (ctx: Ptr[nxt_unit_ctx_t]) =>
+    {
+      nxt_unit_done(ctx)
+      ()
+    }
   }
 }

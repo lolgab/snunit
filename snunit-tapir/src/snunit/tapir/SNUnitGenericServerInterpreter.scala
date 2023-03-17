@@ -1,6 +1,7 @@
 package snunit.tapir
 
-import snunit.Request
+import snunit._
+import sttp.model.{Method as TapirMethod}
 import sttp.model._
 import sttp.monad._
 import sttp.monad.syntax._
@@ -34,16 +35,16 @@ private[tapir] trait SNUnitGenericServerInterpreter {
     val streams = NoStreams
     def toStream(serverRequest: ServerRequest): streams.BinaryStream = throw new UnsupportedOperationException
     override def toRaw[RAW](serverRequest: ServerRequest, bodyType: RawBodyType[RAW]): Wrapper[RawValue[RAW]] = {
-      @inline def req = serverRequest.underlying.asInstanceOf[snunit.Request]
+      inline def req = serverRequest.underlying.asInstanceOf[snunit.Request]
 
       // adapted from tapir Netty implementation
       bodyType match {
         case RawBodyType.StringBody(charset) =>
-          monadError.unit(RawValue(new String(req.contentRaw, charset)))
-        case RawBodyType.ByteArrayBody  => monadError.unit(RawValue(req.contentRaw))
-        case RawBodyType.ByteBufferBody => monadError.unit(RawValue(ByteBuffer.wrap(req.contentRaw)))
+          monadError.unit(RawValue(new String(req.contentRaw(), charset)))
+        case RawBodyType.ByteArrayBody  => monadError.unit(RawValue(req.contentRaw()))
+        case RawBodyType.ByteBufferBody => monadError.unit(RawValue(ByteBuffer.wrap(req.contentRaw())))
         case RawBodyType.InputStreamBody =>
-          monadError.unit(RawValue(new ByteArrayInputStream(req.contentRaw)))
+          monadError.unit(RawValue(new ByteArrayInputStream(req.contentRaw())))
         case RawBodyType.FileBody         => ???
         case _: RawBodyType.MultipartBody => ???
       }
@@ -106,18 +107,7 @@ private[tapir] trait SNUnitGenericServerInterpreter {
     }
 
     // Members declared in sttp.model.RequestMetadata
-    def method: Method = req.method match {
-      case snunit.Method.GET     => Method.GET
-      case snunit.Method.HEAD    => Method.HEAD
-      case snunit.Method.POST    => Method.POST
-      case snunit.Method.PUT     => Method.PUT
-      case snunit.Method.DELETE  => Method.DELETE
-      case snunit.Method.OPTIONS => Method.OPTIONS
-      case snunit.Method.PATCH   => Method.PATCH
-      case snunit.Method.CONNECT => Method.CONNECT
-      case snunit.Method.TRACE   => Method.TRACE
-      case other                 => Method.unsafeApply(other.name)
-    }
+    def method: TapirMethod = TapirMethod.unsafeApply(req.method)
     def uri: sttp.model.Uri = Uri.unsafeParse(req.target)
 
     // Members declared in sttp.tapir.model.ServerRequest
@@ -147,16 +137,16 @@ private[tapir] trait SNUnitGenericServerInterpreter {
               .apply(new SNUnitServerRequest(req))
               .flatMap {
                 case RequestResult.Failure(_) =>
-                  wrapSideEffect(req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, Seq.empty))
+                  wrapSideEffect(req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, Seq.empty[(String, String)]))
                 case RequestResult.Response(response) =>
                   val body = response.body.getOrElse(Array.emptyByteArray)
-                  wrapSideEffect(req.send(response.code.code, body, response.headers.map(h => h.name -> h.value)))
+                  wrapSideEffect(req.send(snunit.StatusCode(response.code.code), body, response.headers.map(h => h.name -> h.value)))
               }
               .handleError { case ex: Exception =>
                 wrapSideEffect {
                   System.err.println(s"Error while processing the request")
                   ex.printStackTrace()
-                  req.send(snunit.StatusCode.InternalServerError, Array.emptyByteArray, Seq.empty)
+                  req.send(snunit.StatusCode.InternalServerError, Array.emptyByteArray, Seq.empty[(String, String)])
                 }
               }
           }

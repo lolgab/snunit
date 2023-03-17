@@ -1,6 +1,6 @@
 package snunit
 
-import snunit.unsafe.CApi._
+import snunit.unsafe._
 
 import scala.scalanative.unsafe._
 

@@ -1,7 +1,6 @@
 package snunit
 
-import snunit.unsafe.CApi._
-import snunit.unsafe.CApiOps._
+import snunit.unsafe.{*, given}
 
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.string.strerror
@@ -38,38 +37,42 @@ object AsyncServerBuilder {
     new AsyncServer(ctx)
   }
 
-  private val add_port: add_port_t = (ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]) => {
-    if (port.in_fd != -1) {
-      var result = NXT_UNIT_OK
-      locally {
-        val res = fcntl(port.in_fd, F_SETFL, O_NONBLOCK)
-        if (res == -1) {
-          nxt_unit_warn(ctx, s"fcntl(${port.in_fd}, O_NONBLOCK) failed: ${fromCString(strerror(errno))}, $errno)")
-          result = -1
+  private val add_port: add_port_t = add_port_t { (ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]) =>
+    {
+      if (in_fd(port) != -1) {
+        var result = NXT_UNIT_OK
+        locally {
+          val res = fcntl(port.in_fd, F_SETFL, O_NONBLOCK)
+          if (res == -1) {
+            nxt_unit_warn(ctx, s"fcntl(${port.in_fd}, O_NONBLOCK) failed: ${fromCString(strerror(errno))}, $errno)")
+            result = -1
+          }
         }
-      }
-      if (result == NXT_UNIT_OK) {
-        try {
-          val portData = new PortData(ctx, port)
-          portData.stopMonitorCallback =
-            EventPollingExecutorScheduler.monitorReads(port.in_fd, portData.process_port_msg)
-          port.data = portData.toPtr()
-          NXT_UNIT_OK
-        } catch {
-          case NonFatal(e @ _) =>
-            nxt_unit_warn(ctx, s"Polling failed: ${fromCString(strerror(errno))}, $errno)")
-            NXT_UNIT_ERROR
-        }
-      } else result
-    } else NXT_UNIT_OK
+        if (result == NXT_UNIT_OK) {
+          try {
+            val portData = new PortData(ctx, port)
+            portData.stopMonitorCallback =
+              EventPollingExecutorScheduler.monitorReads(port.in_fd, portData.process_port_msg)
+            port.data = portData.toPtr()
+            NXT_UNIT_OK
+          } catch {
+            case NonFatal(e @ _) =>
+              nxt_unit_warn(ctx, s"Polling failed: ${fromCString(strerror(errno))}, $errno)")
+              NXT_UNIT_ERROR
+          }
+        } else result
+      } else NXT_UNIT_OK
+    }
   }
 
-  private val remove_port: remove_port_t = (_: Ptr[nxt_unit_t], ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]) =>
-    {
-      if (port.data != null && ctx != null) {
-        PortData.fromPtr(port.data).stop()
+  private val remove_port: remove_port_t = remove_port_t {
+    (_: Ptr[nxt_unit_t], ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]) =>
+      {
+        if (port.data != null && ctx != null) {
+          PortData.fromPtr(port.data).stop()
+        }
       }
-    }
+  }
   private class PortData(
       val ctx: Ptr[nxt_unit_ctx_t],
       val port: Ptr[nxt_unit_port_t]
