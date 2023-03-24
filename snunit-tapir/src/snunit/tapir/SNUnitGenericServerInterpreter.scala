@@ -137,10 +137,14 @@ private[tapir] trait SNUnitGenericServerInterpreter {
               .apply(new SNUnitServerRequest(req))
               .flatMap {
                 case RequestResult.Failure(_) =>
-                  wrapSideEffect(req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, Seq.empty[(String, String)]))
+                  wrapSideEffect(
+                    req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, Seq.empty[(String, String)])
+                  )
                 case RequestResult.Response(response) =>
                   val body = response.body.getOrElse(Array.emptyByteArray)
-                  wrapSideEffect(req.send(snunit.StatusCode(response.code.code), body, response.headers.map(h => h.name -> h.value)))
+                  wrapSideEffect(
+                    req.send(snunit.StatusCode(response.code.code), body, response.headers.map(h => h.name -> h.value))
+                  )
               }
               .handleError { case ex: Exception =>
                 wrapSideEffect {

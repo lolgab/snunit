@@ -2,13 +2,9 @@ package snunit.unsafe
 
 import java.nio.CharBuffer
 import scala.scalanative.runtime.{fromRawPtr, toRawPtr}
-import scala.scalanative.runtime.Intrinsics.{
-  castObjectToRawPtr,
-  loadObject,
-  loadInt
-}
+import scala.scalanative.runtime.Intrinsics.{castObjectToRawPtr, loadObject, loadInt}
 
-private [snunit] def newCharBuffer(string: String): CharBuffer = {
+private[snunit] def newCharBuffer(string: String): CharBuffer = {
   // deconstructing string
   val stringRawPtr = castObjectToRawPtr(string)
   val stringPtr = fromRawPtr[Byte](stringRawPtr)

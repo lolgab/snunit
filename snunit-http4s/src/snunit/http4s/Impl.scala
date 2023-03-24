@@ -27,15 +27,15 @@ private[http4s] object Impl {
               val run = httpApp
                 .run {
                   val method = req.method match {
-                    case snunit.Method.GET => http4s.Method.GET
-                    case snunit.Method.HEAD => http4s.Method.HEAD
-                    case snunit.Method.POST => http4s.Method.POST
-                    case snunit.Method.PUT => http4s.Method.PUT
-                    case snunit.Method.DELETE => http4s.Method.DELETE
+                    case snunit.Method.GET     => http4s.Method.GET
+                    case snunit.Method.HEAD    => http4s.Method.HEAD
+                    case snunit.Method.POST    => http4s.Method.POST
+                    case snunit.Method.PUT     => http4s.Method.PUT
+                    case snunit.Method.DELETE  => http4s.Method.DELETE
                     case snunit.Method.CONNECT => http4s.Method.CONNECT
                     case snunit.Method.OPTIONS => http4s.Method.OPTIONS
-                    case snunit.Method.TRACE => http4s.Method.TRACE
-                    case snunit.Method.PATCH => http4s.Method.PATCH
+                    case snunit.Method.TRACE   => http4s.Method.TRACE
+                    case snunit.Method.PATCH   => http4s.Method.PATCH
                     case v =>
                       http4s.Method
                         .fromString(v)
