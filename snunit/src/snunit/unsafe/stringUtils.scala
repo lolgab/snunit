@@ -3,18 +3,18 @@ package snunit.unsafe
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio._
-import java.nio.charset.{Charset, CoderResult}
-import scala.scalanative.runtime.{fromRawPtr, toRawPtr}
+import java.nio.charset.Charset
+import java.nio.charset.CoderResult
 import scala.scalanative.runtime.GC
-import scala.scalanative.runtime.Intrinsics.{
-  castObjectToRawPtr,
-  castRawPtrToObject,
-  loadInt,
-  loadObject,
-  storeBoolean,
-  storeInt,
-  storeObject
-}
+import scala.scalanative.runtime.Intrinsics.castObjectToRawPtr
+import scala.scalanative.runtime.Intrinsics.castRawPtrToObject
+import scala.scalanative.runtime.Intrinsics.loadInt
+import scala.scalanative.runtime.Intrinsics.loadObject
+import scala.scalanative.runtime.Intrinsics.storeBoolean
+import scala.scalanative.runtime.Intrinsics.storeInt
+import scala.scalanative.runtime.Intrinsics.storeObject
+import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.runtime.toRawPtr
 import scala.scalanative.unsafe._
 
 @extern

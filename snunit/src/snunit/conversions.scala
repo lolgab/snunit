@@ -1,7 +1,8 @@
 package snunit
 
-import scala.scalanative.unsafe._
 import snunit.unsafe.fromCStringAndSize
+
+import scala.scalanative.unsafe._
 
 inline def methodOf(name: CString, nameSize: Byte): String = {
   if (nameSize == 3.toByte) {

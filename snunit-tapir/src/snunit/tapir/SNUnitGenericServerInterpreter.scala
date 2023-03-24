@@ -1,8 +1,8 @@
 package snunit.tapir
 
 import snunit._
-import sttp.model.{Method as TapirMethod}
 import sttp.model._
+import sttp.model.{Method as TapirMethod}
 import sttp.monad._
 import sttp.monad.syntax._
 import sttp.tapir._

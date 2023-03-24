@@ -1,6 +1,6 @@
 package snunit
 
-import snunit.unsafe.{*, given}
+import snunit.unsafe.{_, given}
 
 import scala.annotation.targetName
 import scala.collection.immutable.ArraySeq

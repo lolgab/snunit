@@ -1,6 +1,6 @@
 package snunit
 
-import snunit.unsafe.{*, given}
+import snunit.unsafe.{_, given}
 
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.string.strerror
