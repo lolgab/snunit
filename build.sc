@@ -296,7 +296,7 @@ object `snunit-mill-plugin` extends ScalaModule with Publish {
 object `snunit-mill-plugin-itest` extends MillIntegrationTestModule {
   def millTestVersion = Versions.mill
   def pluginsUnderTest = Seq(`snunit-mill-plugin`)
-  def temporaryIvyModules = Seq(`snunit-plugins-shared`(Versions.scala213))
+  def temporaryIvyModules = Seq(`snunit-plugins-shared`(Versions.scala213), snunit(Versions.scala3))
 }
 
 def buildSources = T(Seq(PathRef(os.pwd / "build.sc")))
