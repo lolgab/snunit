@@ -144,13 +144,19 @@ class SNUnitTapirModule(val crossScalaVersion: String) extends Common.Cross with
 object `snunit-tapir-cats` extends Cross[SNUnitTapirCats](scalaVersions: _*)
 class SNUnitTapirCats(val crossScalaVersion: String) extends Common.Cross with Publish {
   def mimaPreviousArtifacts = Agg.empty[Dep]
-  def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion))
+  def moduleDeps = Seq(
+    `snunit-tapir`(crossScalaVersion),
+    `snunit-async-epollcat`(crossScalaVersion)
+  )
   def ivyDeps = super.ivyDeps() ++ Agg(ivy"com.softwaremill.sttp.tapir::tapir-cats::${Versions.tapir}")
 }
 
 object `snunit-http4s` extends Cross[SNUnitHttp4s](http4sAndScalaVersions: _*)
 class SNUnitHttp4s(val crossScalaVersion: String, http4sVersion: String) extends Common.Cross with Publish {
-  def moduleDeps = Seq(snunit())
+  def moduleDeps = Seq(
+    snunit(),
+    `snunit-async-epollcat`(crossScalaVersion)
+  )
   val http4sBinaryVersion = http4sVersion match {
     case s"0.23.$_" => "0.23"
     case s"1.$_"    => "1"
@@ -234,8 +240,16 @@ object integration extends ScalaModule {
     class Http4sHelloWorldModule(http4sVersion: String) extends Common.Scala3Only {
       def millSourcePath = super.millSourcePath / os.up
       def moduleDeps = Seq(
-        `snunit-http4s`(crossScalaVersion, http4sVersion),
-        `snunit-async-epollcat`(crossScalaVersion)
+        `snunit-http4s`(crossScalaVersion, http4sVersion)
+      )
+      def ivyDeps = super.ivyDeps() ++ Agg(
+        ivy"org.http4s::http4s-dsl::$http4sVersion"
+      )
+    }
+    object `http4s-app` extends Common.Scala3Only {
+      val http4sVersion = Versions.http4s1
+      def moduleDeps = Seq(
+        `snunit-http4s`(crossScalaVersion, http4sVersion)
       )
       def ivyDeps = super.ivyDeps() ++ Agg(
         ivy"org.http4s::http4s-dsl::$http4sVersion"
@@ -249,7 +263,6 @@ object integration extends ScalaModule {
     }
     object `tapir-helloworld-cats` extends Common.Scala3Only {
       def moduleDeps = Seq(
-        `snunit-async-epollcat`(crossScalaVersion),
         `snunit-tapir-cats`(crossScalaVersion)
       )
     }

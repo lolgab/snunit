@@ -11,5 +11,12 @@ object Http4sTests extends TestSuite {
         assert(result == expectedResult)
       }
     }
+    test("http4s-app") {
+      withDeployedExample("http4s-app") {
+        val result = request.get(baseUrl).text()
+        val expectedResult = "Hello Http4s App!"
+        assert(result == expectedResult)
+      }
+    }
   }
 }
