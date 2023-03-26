@@ -8,7 +8,7 @@ object HelloWorldExample {
       .setRequestHandler(req =>
         req.send(
           statusCode = StatusCode.OK,
-          content = s"Hello world!\n",
+          content = "Hello world!\n",
           headers = Seq("Content-Type" -> "text/plain")
         )
       )
@@ -84,7 +84,7 @@ In case of problems, you will get a 4xx response like this:
 }
 ```
 
-Further informations can be found in `unitd` logs in the running terminal.
+Further information can be found in `unitd` logs in the running terminal.
 
 ## Sync and async support
 
@@ -118,3 +118,66 @@ Currently three interpreters are available:
   - You can find an example [in tests](./integration/tests/tapir-helloworld-future/src/Main.scala)
 - An interpreter for cats hidden behind `snunit.tapir.SNUnitServerBuilder` in the `snunit-tapir-cats` artifact.
   - You can find an example [in tests](./integration/tests/tapir-helloworld-cats/src/Main.scala)
+
+## Http4s support
+
+SNUnit offers a server implementation for [http4s](https://http4s.org).
+It is based on the [epollcat](https://github.com/armanbilge/epollcat) asynchronous event loop.
+
+There are two ways you can build a http4s server.
+
+### Automatic server creation
+
+`snunit.Http4sApp` extends `epollcat.EpollApp` building the SNUnit server.
+
+It exposes a `def routes: HttpApp[IO]` that you need to implement with your
+server logic.
+
+Here an example "Hello world" app:
+
+```scala
+import cats.effect._
+import org.http4s._
+import org.http4s.dsl.io._
+
+object app extends snunit.Http4sApp {
+  def routes = HttpRoutes
+    .of[IO] { case GET -> Root =>
+      Ok("Hello from SNUnit Http4s!")
+    }
+    .orNotFound
+}
+```
+
+### Manual server creation
+
+If you want to have more control over the server creation, you can use the
+`SNUnitServerBuilder` and manually use it.
+
+For example, here you see it in combination with `epollcat.EpollApp`
+
+```scala
+package snunit.tests
+
+import cats.effect._
+import epollcat.EpollApp
+import org.http4s._
+import org.http4s.dsl.io._
+import snunit.http4s._
+
+object Http4sHelloWorld extends EpollApp.Simple {
+  def helloWorldRoutes: HttpRoutes[IO] = {
+    HttpRoutes.of[IO] { case GET -> Root =>
+      Ok("Hello Http4s!")
+    }
+  }
+
+  def run: IO[Unit] = {
+    SNUnitServerBuilder
+      .default[IO]
+      .withHttpApp(helloWorldRoutes.orNotFound)
+      .build
+      .useForever
+  }
+}
+```
