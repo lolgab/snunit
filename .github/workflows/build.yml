@@ -37,13 +37,19 @@ jobs:
         run: ./mill --disable-ticker __.fix --check
       - name: Compile
         run: ./mill --disable-ticker -j 0 __.compile
-      - name: Integration Test
+      - name: Publish libraries locally
+        run: ./mill --disable-ticker -j 0 __.publishLocal
+      - name: Run Unit Tests
+        run: ./mill --disable-ticker snunit[_].test
+      - name: Run Integration Tests
         run: |
           sudo systemctl stop unit.service
           ./mill --disable-ticker integration.test
-      - name: Publish libraries locally
-        run: ./mill --disable-ticker -j 0 __.publishLocal
-      - name: Compile Sbt plugin
+      - name: Start NGINX Unit daemon
+        run: sudo systemctl start unit.service
+      - name: Run Mill Plugin Tests
+        run: ./mill --disable-ticker integration.test
+      - name: Build and Test Sbt plugin
         run: |
           (
             cd sbt-plugin

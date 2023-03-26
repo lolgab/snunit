@@ -9,54 +9,69 @@ import org.http4s
 import org.http4s.HttpApp
 import org.typelevel.ci.CIString
 import org.typelevel.vault.Vault
-import snunit.AsyncServer
+import snunit._
 
 import java.util.concurrent.CancellationException
 
 private[http4s] object Impl {
-  @inline
-  private def toHttp4sRequest[F[_]](req: snunit.Request): http4s.Request[F] = {
-    @inline
-    def toHttp4sMethod(method: snunit.Method): http4s.Method =
-      http4s.Method.fromString(method.name).getOrElse(throw new Exception(s"Method not valid ${method.name}"))
-    @inline
-    def toHttp4sUri(req: snunit.Request): http4s.Uri =
-      http4s.Uri.fromString(req.target).getOrElse(throw new Exception(s"Uri not valid ${req.target}"))
-    @inline
-    def toHttp4sHeaders(req: snunit.Request): http4s.Headers = {
-      val builder = List.newBuilder[http4s.Header.Raw]
-      var i = 0
-      while (i < req.headersLength) {
-        builder += http4s.Header.Raw(CIString(req.headerNameUnsafe(i)), req.headerValueUnsafe(i))
-        i += 1
-      }
-      http4s.Headers(builder.result())
-    }
-    @inline
-    def toHttp4sVersion(req: snunit.Request): http4s.HttpVersion = {
-      http4s.HttpVersion.fromString(req.version).getOrElse(throw new Exception(s"Version not valid ${req.version}"))
-    }
-    http4s.Request[F](
-      toHttp4sMethod(req.method),
-      toHttp4sUri(req),
-      httpVersion = toHttp4sVersion(req),
-      headers = toHttp4sHeaders(req),
-      VersionSpecific.toHttp4sBody(req),
-      attributes = Vault.empty
-    )
-  }
   def buildServer[F[_]: Async](
       dispatcher: Dispatcher[F],
       httpApp: HttpApp[F],
       errorHandler: Throwable => F[http4s.Response[F]]
-  ): Resource[F, AsyncServer] = {
+  ): Resource[F, snunit.AsyncServer] = {
     Resource.eval(
       Async[F].delay(
         snunit.AsyncServerBuilder
           .setRequestHandler(new snunit.RequestHandler {
             def handleRequest(req: snunit.Request): Unit = {
               val run = httpApp
-                .run(toHttp4sRequest[F](req))
+                .run {
+                  val method = req.method match {
+                    case snunit.Method.GET     => http4s.Method.GET
+                    case snunit.Method.HEAD    => http4s.Method.HEAD
+                    case snunit.Method.POST    => http4s.Method.POST
+                    case snunit.Method.PUT     => http4s.Method.PUT
+                    case snunit.Method.DELETE  => http4s.Method.DELETE
+                    case snunit.Method.CONNECT => http4s.Method.CONNECT
+                    case snunit.Method.OPTIONS => http4s.Method.OPTIONS
+                    case snunit.Method.TRACE   => http4s.Method.TRACE
+                    case snunit.Method.PATCH   => http4s.Method.PATCH
+                    case v =>
+                      http4s.Method
+                        .fromString(v)
+                        .getOrElse(throw new Exception(s"Method not valid $v"))
+                  }
+                  val uri = {
+                    val v = req.target
+                    http4s.Uri.fromString(v).getOrElse(throw new Exception(s"Uri not valid $v"))
+                  }
+                  val headers = {
+                    var list: List[http4s.Header.Raw] = Nil
+                    var i = req.headersLength - 1
+                    while (i >= 0) {
+                      list = http4s.Header.Raw(CIString(req.headerNameUnsafe(i)), req.headerValueUnsafe(i)) :: list
+                      i -= 1
+                    }
+                    http4s.Headers(list)
+                  }
+                  val version = req.version match {
+                    case snunit.Version.`HTTP/1.1` => http4s.HttpVersion.`HTTP/1.1`
+                    case snunit.Version.`HTTP/1.0` => http4s.HttpVersion.`HTTP/1.0`
+                    case v =>
+                      http4s.HttpVersion
+                        .fromString(v)
+                        .getOrElse(throw new Exception(s"Version not valid $v"))
+                  }
+
+                  http4s.Request[F](
+                    method,
+                    uri,
+                    httpVersion = version,
+                    headers = headers,
+                    VersionSpecific.toHttp4sBody(req),
+                    attributes = Vault.empty
+                  )
+                }
                 .start
                 .flatMap(_.joinWith(Async[F].raiseError(new CancellationException)))
                 .handleErrorWith(errorHandler)

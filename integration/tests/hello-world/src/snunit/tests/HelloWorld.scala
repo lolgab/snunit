@@ -3,21 +3,30 @@ package snunit.tests
 import snunit._
 
 object MyHandler extends RequestHandler {
-  val res = "Hello world!\n".getBytes
+  val array = "Hello world!\n".getBytes
   def handleRequest(req: Request): Unit = {
     req.method match {
       case Method.GET =>
-        val content =
-          if (req.path.startsWith("/path")) req.path
-          else if (req.path.startsWith("/version")) req.version
-          else if (req.path.startsWith("/target")) req.target
-          else if (req.path.startsWith("/query")) req.query
-          else "Hello world!\n"
-        req.send(
-          statusCode = StatusCode.OK,
-          content = content,
-          headers = Seq("Content-Type" -> "text/plain")
-        )
+        val path = req.path
+        if (path == "/array")
+          req.send(
+            statusCode = StatusCode.OK,
+            content = array,
+            headers = Seq("Content-Type" -> "text/plain")
+          )
+        else
+          val content =
+            if (path.startsWith("/path")) req.path
+            else if (path.startsWith("/version")) req.version
+            else if (path.startsWith("/target")) req.target
+            else if (path.startsWith("/query")) req.query
+            else if (path == "/empty") ""
+            else "Hello world!\n"
+          req.send(
+            statusCode = StatusCode.OK,
+            content = content,
+            headers = Seq("Content-Type" -> "text/plain")
+          )
       case _ =>
         req.send(
           statusCode = StatusCode.NotFound,
