@@ -7,11 +7,11 @@ import snunit.plugin._
 val port = 8087
 
 object module extends ScalaNativeModule with SNUnit {
-  def scalaVersion = "2.13.8"
-  def scalaNativeVersion = "0.4.7"
+  def scalaVersion = "3.2.2"
+  def scalaNativeVersion = "0.4.12"
   def snunitPort = port
   def ivyDeps = super.ivyDeps() ++ Agg(
-    ivy"com.github.lolgab::snunit::0.1.0"
+    ivy"com.github.lolgab::snunit::$snunitVersion"
   )
 }
 def verify() = T.command {
