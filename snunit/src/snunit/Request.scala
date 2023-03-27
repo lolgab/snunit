@@ -30,8 +30,7 @@ extension (req: Request) {
     ArraySeq.unsafeWrapArray(array)
   }
 
-  @inline
-  def headersLength: Int = req.request.fields_count
+  inline def headersLength: Int = req.request.fields_count
   private inline def checkIndex(index: Int): Unit = {
     if (index < 0 && index >= req.request.fields_count)
       throw new IndexOutOfBoundsException(s"Index $index out of bounds for length ${req.request.fields_count}")
@@ -40,8 +39,7 @@ extension (req: Request) {
     checkIndex(index)
     headerNameUnsafe(index)
   }
-  @inline
-  def headerNameUnsafe(index: Int): String = {
+  inline def headerNameUnsafe(index: Int): String = {
     val field = req.request.fields + index
     fromCStringAndSize(field.name, field.name_length)
   }
@@ -49,8 +47,7 @@ extension (req: Request) {
     checkIndex(index)
     headerValueUnsafe(index)
   }
-  @inline
-  def headerValueUnsafe(index: Int): String = {
+  inline def headerValueUnsafe(index: Int): String = {
     val field = req.request.fields + index
     fromCStringAndSize(field.value, field.value_length)
   }
