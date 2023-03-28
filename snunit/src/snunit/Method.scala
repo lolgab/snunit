@@ -5,7 +5,7 @@ import scala.annotation.targetName
 type Method = String
 
 object Method {
-  def apply(value: String): Method = value
+  inline def apply(value: String): Method = value
 
   final val GET: Method = "GET"
   final val HEAD: Method = "HEAD"

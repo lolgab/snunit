@@ -10,13 +10,17 @@ object HeadersWrapper:
 
     def apply(pairs: (String, String)*): Headers = apply(pairs, _._1, _._2)
 
-    inline def apply[T](seq: Seq[T], inline getName: T => String, inline getValue: T => String): Headers = {
-      seq match {
+    transparent inline def apply[T](
+        inline seq: Iterable[T],
+        inline getName: T => String,
+        inline getValue: T => String
+    ): Headers = {
+      inline seq match {
         case s: IndexedSeq[T] =>
           val len = s.length
           val headers = Headers(len)
           var i = 0
-          while(i < len) {
+          while (i < len) {
             val elem: T = s(i)
             headers.updateName(i, getName(elem))
             headers.updateValue(i, getValue(elem))
@@ -33,18 +37,12 @@ object HeadersWrapper:
           builder.result()
       }
     }
+
     // TODO: Map[String, String] should have a different type since it
     // drops duplicated headers. It needs a revamp and so it does
     // the undertow implementation
-    def apply(map: collection.Map[String, String]): Headers = {
-      val builder = Array.newBuilder[String]
-      for ((name, value) <- map) {
-        builder += name
-        builder += value
-      }
-
-      builder.result()
-    }
+    def apply(map: collection.Map[String, String]): Headers =
+      apply(map, _._1, _._2)
 
   extension (headers: Headers)
     private def underlying: Array[String] = headers
@@ -83,7 +81,7 @@ object HeadersWrapper:
     def toMap: Map[String, String] = {
       val builder = Map.newBuilder[String, String]
       var i = 0
-      while(i < length) {
+      while (i < underlying.length / 2) {
         builder += name(i) -> value(i)
         i += 1
       }

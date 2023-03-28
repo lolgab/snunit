@@ -2,7 +2,7 @@ package snunit
 
 import snunit.unsafe.{_, given}
 
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 private[snunit] object ServerBuilder {
 

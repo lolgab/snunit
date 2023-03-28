@@ -4,7 +4,7 @@ import snunit.unsafe.{_, given}
 
 import scala.annotation.targetName
 import scala.collection.immutable.ArraySeq
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 
 opaque type Request = Ptr[nxt_unit_request_info_t]
 
@@ -13,9 +13,9 @@ object Request:
 
 extension (req: Request) {
   def method: snunit.Method =
-    Method(fromCStringAndSize(snunit.unsafe.method(req.request), req.request.method_length))
+    methodOf(snunit.unsafe.method(req.request), req.request.method_length)
   def version: String =
-    fromCStringAndSize(snunit.unsafe.version(req.request), req.request.version_length)
+    versionOf(snunit.unsafe.version(req.request), req.request.version_length)
 
   def headers: Headers = {
     val headers = Headers(req.request.fields_count)
@@ -117,7 +117,7 @@ extension (req: Request) {
   private inline def sendBatchUnsafe(data: Array[Byte], off: Int, len: Int): Unit = {
     val res = nxt_unit_response_write_nb(
       req,
-      if (len > 0) data.at(off) else null,
+      data.at(off),
       len,
       0L
     )

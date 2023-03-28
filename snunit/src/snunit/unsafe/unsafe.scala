@@ -340,6 +340,7 @@ extension (ptr: Ptr[nxt_unit_request_t]) {
 
   inline def content_length: CLongLong = !ptr.at(48).asInstanceOf[Ptr[CLongLong]] // CUnsignedLongLong
 
+  @targetName("request_t_method")
   inline def method: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(56).asInstanceOf[Ptr[nxt_unit_sptr_t]])
 
   inline def version: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(60).asInstanceOf[Ptr[nxt_unit_sptr_t]])
@@ -367,9 +368,9 @@ extension (ptr: Ptr[nxt_unit_request_t]) {
 opaque type nxt_unit_response_t = CStruct6[CLongInt, CInt, CInt, CShort, nxt_unit_sptr_t, nxt_unit_field_t]
 
 extension (ptr: Ptr[nxt_unit_response_t]) {
-  @targetName("response_content_length")
+  @targetName("response_t_content_length")
   inline def content_length: CLongInt = ptr._1
-  @targetName("response_content_length_=")
+  @targetName("response_t_content_length_=")
   inline def content_length_=(v: CLongInt): Unit = ptr._1 = v
 
   @targetName("response_t_fields_count")
