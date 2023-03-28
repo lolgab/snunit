@@ -1,6 +1,6 @@
 package snunit.tapir
 
-import snunit._
+import snunit.*
 import sttp.model._
 import sttp.model.{Method as TapirMethod}
 import sttp.monad._
@@ -138,19 +138,20 @@ private[tapir] trait SNUnitGenericServerInterpreter {
               .flatMap {
                 case RequestResult.Failure(_) =>
                   wrapSideEffect(
-                    req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, Seq.empty[(String, String)])
+                    req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, snunit.Headers.empty)
                   )
                 case RequestResult.Response(response) =>
                   val body = response.body.getOrElse(Array.emptyByteArray)
+                  val headers = snunit.Headers(response.headers, _.name, _.value)
                   wrapSideEffect(
-                    req.send(snunit.StatusCode(response.code.code), body, response.headers.map(h => h.name -> h.value))
+                    req.send(snunit.StatusCode(response.code.code), body, headers)
                   )
               }
               .handleError { case ex: Exception =>
                 wrapSideEffect {
                   System.err.println(s"Error while processing the request")
                   ex.printStackTrace()
-                  req.send(snunit.StatusCode.InternalServerError, Array.emptyByteArray, Seq.empty[(String, String)])
+                  req.send(snunit.StatusCode.InternalServerError, Array.emptyByteArray, snunit.Headers.empty)
                 }
               }
           }

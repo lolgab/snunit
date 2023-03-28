@@ -1,6 +1,6 @@
 package snunit.tests
 
-import snunit._
+import snunit.*
 
 import scala.concurrent.duration._
 import scala.scalanative.loop.Timer
@@ -15,16 +15,16 @@ object Async {
             t = Timer.timeout(500.millis) { () =>
               req.send(
                 statusCode = StatusCode.OK,
-                content = s"Hello world async!\n",
-                headers = Seq("Content-Type" -> "text/plain")
+                content = "Hello world async!\n",
+                headers = Headers("Content-Type" -> "text/plain")
               )
               t.clear()
             }
           case _ =>
             req.send(
               statusCode = StatusCode.NotFound,
-              content = s"Not found\n",
-              headers = Seq("Content-Type" -> "text/plain")
+              content = "Not found\n",
+              headers = Headers("Content-Type" -> "text/plain")
             )
         }
       })

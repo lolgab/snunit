@@ -17,20 +17,21 @@ extension (req: Request) {
   def version: String =
     fromCStringAndSize(snunit.unsafe.version(req.request), req.request.version_length)
 
-  def headers: Seq[(String, String)] = {
-    val array = new Array[(String, String)](req.request.fields_count)
+  def headers: Headers = {
+    val headers = Headers(req.request.fields_count)
     var i = 0
     while (i < req.request.fields_count) {
       val field = req.request.fields + i
       val fieldName = fromCStringAndSize(field.name, field.name_length)
       val fieldValue = fromCStringAndSize(field.value, field.value_length)
-      array(i) = fieldName -> fieldValue
+      headers.updateName(i, fieldName)
+      headers.updateValue(i, fieldValue)
       i += 1
     }
-    ArraySeq.unsafeWrapArray(array)
+    headers
   }
 
-  inline def headersLength: Int = req.request.fields_count
+  @inline def headersLength: Int = req.request.fields_count
   private inline def checkIndex(index: Int): Unit = {
     if (index < 0 && index >= req.request.fields_count)
       throw new IndexOutOfBoundsException(s"Index $index out of bounds for length ${req.request.fields_count}")
@@ -39,7 +40,7 @@ extension (req: Request) {
     checkIndex(index)
     headerNameUnsafe(index)
   }
-  inline def headerNameUnsafe(index: Int): String = {
+  @inline def headerNameUnsafe(index: Int): String = {
     val field = req.request.fields + index
     fromCStringAndSize(field.name, field.name_length)
   }
@@ -47,7 +48,7 @@ extension (req: Request) {
     checkIndex(index)
     headerValueUnsafe(index)
   }
-  inline def headerValueUnsafe(index: Int): String = {
+  @inline def headerValueUnsafe(index: Int): String = {
     val field = req.request.fields + index
     fromCStringAndSize(field.value, field.value_length)
   }
@@ -77,29 +78,17 @@ extension (req: Request) {
 
   private inline def startSendUnsafe(
       statusCode: StatusCode,
-      headers: Seq[(String, String)],
+      headers: Headers,
       contentLength: Int
   ): Unit = {
-    var headersLength = 0
-    val fieldsSize: Int = {
-      var res = 0
-      for ((key, value) <- headers) {
-        res += key.length + value.length
-        headersLength += 1
-      }
-      res
-    }
-
     locally {
-      val res = nxt_unit_response_init(req, statusCode, headersLength, fieldsSize + contentLength)
+      val res = nxt_unit_response_init(req, statusCode, headers.length, headers.fieldsLength + contentLength)
       if (res != NXT_UNIT_OK) throw new Exception("Failed to create response")
     }
 
-    for ((key, value) <- headers) {
-      addHeader(key, value)
-    }
+    headers.foreach((name, value) => addHeader(name, value))
   }
-  inline def startSend(statusCode: StatusCode, headers: Seq[(String, String)]): Unit =
+  inline def startSend(statusCode: StatusCode, headers: Headers): Unit =
     startSendUnsafe(statusCode, headers, 0)
   def sendByte(byte: Int): Unit = {
     val bytePtr = stackalloc[Byte]()
@@ -151,7 +140,7 @@ extension (req: Request) {
     nxt_unit_request_done(req, NXT_UNIT_OK)
   }
   @targetName("send_array")
-  def send(statusCode: StatusCode, content: Array[Byte], headers: Seq[(String, String)]): Unit = {
+  def send(statusCode: StatusCode, content: Array[Byte], headers: Headers): Unit = {
     val byteArray = content
     val contentLength = byteArray.length
     startSendUnsafe(statusCode, headers, contentLength)
@@ -183,20 +172,9 @@ extension (req: Request) {
   }
   @targetName("request_content")
   def content(): String = new String(contentRaw())
-  // @targetName("send_string")
-  // inline def send(statusCode: StatusCode, content: String, headers: Seq[(String, String)]): Unit = {
-  //   readStringBytesWith(content) { buffer =>
-  //     val contentLength = buffer.contentLength
-  //     startSendUnsafe(statusCode, headers, contentLength)
-  //     if (contentLength > 0) {
-  //       nxt_unit_response_add_content(req, buffer.pointer, contentLength)
-  //     }
-  //     nxt_unit_response_send(req)
-  //     sendDone()
-  //   }
-  // }
+
   @targetName("send_string")
-  inline def send(statusCode: StatusCode, content: String, headers: Seq[(String, String)]): Unit = {
+  inline def send(statusCode: StatusCode, content: String, headers: Headers): Unit = {
     startSendUnsafe(statusCode, headers, 0)
     readStringBytesWith(content) { buffer =>
       val length = buffer.contentLength

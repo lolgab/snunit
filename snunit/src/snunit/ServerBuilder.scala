@@ -8,7 +8,7 @@ private[snunit] object ServerBuilder {
 
   private var requestHandler: RequestHandler = new RequestHandler {
     def handleRequest(req: Request) =
-      send(req)(StatusCode.InternalServerError, Array.emptyByteArray, Seq.empty[(String, String)])
+      send(req)(StatusCode.InternalServerError, Array.emptyByteArray, Headers.empty)
   }
 
   private var websocketHandler: WebsocketHandler = null

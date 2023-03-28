@@ -1,13 +1,13 @@
 package snunit.tests
 
-import snunit._
+import snunit.*
 
 object MultipleHandlers {
   def main(args: Array[String]): Unit = {
     val fallback: RequestHandler = _.send(
       statusCode = StatusCode.NotFound,
       content = s"Not found\n",
-      headers = Seq("Content-Type" -> "text/plain")
+      headers = Headers("Content-Type" -> "text/plain")
     )
 
     val server = SyncServerBuilder
@@ -16,7 +16,7 @@ object MultipleHandlers {
           req.send(
             statusCode = StatusCode.OK,
             content = s"Hello world multiple handlers!\n",
-            headers = Seq("Content-Type" -> "text/plain")
+            headers = Headers("Content-Type" -> "text/plain")
           )
         } else fallback.handleRequest(req)
       })

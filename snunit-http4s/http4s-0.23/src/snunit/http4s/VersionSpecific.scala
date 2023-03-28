@@ -12,7 +12,7 @@ private[http4s] object VersionSpecific {
       req: snunit.Request,
       response: http4s.Response[F],
       statusCode: Int,
-      headers: Seq[(String, String)]
+      headers: snunit.Headers
   ): F[Unit] = {
     Utils.sendStreaming(
       req,

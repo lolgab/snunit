@@ -9,7 +9,7 @@ import org.http4s
 import org.http4s.HttpApp
 import org.typelevel.ci.CIString
 import org.typelevel.vault.Vault
-import snunit._
+import snunit.*
 
 import java.util.concurrent.CancellationException
 
@@ -79,7 +79,7 @@ private[http4s] object Impl {
                   http4s.Response(http4s.Status.InternalServerError).putHeaders(http4s.headers.`Content-Length`.zero)
                 )
                 .flatMap { response =>
-                  val headers = response.headers.headers.map { h => (h.name.toString, h.value) }
+                  val headers = Headers(response.headers.headers, _.name.toString, _.value)
                   VersionSpecific.writeResponse(req, response, response.status.code, headers)
                 }
               dispatcher.unsafeRunAndForget(run)

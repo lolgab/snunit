@@ -7,7 +7,7 @@ import org.http4s.Entity.Default
 import org.http4s.Entity.Empty
 import org.http4s.Entity.Strict
 import scodec.bits.ByteVector
-import snunit._
+import snunit.*
 
 object VersionSpecific {
   inline def toHttp4sBody[F[_]](req: snunit.Request): http4s.Entity[F] = {
@@ -18,7 +18,7 @@ object VersionSpecific {
       req: snunit.Request,
       response: http4s.Response[F],
       statusCode: Int,
-      headers: Seq[(String, String)]
+      headers: snunit.Headers
   ): F[Unit] = {
     response.entity match {
       case Default(body, _) =>

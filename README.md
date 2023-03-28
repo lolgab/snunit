@@ -1,7 +1,7 @@
 # SNUnit: Scala Native HTTP server based on NGINX Unit
 
 ```scala
-import snunit._
+import snunit.*
 object HelloWorldExample {
   def main(args: Array[String]): Unit = {
     SyncServerBuilder
@@ -9,7 +9,7 @@ object HelloWorldExample {
         req.send(
           statusCode = StatusCode.OK,
           content = "Hello world!\n",
-          headers = Seq("Content-Type" -> "text/plain")
+          headers = Headers("Content-Type" -> "text/plain")
         )
       )
       .build()

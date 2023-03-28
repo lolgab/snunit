@@ -1,4 +1,4 @@
-import snunit._
+import snunit.*
 
 object HelloWorld {
   def main(args: Array[String]): Unit = {
