@@ -1,23 +1,25 @@
-import snunit._
+package snunit.tests
+
+import snunit.*
 
 object MyRequestHandler extends RequestHandler {
   def handleRequest(req: Request): Unit = {
     if (req.isWebsocketHandshake) {
       req.upgrade()
     } else {
-      req.send(StatusCode.NotFound, Array.emptyByteArray, Seq.empty[(String, String)])
+      req.send(StatusCode.NotFound, Array.emptyByteArray, Headers.empty)
     }
   }
 }
 
 object MyWebsocketHandler extends WebsocketHandler {
   def handleFrame(frame: Frame): Unit = {
-    if (frame.opcode == 9 /* PONG */ ) {
+    if (frame.opcode == Opcode.Pong.value) {
       frame.sendFrameDone()
     } else {
       frame.sendFrame(frame.opcode, frame.fin, frame.frameContentRaw())
       frame.sendFrameDone()
-      if (frame.opcode == 8 /* CLOSE */ ) {
+      if (frame.opcode == Opcode.Close.value) {
         frame.frameRequest.sendDone()
       }
     }

@@ -33,8 +33,8 @@ jobs:
         run:
           ./mill --disable-ticker -j 0 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
           # ./mill -j 0 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll --sources buildSources
-      - name: Check scalafix
-        run: ./mill --disable-ticker __.fix --check
+      # - name: Check scalafix
+      #   run: ./mill --disable-ticker __.fix --check
       - name: Compile
         run: ./mill --disable-ticker -j 0 __.compile
       - name: Publish libraries locally

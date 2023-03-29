@@ -5,12 +5,12 @@ import io.undertow.io.BlockingSenderImpl
 import io.undertow.io.Sender
 import io.undertow.server.handlers.Cookie
 import io.undertow.util.HeaderMap
-import snunit._
+import snunit.*
 
 import java.io.InputStream
 import java.io.OutputStream
 
-final class HttpServerExchange private[undertow] (private[undertow] val req: snunit.Request) {
+final class HttpServerExchange private[undertow] (private[undertow] val req: Request) {
   private var state = 200
 
   private val responseHeaders = new HeaderMap
@@ -110,7 +110,7 @@ object HttpServerExchange {
           override def flush(): Unit = ???
 
           override def close(): Unit = {
-            exchange.req.send(StatusCode(exchange.state), responseData, exchange.responseHeaders.asScala)
+            exchange.req.send(StatusCode(exchange.state), responseData, Headers(exchange.responseHeaders.asScala: _*))
           }
         }
       }

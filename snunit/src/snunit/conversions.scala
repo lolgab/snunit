@@ -4,7 +4,7 @@ import snunit.unsafe.fromCStringAndSize
 
 import scala.scalanative.unsafe._
 
-inline def methodOf(name: CString, nameSize: Byte): String = {
+inline def methodOf(name: CString, nameSize: Byte): Method = {
   if (nameSize == 3.toByte) {
     if (
       name(0) == 'G'.toByte &&
@@ -82,7 +82,7 @@ inline def methodOf(name: CString, nameSize: Byte): String = {
   } else Method(fromCStringAndSize(name, nameSize))
 }
 
-inline def versionOf(ptr: CString, size: Byte): String = {
+inline def versionOf(ptr: CString, size: Byte): Version = {
   if (size == 8.toByte)
     if (
       // Of course it starts with "HTTP/", let's trust Unit

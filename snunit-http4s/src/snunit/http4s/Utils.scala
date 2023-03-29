@@ -3,14 +3,14 @@ package snunit.http4s
 import cats.effect.Async
 import cats.syntax.all._
 import org.http4s
-import snunit._
+import snunit.*
 
 private[http4s] object Utils {
   inline def sendStreaming[F[_]: Async](
       req: snunit.Request,
       body: http4s.EntityBody[F],
       statusCode: Int,
-      headers: Seq[(String, String)]
+      headers: snunit.Headers
   ) = {
     Async[F].delay(req.startSend(StatusCode(statusCode), headers)) *>
       body.chunks

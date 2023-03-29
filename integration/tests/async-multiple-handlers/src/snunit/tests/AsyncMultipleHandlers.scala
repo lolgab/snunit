@@ -1,6 +1,6 @@
 package snunit.tests
 
-import snunit._
+import snunit.*
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -8,7 +8,7 @@ object AsyncMultipleHandlers {
   val fallback: RequestHandler = _.send(
     statusCode = StatusCode.NotFound,
     content = s"Not found\n",
-    headers = Seq("Content-Type" -> "text/plain")
+    headers = Headers("Content-Type" -> "text/plain")
   )
   def main(args: Array[String]): Unit = {
     AsyncServerBuilder
@@ -18,7 +18,7 @@ object AsyncMultipleHandlers {
             req.send(
               statusCode = StatusCode.OK,
               content = s"Hello world async multiple handlers!\n",
-              headers = Seq("Content-Type" -> "text/plain")
+              headers = Headers("Content-Type" -> "text/plain")
             )
           } else fallback.handleRequest(req)
         })

@@ -1,7 +1,7 @@
 package io.undertow
 
 import _root_.io.undertow.server._
-import snunit._
+import snunit.*
 
 class Undertow private (builder: Undertow.Builder) {
   private val handler: HttpHandler = builder.handler

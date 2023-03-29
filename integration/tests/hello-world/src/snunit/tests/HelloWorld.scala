@@ -1,6 +1,6 @@
 package snunit.tests
 
-import snunit._
+import snunit.*
 
 object MyHandler extends RequestHandler {
   val array = "Hello world!\n".getBytes
@@ -12,7 +12,7 @@ object MyHandler extends RequestHandler {
           req.send(
             statusCode = StatusCode.OK,
             content = array,
-            headers = Seq("Content-Type" -> "text/plain")
+            headers = Headers("Content-Type" -> "text/plain")
           )
         else
           val content =
@@ -25,13 +25,13 @@ object MyHandler extends RequestHandler {
           req.send(
             statusCode = StatusCode.OK,
             content = content,
-            headers = Seq("Content-Type" -> "text/plain")
+            headers = Headers("Content-Type" -> "text/plain")
           )
       case _ =>
         req.send(
           statusCode = StatusCode.NotFound,
           content = s"Not found\n",
-          headers = Seq("Content-Type" -> "text/plain")
+          headers = Headers("Content-Type" -> "text/plain")
         )
     }
   }

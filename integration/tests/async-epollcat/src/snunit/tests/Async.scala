@@ -1,11 +1,11 @@
 package snunit.tests
 
-import snunit._
+import snunit.*
 
 object AsyncEpollcat {
   def main(args: Array[String]): Unit = {
     AsyncServerBuilder
-      .setRequestHandler(_.send(StatusCode.OK, "Hello world from epollcat!", Seq.empty[(String, String)]))
+      .setRequestHandler(_.send(StatusCode.OK, "Hello world from epollcat!", Headers.empty))
       .build()
   }
 }

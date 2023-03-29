@@ -1,8 +1,8 @@
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.api.ZincWorkerUtil.isScala3
 import mill.scalalib.publish._
-import $ivy.`com.goyeau::mill-scalafix::0.2.11`
-import com.goyeau.mill.scalafix.ScalafixModule
+// import $ivy.`com.goyeau::mill-scalafix::0.2.11`
+// import com.goyeau.mill.scalafix.ScalafixModule
 import $ivy.`io.chris-kipp::mill-ci-release::0.1.3`
 import io.kipp.mill.ci.release.CiReleaseModule
 import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.6.1`
@@ -34,7 +34,7 @@ val utest = ivy"com.lihaoyi::utest::${Versions.utest}"
 val testServerPort = 8081
 
 object Common {
-  trait Shared extends ScalaModule with ScalafixModule {
+  trait Shared extends ScalaModule /* with ScalafixModule */ {
     def organization = "com.github.lolgab"
     def name = "snunit"
     def crossScalaVersion: String
@@ -43,7 +43,8 @@ object Common {
       Seq("-deprecation") ++
       (if (isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
 
-    def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.6.0")
+    // Disabled because of https://github.com/liancheng/scalafix-organize-imports/issues/221
+    // def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.6.0")
   }
   trait SharedNative extends Shared with ScalaNativeModule {
     def scalaNativeVersion = versions.Versions.scalaNative
