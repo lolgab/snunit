@@ -1,15 +1,15 @@
 package snunit
 
-import snunit.unsafe.{_, given}
+import snunit.unsafe.{*, given}
 
 import scala.annotation.targetName
 import scala.collection.immutable.ArraySeq
 import scala.scalanative.unsafe.*
 
-opaque type Request = Ptr[nxt_unit_request_info_t]
+opaque type Request = nxt_unit_request_info_t_*
 
 object Request:
-  def apply(req: Ptr[nxt_unit_request_info_t]): Request = req
+  def apply(req: nxt_unit_request_info_t_*): Request = req
 
 extension (req: Request) {
   def method: snunit.Method =
@@ -21,7 +21,7 @@ extension (req: Request) {
     val headers = Headers(req.request.fields_count)
     var i = 0
     while (i < req.request.fields_count) {
-      val field = req.request.fields + i
+      val field = req.request.fields(i)
       val fieldName = fromCStringAndSize(field.name, field.name_length)
       val fieldValue = fromCStringAndSize(field.value, field.value_length)
       headers.updateName(i, fieldName)
@@ -41,7 +41,7 @@ extension (req: Request) {
     headerNameUnsafe(index)
   }
   @inline def headerNameUnsafe(index: Int): String = {
-    val field = req.request.fields + index
+    val field = req.request.fields(index)
     fromCStringAndSize(field.name, field.name_length)
   }
   def headerValue(index: Int): String = {
@@ -49,7 +49,7 @@ extension (req: Request) {
     headerValueUnsafe(index)
   }
   @inline def headerValueUnsafe(index: Int): String = {
-    val field = req.request.fields + index
+    val field = req.request.fields(index)
     fromCStringAndSize(field.value, field.value_length)
   }
   // TODO: should be a lazy val

@@ -1,6 +1,6 @@
 package snunit
 
-import snunit.unsafe.{_, given}
+import snunit.unsafe.{*, given}
 
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.string.strerror
@@ -10,14 +10,12 @@ import scala.scalanative.posix.fcntl.fcntl
 import scala.scalanative.runtime.Intrinsics
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.toRawPtr
-import scala.scalanative.unsafe._
+import scala.scalanative.unsafe.*
 import scala.util.control.NonFatal
 
 object AsyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)
-  private val init: Ptr[nxt_unit_init_t] = {
-    initArray.at(0).asInstanceOf[Ptr[nxt_unit_init_t]]
-  }
+  private val init: nxt_unit_init_t_* = initArray.at(0).asInstanceOf[nxt_unit_init_t_*]
   def setRequestHandler(requestHandler: RequestHandler): this.type = {
     ServerBuilder.setRequestHandler(requestHandler)
     this
@@ -30,14 +28,14 @@ object AsyncServerBuilder {
     ServerBuilder.setBaseHandlers(init)
     init.callbacks.add_port = AsyncServerBuilder.add_port
     init.callbacks.remove_port = AsyncServerBuilder.remove_port
-    val ctx: Ptr[nxt_unit_ctx_t] = nxt_unit_init(init)
-    if (ctx == null) {
+    val ctx: nxt_unit_ctx_t_* = nxt_unit_init(init)
+    if (ctx.isNull) {
       throw new Exception("Failed to create Unit object")
     }
     new AsyncServer(ctx)
   }
 
-  private val add_port: add_port_t = add_port_t { (ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]) =>
+  private val add_port: add_port_t = add_port_t { (ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
     {
       if (in_fd(port) != -1) {
         var result = NXT_UNIT_OK
@@ -66,16 +64,16 @@ object AsyncServerBuilder {
   }
 
   private val remove_port: remove_port_t = remove_port_t {
-    (_: Ptr[nxt_unit_t], ctx: Ptr[nxt_unit_ctx_t], port: Ptr[nxt_unit_port_t]) =>
+    (_: nxt_unit_t_*, ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
       {
-        if (port.data != null && ctx != null) {
+        if (port.data != null && !ctx.isNull) {
           PortData.fromPtr(port.data).stop()
         }
       }
   }
   private class PortData(
-      val ctx: Ptr[nxt_unit_ctx_t],
-      val port: Ptr[nxt_unit_port_t]
+      val ctx: nxt_unit_ctx_t_*,
+      val port: nxt_unit_port_t_*
   ) {
     var stopped: Boolean = false
     var scheduled: Boolean = false

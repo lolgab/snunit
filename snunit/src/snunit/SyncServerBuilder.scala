@@ -1,13 +1,13 @@
 package snunit
 
-import snunit.unsafe.{_, given}
+import snunit.unsafe.{*, given}
 
 import scala.scalanative.unsafe._
 
 object SyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)
-  private val init: Ptr[nxt_unit_init_t] = {
-    initArray.at(0).asInstanceOf[Ptr[nxt_unit_init_t]]
+  private val init: nxt_unit_init_t_* = {
+    initArray.at(0).asInstanceOf[nxt_unit_init_t_*]
   }
   def setRequestHandler(requestHandler: RequestHandler): this.type = {
     ServerBuilder.setRequestHandler(requestHandler)
@@ -19,8 +19,8 @@ object SyncServerBuilder {
   }
   def build(): SyncServer = {
     ServerBuilder.setBaseHandlers(init)
-    val ctx: Ptr[nxt_unit_ctx_t] = nxt_unit_init(init)
-    if (ctx == null) {
+    val ctx: nxt_unit_ctx_t_* = nxt_unit_init(init)
+    if (ctx.isNull) {
       throw new Exception("Failed to create Unit object")
     }
     new SyncServerImpl(ctx)
