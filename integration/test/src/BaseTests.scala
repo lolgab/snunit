@@ -32,6 +32,19 @@ object BaseTests extends TestSuite {
           val expectedResult = ""
           assert(result == expectedResult)
         }
+        locally {
+          val responseHeaders = request
+            .get(uri"$baseUrl/headers")
+            .header("foo", "bar")
+            .header("foo", "qux")
+            .header("bla", "bal")
+            .responseHeaders()
+            .toSet
+
+          assert(responseHeaders.contains(Header("foo", "bar")))
+          assert(responseHeaders.contains(Header("foo", "qux")))
+          assert(responseHeaders.contains(Header("bla", "bal")))
+        }
       }
     }
     test("async") {

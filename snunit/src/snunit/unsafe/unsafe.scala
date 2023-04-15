@@ -315,7 +315,7 @@ extension (ptr: nxt_unit_field_t_*) {
 opaque type nxt_unit_request_t = CArray[CChar, Nat.Digit2[Nat._9, Nat._6]]
 opaque type nxt_unit_request_t_* = Ptr[nxt_unit_request_t]
 
-extension (ptr: nxt_unit_request_t) {
+extension (ptr: nxt_unit_request_t_*) {
   @inline def method_length: Byte = !ptr.at(0)
 
   @inline def version_length: Byte = !ptr.at(1)
@@ -374,7 +374,7 @@ extension (ptr: nxt_unit_request_t) {
   @inline def preread_content: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(92).asInstanceOf[nxt_unit_sptr_t_*])
 
   @inline def fields(i: Int): nxt_unit_field_t_* =
-    nxt_unit_sptr_get(ptr.at(96).asInstanceOf[nxt_unit_sptr_t_*]).asInstanceOf[nxt_unit_field_t_*] + i
+    ptr.at(96).asInstanceOf[nxt_unit_field_t_*] + i
 }
 
 opaque type nxt_unit_response_t = CStruct6[CLongInt, CInt, CInt, CShort, nxt_unit_sptr_t, nxt_unit_field_t]
@@ -430,7 +430,7 @@ extension (ptr: nxt_unit_request_info_t_*) {
   // @inline def response_port: nxt_unit_port_t = ptr._3
   // @inline def response_port_=(v: nxt_unit_port_t): Unit = !ptr.at3 = v
 
-  @inline def request: nxt_unit_request_t = ptr._4
+  @inline def request: nxt_unit_request_t_* = ptr._4
   // @inline def request_=(v: nxt_unit_request_t): Unit = !ptr.at4 = v
 
   // @inline def request_buf: nxt_unit_buf_t = ptr._5
