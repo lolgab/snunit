@@ -65,6 +65,7 @@ private def sendReq(req: Req) = simpleHttpClient.send(req)
 
 extension (req: Req)
   def text() = sendReq(req).body
+  def responseHeaders() = sendReq(req).headers
   def statusCode() = sendReq(req).code.code
   def websocket() =
     req
@@ -74,6 +75,7 @@ extension (req: Req)
 export sttp.client3.quick.UriContext
 
 export sttp.model.Uri
+export sttp.model.Header
 
 export scala.concurrent.Future
 

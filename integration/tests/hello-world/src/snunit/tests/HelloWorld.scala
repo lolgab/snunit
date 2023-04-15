@@ -14,6 +14,12 @@ object MyHandler extends RequestHandler {
             content = array,
             headers = Headers("Content-Type" -> "text/plain")
           )
+        else if (path == "/headers")
+          req.send(
+            statusCode = StatusCode.OK,
+            content = "Request headers",
+            headers = req.headers
+          )
         else
           val content =
             if (path.startsWith("/path")) req.path
