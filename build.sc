@@ -97,7 +97,7 @@ trait Publish extends CiReleaseModule with Mima {
         Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lolgab")
       )
     )
-  def mimaPreviousVersions = Seq("0.3.0")
+  def mimaPreviousVersions = Seq("0.4.0")
 }
 object `snunit-internal-api` extends JavaModule
 object snunit extends Cross[SNUnitModule](scalaVersions: _*)

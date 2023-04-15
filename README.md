@@ -130,7 +130,7 @@ There are two ways you can build a http4s server.
 
 `snunit.Http4sApp` extends `epollcat.EpollApp` building the SNUnit server.
 
-It exposes a `def routes: HttpApp[IO]` that you need to implement with your
+It exposes a `def routes: Resource[IO, HttpApp[IO]]` that you need to implement with your
 server logic.
 
 Here an example "Hello world" app:
@@ -141,11 +141,13 @@ import org.http4s._
 import org.http4s.dsl.io._
 
 object app extends snunit.Http4sApp {
-  def routes = HttpRoutes
-    .of[IO] { case GET -> Root =>
-      Ok("Hello from SNUnit Http4s!")
-    }
-    .orNotFound
+  def routes = Resource.pure(
+    HttpRoutes
+      .of[IO] { case GET -> Root =>
+        Ok("Hello from SNUnit Http4s!")
+      }
+      .orNotFound
+  )
 }
 ```
 

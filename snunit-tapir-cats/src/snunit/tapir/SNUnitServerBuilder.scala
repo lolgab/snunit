@@ -17,7 +17,7 @@ class SNUnitServerBuilder[F[_]: Async] private (serverEndpoints: List[ServerEndp
     copy(serverEndpoints = serverEndpoints)
   }
 
-  def build: Resource[F, SNUnitServer] = Dispatcher[F].flatMap { dispatcher =>
+  def build: Resource[F, SNUnitServer] = Dispatcher.parallel[F].flatMap { dispatcher =>
     val interpreter = new SNUnitCatsServerInterpreter[F](dispatcher)
     Resource.eval {
       for {
