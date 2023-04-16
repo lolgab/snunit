@@ -48,10 +48,7 @@ object AsyncServerBuilder {
         }
         if (result == NXT_UNIT_OK) {
           try {
-            val portData = new PortData(ctx, port)
-            portData.stopMonitorCallback =
-              EventPollingExecutorScheduler.monitorReads(port.in_fd, portData.process_port_msg)
-            port.data = portData.toPtr()
+            PortData.register(ctx, port)
             NXT_UNIT_OK
           } catch {
             case NonFatal(e @ _) =>
@@ -67,22 +64,32 @@ object AsyncServerBuilder {
     (_: nxt_unit_t_*, ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
       {
         if (port.data != null && !ctx.isNull) {
-          PortData.fromPtr(port.data).stop()
+          PortData.fromPort(port).stop()
         }
       }
   }
-  private class PortData(
+  private class PortData private (
       val ctx: nxt_unit_ctx_t_*,
       val port: nxt_unit_port_t_*
   ) {
-    var stopped: Boolean = false
-    var scheduled: Boolean = false
-    var stopMonitorCallback: Runnable = null
-
-    def toPtr(): Ptr[Byte] = {
-      PortData.references.put(this, ())
-      fromRawPtr(Intrinsics.castObjectToRawPtr(this))
+    private var stopped: Boolean = false
+    private var scheduled: Boolean = false
+    val process_port_msg: Runnable = new Runnable {
+      def run(): Unit = {
+        val rc = nxt_unit_process_port_msg(ctx, port)
+        if (rc == NXT_UNIT_OK && !scheduled && !stopped) {
+          // The NGINX Unit implementation uses a cancelable timer
+          // so it can cancel this callback in stop()
+          // We don't do that here, also because doing that would
+          // allocate a new Lambda for every process_port_msg
+          // and it's hard to cancel since it happens immediately
+          EventPollingExecutorScheduler.execute(timer_callback)
+          scheduled = true
+        }
+      }
     }
+
+    val stopMonitorCallback: Runnable = EventPollingExecutorScheduler.monitorReads(port.in_fd, process_port_msg)
 
     val timer_callback: Runnable = new Runnable {
       def run(): Unit = {
@@ -93,35 +100,22 @@ object AsyncServerBuilder {
       }
     }
 
-    val process_port_msg: Runnable = new Runnable {
-      def run(): Unit = {
-        val rc = nxt_unit_process_port_msg(ctx, port)
-        if (rc == NXT_UNIT_OK && !scheduled && !stopped) {
-          scheduled = true
-          // The NGINX Unit implementation uses a cancelable timer
-          // so it can cancel this callback in stop()
-          // We don't do that here, also because doing that would
-          // allocate a new Lambda for every process_port_msg
-          // and it's hard to cancel since it happens immediately
-          EventPollingExecutorScheduler.execute(timer_callback)
-        }
-      }
-    }
-
     def stop(): Unit = {
-      // The NGINX Unit implementation sets `stopped = true` here
-      // https://github.com/nginx/unit/blob/bba97134e983541e94cf73e93900729e3a3e61fc/src/nodejs/unit-http/unit.cpp#L90
-      // But doing so breaks http4s server which doesn't restart properly
-      // stopped = true
+      stopped = true
       stopMonitorCallback.run()
     }
   }
 
   private object PortData {
-    private val references = new java.util.IdentityHashMap[PortData, Unit]
+    private[this] val references = new java.util.IdentityHashMap[PortData, Unit]
 
-    def fromPtr(ptr: Ptr[Byte]): PortData = {
-      val result = Intrinsics.castRawPtrToObject(toRawPtr(ptr)).asInstanceOf[PortData]
+    def register(ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*): Unit =
+      val portData = new PortData(ctx, port)
+      references.put(portData, ())
+      port.data = fromRawPtr(Intrinsics.castObjectToRawPtr(portData))
+
+    def fromPort(port: nxt_unit_port_t_*): PortData = {
+      val result = Intrinsics.castRawPtrToObject(toRawPtr(port.data)).asInstanceOf[PortData]
       references.remove(result)
       result
     }
