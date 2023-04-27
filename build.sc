@@ -11,7 +11,7 @@ import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
 import mill.contrib.buildinfo.BuildInfo
 import $ivy.`com.github.lolgab::mill-mima::0.0.13`
 import com.github.lolgab.mill.mima._
-import $ivy.`com.github.lolgab::mill-crossplatform::0.0.3`
+import $ivy.`com.github.lolgab::mill-crossplatform::0.2.1`
 import com.github.lolgab.mill.crossplatform._
 import $file.versions
 import versions.Versions
