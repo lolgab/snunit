@@ -31,7 +31,7 @@ def withDeployedExampleMultiplatform(projectName: String, crossSuffix: String = 
   val projectPrefix = s"integration.tests.$projectName$crossSuffix"
   runMillCommand(s"$projectPrefix.native.deployTestApp")
   val result = runMillCommand(s"$projectPrefix.jvm.launcher").out.lines().head
-  val s""""ref:$_:$path"""" = result: @unchecked
+  val s""""$_:$_:$_:$path"""" = result: @unchecked
   val process = os.proc(path).spawn()
   Thread.sleep(1000)
   try { f }
