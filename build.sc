@@ -1,7 +1,7 @@
 // import $ivy.`com.goyeau::mill-scalafix::0.2.11`
 import $ivy.`io.chris-kipp::mill-ci-release_mill$MILL_BIN_PLATFORM:0.1.6`
 import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest_mill$MILL_BIN_PLATFORM:0.7.0`
-import $ivy.`com.github.lolgab::mill-crossplatform_mill$MILL_BIN_PLATFORM:0.2.1`
+import $ivy.`com.github.lolgab::mill-crossplatform_mill$MILL_BIN_PLATFORM:0.2.2`
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import $ivy.`com.github.lolgab::mill-mima_mill$MILL_BIN_PLATFORM:0.0.19`
 
