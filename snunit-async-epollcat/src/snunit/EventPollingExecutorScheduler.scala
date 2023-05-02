@@ -5,7 +5,7 @@ private[snunit] object EventPollingExecutorScheduler {
       fd: Int,
       cb: Runnable
   ): Runnable = {
-    epollcat.snunit.InternalEventPollingExecutorSchedulerImpl.monitorReads(fd, cb)
+    epollcat.unsafe.InternalEventPollingExecutorSchedulerImpl.monitorReads(fd, cb)
   }
 
   def execute(runnable: Runnable): Unit = {
