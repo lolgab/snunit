@@ -20,9 +20,9 @@ private def closeUnitd(): Unit = {
 }
 def runBackground(config: ujson.Obj): Unit = {
   closeUnitd()
-  val state = dest / "state"
-  os.makeDir.all(state)
-  os.write.over(state / "conf.json", config)
+  val statedir = dest / "statedir"
+  os.makeDir.all(statedir)
+  os.write.over(statedir / "conf.json", config)
   val control = dest / "control.sock"
   os.remove(control)
   val started = new AtomicBoolean(false)
@@ -32,8 +32,8 @@ def runBackground(config: ujson.Obj): Unit = {
       "--no-daemon",
       "--log",
       dest / "log.txt",
-      "--state",
-      state,
+      "--statedir",
+      statedir,
       "--control",
       s"unix:$control",
       "--pid",
