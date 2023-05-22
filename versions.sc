@@ -11,7 +11,7 @@ object Versions {
   val autowire = "0.3.3"
   val tapir = "1.2.7"
   val cask = "0.9.0"
-  val http4s023 = "0.23.19-RC3"
+  val http4s023 = "0.23.19"
   val http4s1 = "1.0.0-M39"
   val mill = "0.10.11"
   val utest = "0.8.1"
