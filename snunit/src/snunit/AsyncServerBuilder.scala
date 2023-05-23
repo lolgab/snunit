@@ -101,7 +101,10 @@ object AsyncServerBuilder {
     }
 
     def stop(): Unit = {
-      stopped = true
+      // The NGINX Unit implementation sets `stopped = true` here
+      // https://github.com/nginx/unit/blob/bba97134e983541e94cf73e93900729e3a3e61fc/src/nodejs/unit-http/unit.cpp#L90
+      // But doing so breaks http4s server which doesn't restart properly
+      // stopped = true
       stopMonitorCallback.run()
     }
   }
