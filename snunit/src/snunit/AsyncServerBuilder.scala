@@ -101,10 +101,13 @@ object AsyncServerBuilder {
     }
 
     def stop(): Unit = {
-      // The NGINX Unit implementation sets `stopped = true` here
+      stopped = true
+      // The NGINX Unit implementation doesn't run the `process_port_msg` callback here
       // https://github.com/nginx/unit/blob/bba97134e983541e94cf73e93900729e3a3e61fc/src/nodejs/unit-http/unit.cpp#L90
-      // But doing so breaks http4s server which doesn't restart properly
-      // stopped = true
+      // Not doing so breaks http4s server which doesn't restart properly.
+      // My best guess is that libuv semantics to stop polling are different than epollcat's,
+      // which leaves the process hanging if the last bytes of the socket are not consumed.
+      process_port_msg.run()
       stopMonitorCallback.run()
     }
   }
