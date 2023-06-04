@@ -22,7 +22,14 @@ object Http4sTests extends TestSuite {
       withDeployedExample("http4s-app") {
         for (i <- 0.to(3)) {
           val restartResult = os
-            .proc("curl", "-s", "--unix-socket", BuildInfo.unitControl, "localhost/control/applications/app/restart")
+            .proc(
+              if (sys.env.contains("CI")) Seq("sudo") else Seq.empty[String],
+              "curl",
+              "-s",
+              "--unix-socket",
+              BuildInfo.unitControl,
+              "localhost/control/applications/app/restart"
+            )
             .call()
             .out
             .text()
