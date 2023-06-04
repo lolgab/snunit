@@ -16,6 +16,7 @@ import scala.util.control.NonFatal
 object AsyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)
   private val init: nxt_unit_init_t_* = initArray.at(0).asInstanceOf[nxt_unit_init_t_*]
+  private var calledShutdown: Boolean = false
   def setRequestHandler(requestHandler: RequestHandler): this.type = {
     ServerBuilder.setRequestHandler(requestHandler)
     this
@@ -28,6 +29,7 @@ object AsyncServerBuilder {
     ServerBuilder.setBaseHandlers(init)
     init.callbacks.add_port = AsyncServerBuilder.add_port
     init.callbacks.remove_port = AsyncServerBuilder.remove_port
+    init.callbacks.quit = AsyncServerBuilder.quit
     val ctx: nxt_unit_ctx_t_* = nxt_unit_init(init)
     if (ctx.isNull) {
       throw new Exception("Failed to create Unit object")
@@ -63,11 +65,19 @@ object AsyncServerBuilder {
   private val remove_port: remove_port_t = remove_port_t {
     (_: nxt_unit_t_*, ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
       {
-        if (port.data != null && !ctx.isNull) {
+        if (!calledShutdown && port.data != null && !ctx.isNull) {
           PortData.fromPort(port).stop()
         }
       }
   }
+
+  private val quit: quit_t = quit_t { (ctx: nxt_unit_ctx_t_*) =>
+    nxt_unit_done(ctx)
+    EventPollingExecutorScheduler.shutdown()
+    calledShutdown = true
+    ()
+  }
+
   private class PortData private (
       val ctx: nxt_unit_ctx_t_*,
       val port: nxt_unit_port_t_*
@@ -102,12 +112,6 @@ object AsyncServerBuilder {
 
     def stop(): Unit = {
       stopped = true
-      // The NGINX Unit implementation doesn't run the `process_port_msg` callback here
-      // https://github.com/nginx/unit/blob/bba97134e983541e94cf73e93900729e3a3e61fc/src/nodejs/unit-http/unit.cpp#L90
-      // Not doing so breaks http4s server which doesn't restart properly.
-      // My best guess is that libuv semantics to stop polling are different than epollcat's,
-      // which leaves the process hanging if the last bytes of the socket are not consumed.
-      process_port_msg.run()
       stopMonitorCallback.run()
     }
   }

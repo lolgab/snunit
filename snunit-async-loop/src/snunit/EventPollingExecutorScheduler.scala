@@ -13,4 +13,6 @@ private[snunit] object EventPollingExecutorScheduler {
   def execute(runnable: Runnable): Unit = {
     scala.concurrent.ExecutionContext.global.execute(runnable)
   }
+
+  def shutdown(): Unit = {}
 }
