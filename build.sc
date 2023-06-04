@@ -275,7 +275,8 @@ object integration extends ScalaModule {
       BuildInfo.Value("port", testServerPort.toString),
       BuildInfo.Value("scalaVersions", scalaVersions.mkString(":")),
       BuildInfo.Value("http4sVersions", http4sVersions.mkString(":")),
-      BuildInfo.Value("scala213", Versions.scala213)
+      BuildInfo.Value("scala213", Versions.scala213),
+      BuildInfo.Value("unitControl", unitd.control.toString)
     )
     def buildInfoPackageName = "snunit.test"
     def ivyDeps =

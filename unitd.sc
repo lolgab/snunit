@@ -1,6 +1,7 @@
 import java.util.concurrent.atomic.AtomicBoolean
 
 private val dest = os.home / ".cache" / "snunit"
+val control = dest / "control.sock"
 private val pid = dest / "unit.pid"
 
 // Variables are not maintained among invocations in interactive (`-i`) mode.
@@ -23,7 +24,6 @@ def runBackground(config: ujson.Obj): Unit = {
   val statedir = dest / "statedir"
   os.makeDir.all(statedir)
   os.write.over(statedir / "conf.json", config)
-  val control = dest / "control.sock"
   os.remove(control)
   val started = new AtomicBoolean(false)
   optProc = Some(

@@ -18,5 +18,29 @@ object Http4sTests extends TestSuite {
         assert(result == expectedResult)
       }
     }
+    test("unit-restart") {
+      withDeployedExample("http4s-app") {
+        for (i <- 0.to(3)) {
+          val restartResult = os
+            .proc(
+              if (sys.env.contains("CI")) Seq("sudo") else Seq.empty[String],
+              "curl",
+              "-s",
+              "--unix-socket",
+              BuildInfo.unitControl,
+              "localhost/control/applications/app/restart"
+            )
+            .call()
+            .out
+            .text()
+            .replaceAll("\\s+", "")
+          assert(restartResult == """{"success":"Ok"}""")
+          Thread.sleep(1000)
+          val result = request.get(baseUrl).text()
+          val expectedResult = "Hello Http4s App!"
+          assert(result == expectedResult)
+        }
+      }
+    }
   }
 }
