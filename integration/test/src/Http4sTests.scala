@@ -21,7 +21,6 @@ object Http4sTests extends TestSuite {
     test("unit-restart") {
       withDeployedExample("http4s-app") {
         for (i <- 0.to(3)) {
-          println("restarting.")
           val restartResult = os
             .proc(
               if (sys.env.contains("CI")) Seq("sudo") else Seq.empty[String],
@@ -35,13 +34,9 @@ object Http4sTests extends TestSuite {
             .out
             .text()
             .replaceAll("\\s+", "")
-          println("restarted.")
           assert(restartResult == """{"success":"Ok"}""")
-          println("sleeping.")
           Thread.sleep(1000)
-          println("sleep done.")
           val result = request.get(baseUrl).text()
-          println("request done")
           val expectedResult = "Hello Http4s App!"
           assert(result == expectedResult)
         }
