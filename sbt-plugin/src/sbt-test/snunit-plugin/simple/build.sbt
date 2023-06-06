@@ -1,7 +1,7 @@
 enablePlugins(ScalaNativePlugin)
 enablePlugins(SNUnitPlugin)
 
-scalaVersion := "3.2.2"
+scalaVersion := "3.3.0"
 snunitPort := 8085
 snunitCurlCommand := Seq("sudo", "curl")
 libraryDependencies += "com.github.lolgab" %%% "snunit" % snunitVersion
