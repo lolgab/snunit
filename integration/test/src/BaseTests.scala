@@ -54,6 +54,13 @@ object BaseTests extends TestSuite {
         assert(result == expectedResult)
       }
     }
+    test("async-epollcat") {
+      withDeployedExample("async-epollcat") {
+        val result = request.get(baseUrl).text()
+        val expectedResult = "Hello world from epollcat!"
+        assert(result == expectedResult)
+      }
+    }
     test("multiple-handlers") {
       withDeployedExample("multiple-handlers") {
         val getResult = request.get(baseUrl).text()
