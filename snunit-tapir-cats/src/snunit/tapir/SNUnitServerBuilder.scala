@@ -17,16 +17,24 @@ class SNUnitServerBuilder[F[_]: Async] private (serverEndpoints: List[ServerEndp
     copy(serverEndpoints = serverEndpoints)
   }
 
-  def build: Resource[F, SNUnitServer] = Dispatcher.parallel[F](await = true).flatMap { dispatcher =>
+  def run: F[Unit] = Dispatcher.parallel[F](await = true).use { dispatcher =>
     val interpreter = new SNUnitCatsServerInterpreter[F](dispatcher)
-    Resource.eval {
-      for {
-        handler <- interpreter.toHandler(serverEndpoints)
-        _ <- Async[F].delay(snunit.AsyncServerBuilder.setRequestHandler(handler).build())
-      } yield new SNUnitServer
-    }
+    for {
+      handler <- interpreter.toHandler(serverEndpoints)
+      shutdownDeferred <- Deferred[F, F[Unit]]
+      _ <- Async[F].delay(
+        snunit.AsyncServerBuilder
+          .setRequestHandler(handler)
+          .setShutdownHandler(shutdown =>
+            dispatcher.unsafeRunAndForget(shutdownDeferred.complete(Async[F].delay(shutdown())))
+          )
+          .build()
+      )
+      _ <- shutdownDeferred.get
+    } yield ()
   }
 }
+
 object SNUnitServerBuilder {
   def default[F[_]: Async]: SNUnitServerBuilder[F] = {
     new SNUnitServerBuilder[F](

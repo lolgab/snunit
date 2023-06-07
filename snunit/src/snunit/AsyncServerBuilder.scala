@@ -25,6 +25,11 @@ object AsyncServerBuilder {
     ServerBuilder.setWebsocketHandler(websocketHandler)
     this
   }
+  private var shutdownHandler: (() => Unit) => Unit = _ => ()
+  def setShutdownHandler(shutdownHandler: (() => Unit) => Unit): this.type = {
+    this.shutdownHandler = shutdownHandler
+    this
+  }
   def build(): AsyncServer = {
     ServerBuilder.setBaseHandlers(init)
     init.callbacks.add_port = AsyncServerBuilder.add_port
@@ -65,16 +70,16 @@ object AsyncServerBuilder {
   private val remove_port: remove_port_t = remove_port_t {
     (_: nxt_unit_t_*, ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
       {
-        if (!calledShutdown && port.data != null && !ctx.isNull) {
+        if (port.data != null && !ctx.isNull) {
           PortData.fromPort(port).stop()
         }
       }
   }
 
   private val quit: quit_t = quit_t { (ctx: nxt_unit_ctx_t_*) =>
-    nxt_unit_done(ctx)
-    EventPollingExecutorScheduler.shutdown()
-    calledShutdown = true
+    shutdownHandler { () =>
+      nxt_unit_done(ctx)
+    }
     ()
   }
 
