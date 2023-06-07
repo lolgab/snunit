@@ -20,5 +20,5 @@ object Versions {
   val pprint = "0.8.1"
   val castor = "0.3.0"
   val sjavatime = "1.1.9"
-  val epollcat = "0.1.4"
+  val epollcat = "0.1.5"
 }
