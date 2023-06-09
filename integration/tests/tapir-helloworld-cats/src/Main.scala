@@ -15,5 +15,6 @@ object TapirHelloWorldIO extends epollcat.EpollApp.Simple {
     SNUnitServerBuilder
       .default[IO]
       .withServerEndpoints(helloWorld :: Nil)
-      .run
+      .build
+      .useForever
 }

@@ -2,17 +2,17 @@ package snunit
 
 import snunit.unsafe.{*, given}
 
+import scala.annotation.tailrec
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.string.strerror
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
+import scala.scalanative.posix.sys.ioctl._
 import scala.scalanative.runtime.Intrinsics
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.toRawPtr
 import scala.scalanative.unsafe.*
 import scala.util.control.NonFatal
-import scala.annotation.tailrec
-import scala.scalanative.posix.sys.ioctl
 
 object AsyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)
@@ -38,7 +38,6 @@ object AsyncServerBuilder {
 
   private val add_port: add_port_t = add_port_t { (ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
     {
-      // println(s"adding port with fd: ${in_fd(port)}")
       if (port.in_fd != -1) {
         var result = NXT_UNIT_OK
         locally {
@@ -65,9 +64,6 @@ object AsyncServerBuilder {
   private val remove_port: remove_port_t = remove_port_t {
     (_: nxt_unit_t_*, ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
       {
-        // println(s"removing port with fd: ${in_fd(port)}")
-        // println(s"port.data = ${port.data}")
-        // println(s"ctx.isNull = ${ctx.isNull}")
         if (port.data != null && !ctx.isNull) {
           PortData.fromPort(port).stop()
         }
@@ -93,7 +89,7 @@ object AsyncServerBuilder {
       // since one port to remain open and one callback registered
       def continueReading: Boolean = {
         val bytesAvailable = stackalloc[Int]()
-        ioctl.ioctl(port.in_fd, ioctl.FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
+        ioctl(port.in_fd, FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
         !bytesAvailable > 0
       }
 

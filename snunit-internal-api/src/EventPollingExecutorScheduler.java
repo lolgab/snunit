@@ -11,4 +11,8 @@ final class EventPollingExecutorScheduler {
   public static void execute(Runnable runnable) {
     throw new AssertionError("stub");
   }
+
+  public static void shutdown() {
+    throw new AssertionError("stub");
+  }
 }

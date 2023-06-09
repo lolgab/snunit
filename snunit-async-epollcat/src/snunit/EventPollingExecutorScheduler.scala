@@ -11,4 +11,8 @@ private[snunit] object EventPollingExecutorScheduler {
   def execute(runnable: Runnable): Unit = {
     epollcat.unsafe.EpollRuntime.global.compute.execute(runnable)
   }
+
+  def shutdown(): Unit = {
+    epollcat.unsafe.EpollRuntime.global.shutdown()
+  }
 }

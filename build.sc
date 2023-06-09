@@ -56,10 +56,7 @@ object Common {
         "applications" -> ujson.Obj(
           appName -> ujson.Obj(
             "type" -> "external",
-            "executable" -> binary.toString,
-            // "limits" -> ujson.Obj(
-            //   "requests" -> 2
-            // )
+            "executable" -> binary.toString
           )
         ),
         "listeners" -> ujson.Obj(

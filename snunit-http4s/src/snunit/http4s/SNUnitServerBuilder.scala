@@ -3,7 +3,6 @@ package snunit.http4s
 import cats.effect.Resource
 import cats.effect.kernel.Async
 import cats.effect.std.Dispatcher
-import cats.syntax.all.*
 import org.http4s.HttpApp
 import org.http4s.Response
 import org.http4s.Status
@@ -22,12 +21,9 @@ class SNUnitServerBuilder[F[_]: Async](
   def withErrorHandler(errorHandler: Throwable => F[Response[F]]): SNUnitServerBuilder[F] =
     copy(errorHandler = errorHandler)
   def withHttpApp(httpApp: HttpApp[F]): SNUnitServerBuilder[F] = copy(httpApp = httpApp)
-  def run: F[Unit] = Dispatcher
-    .parallel[F](await = true)
-    .use { dispatcher =>
-      Impl.buildServer[F](dispatcher, httpApp, errorHandler)
-    }
-    .void
+  def build: Resource[F, snunit.AsyncServer] = Dispatcher.parallel[F](await = true).flatMap { dispatcher =>
+    Impl.buildServer[F](dispatcher, httpApp, errorHandler)
+  }
 
 }
 object SNUnitServerBuilder {

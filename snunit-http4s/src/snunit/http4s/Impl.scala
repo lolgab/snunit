@@ -1,6 +1,7 @@
 package snunit.http4s
 
-import cats.effect.*
+import cats.effect.Async
+import cats.effect.Resource
 import cats.effect.std.Dispatcher
 import cats.effect.syntax.all._
 import cats.syntax.all._
@@ -17,10 +18,9 @@ private[http4s] object Impl {
       dispatcher: Dispatcher[F],
       httpApp: HttpApp[F],
       errorHandler: Throwable => F[http4s.Response[F]]
-  ): F[F[Unit]] = {
-    for
-      shutdownDeferred <- Deferred[F, F[Unit]]
-      _ <- Async[F].delay(
+  ): Resource[F, snunit.AsyncServer] = {
+    Resource.eval(
+      Async[F].delay(
         snunit.AsyncServerBuilder
           .setRequestHandler(new snunit.RequestHandler {
             def handleRequest(req: snunit.Request): Unit = {
@@ -85,12 +85,8 @@ private[http4s] object Impl {
               dispatcher.unsafeRunAndForget(run)
             }
           })
-          .setShutdownHandler(shutdown =>
-            dispatcher.unsafeRunAndForget(shutdownDeferred.complete(Async[F].delay(shutdown())))
-          )
           .build()
       )
-      shutdown <- shutdownDeferred.get
-    yield shutdown
+    )
   }
 }
