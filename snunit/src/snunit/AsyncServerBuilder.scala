@@ -4,19 +4,19 @@ import snunit.unsafe.{*, given}
 
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.string.strerror
-import scala.scalanative.posix.fcntl.F_SETFL
-import scala.scalanative.posix.fcntl.O_NONBLOCK
-import scala.scalanative.posix.fcntl.fcntl
+import scala.scalanative.posix.fcntl._
+import scala.scalanative.posix.fcntlOps._
 import scala.scalanative.runtime.Intrinsics
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.toRawPtr
 import scala.scalanative.unsafe.*
 import scala.util.control.NonFatal
+import scala.annotation.tailrec
+import scala.scalanative.posix.sys.ioctl
 
 object AsyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)
   private val init: nxt_unit_init_t_* = initArray.at(0).asInstanceOf[nxt_unit_init_t_*]
-  private var calledShutdown: Boolean = false
   def setRequestHandler(requestHandler: RequestHandler): this.type = {
     ServerBuilder.setRequestHandler(requestHandler)
     this
@@ -25,16 +25,10 @@ object AsyncServerBuilder {
     ServerBuilder.setWebsocketHandler(websocketHandler)
     this
   }
-  private var shutdownHandler: (() => Unit) => Unit = _ => ()
-  def setShutdownHandler(shutdownHandler: (() => Unit) => Unit): this.type = {
-    this.shutdownHandler = shutdownHandler
-    this
-  }
   def build(): AsyncServer = {
     ServerBuilder.setBaseHandlers(init)
     init.callbacks.add_port = AsyncServerBuilder.add_port
     init.callbacks.remove_port = AsyncServerBuilder.remove_port
-    init.callbacks.quit = AsyncServerBuilder.quit
     val ctx: nxt_unit_ctx_t_* = nxt_unit_init(init)
     if (ctx.isNull) {
       throw new Exception("Failed to create Unit object")
@@ -44,7 +38,8 @@ object AsyncServerBuilder {
 
   private val add_port: add_port_t = add_port_t { (ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
     {
-      if (in_fd(port) != -1) {
+      // println(s"adding port with fd: ${in_fd(port)}")
+      if (port.in_fd != -1) {
         var result = NXT_UNIT_OK
         locally {
           val res = fcntl(port.in_fd, F_SETFL, O_NONBLOCK)
@@ -70,17 +65,13 @@ object AsyncServerBuilder {
   private val remove_port: remove_port_t = remove_port_t {
     (_: nxt_unit_t_*, ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
       {
+        // println(s"removing port with fd: ${in_fd(port)}")
+        // println(s"port.data = ${port.data}")
+        // println(s"ctx.isNull = ${ctx.isNull}")
         if (port.data != null && !ctx.isNull) {
           PortData.fromPort(port).stop()
         }
       }
-  }
-
-  private val quit: quit_t = quit_t { (ctx: nxt_unit_ctx_t_*) =>
-    shutdownHandler { () =>
-      nxt_unit_done(ctx)
-    }
-    ()
   }
 
   private class PortData private (
@@ -89,10 +80,25 @@ object AsyncServerBuilder {
   ) {
     private var stopped: Boolean = false
     private var scheduled: Boolean = false
+
+    private def process_port_msg_impl(): Boolean = {
+      val rc = nxt_unit_process_port_msg(ctx, port)
+      // println(s"nxt_unit_process_port_msg returned $rc")
+
+      def continueReading: Boolean = {
+        // println("checking if we should continue reading...")
+        val bytesAvailable = stackalloc[Int]()
+        ioctl.ioctl(port.in_fd, ioctl.FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
+        // println(s"should we continue reading: ${!bytesAvailable > 0}")
+        !bytesAvailable > 0
+      }
+
+      rc == NXT_UNIT_OK || continueReading
+    }
     val process_port_msg: Runnable = new Runnable {
       def run(): Unit = {
-        val rc = nxt_unit_process_port_msg(ctx, port)
-        if (rc == NXT_UNIT_OK && !scheduled && !stopped) {
+        val continue = process_port_msg_impl()
+        if (continue && !scheduled && !stopped) {
           // The NGINX Unit implementation uses a cancelable timer
           // so it can cancel this callback in stop()
           // We don't do that here, also because doing that would
@@ -104,7 +110,9 @@ object AsyncServerBuilder {
       }
     }
 
+    // println(s"Monitoring reads on fd: ${port.in_fd}")
     val stopMonitorCallback: Runnable = EventPollingExecutorScheduler.monitorReads(port.in_fd, process_port_msg)
+    // println(s"Created stopMonitorCallback ${stopMonitorCallback.hashCode()} for fd: ${port.in_fd}")
 
     val timer_callback: Runnable = new Runnable {
       def run(): Unit = {
@@ -116,7 +124,9 @@ object AsyncServerBuilder {
     }
 
     def stop(): Unit = {
+      // println(s"calling stop on fd: ${port.in_fd}")
       stopped = true
+      // println(s"Calling stopMonitorCallback ${stopMonitorCallback.hashCode()} for fd: ${port.in_fd}")
       stopMonitorCallback.run()
     }
   }
