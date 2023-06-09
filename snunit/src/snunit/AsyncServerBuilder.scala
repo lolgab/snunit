@@ -83,13 +83,17 @@ object AsyncServerBuilder {
 
     private def process_port_msg_impl(): Boolean = {
       val rc = nxt_unit_process_port_msg(ctx, port)
-      // println(s"nxt_unit_process_port_msg returned $rc")
 
+      // ideally this shouldn't be needed
+      // in theory rc == NXT_UNIT_AGAIN
+      // would mean that there aren't any messages
+      // to read. In practice if we stop at rc == NXT_UNIT_AGAIN
+      // there are some unprocessed messages which effect in
+      // epollcat (which uses edge-triggering) to hang on close
+      // since one port to remain open and one callback registered
       def continueReading: Boolean = {
-        // println("checking if we should continue reading...")
         val bytesAvailable = stackalloc[Int]()
         ioctl.ioctl(port.in_fd, ioctl.FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
-        // println(s"should we continue reading: ${!bytesAvailable > 0}")
         !bytesAvailable > 0
       }
 
@@ -110,9 +114,7 @@ object AsyncServerBuilder {
       }
     }
 
-    // println(s"Monitoring reads on fd: ${port.in_fd}")
     val stopMonitorCallback: Runnable = EventPollingExecutorScheduler.monitorReads(port.in_fd, process_port_msg)
-    // println(s"Created stopMonitorCallback ${stopMonitorCallback.hashCode()} for fd: ${port.in_fd}")
 
     val timer_callback: Runnable = new Runnable {
       def run(): Unit = {
@@ -124,9 +126,7 @@ object AsyncServerBuilder {
     }
 
     def stop(): Unit = {
-      // println(s"calling stop on fd: ${port.in_fd}")
       stopped = true
-      // println(s"Calling stopMonitorCallback ${stopMonitorCallback.hashCode()} for fd: ${port.in_fd}")
       stopMonitorCallback.run()
     }
   }
