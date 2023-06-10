@@ -1,9 +1,9 @@
 // import $ivy.`com.goyeau::mill-scalafix::0.2.11`
-import $ivy.`io.chris-kipp::mill-ci-release_mill$MILL_BIN_PLATFORM:0.1.6`
-import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest_mill$MILL_BIN_PLATFORM:0.7.0`
-import $ivy.`com.github.lolgab::mill-crossplatform_mill$MILL_BIN_PLATFORM:0.2.2`
-import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
-import $ivy.`com.github.lolgab::mill-mima_mill$MILL_BIN_PLATFORM:0.0.19`
+import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
+import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.1`
+import $ivy.`com.github.lolgab::mill-crossplatform::0.2.3`
+import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
+import $ivy.`com.github.lolgab::mill-mima::0.0.23`
 
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.api.ZincWorkerUtil.isScala3
@@ -104,7 +104,7 @@ object `snunit-internal-api` extends JavaModule
 object snunit extends Cross[SNUnitModule](scalaVersions)
 trait SNUnitModule extends Common.Cross with Publish {
   def compileModuleDeps = Seq(`snunit-internal-api`)
-  object test extends Tests with TestModule.Utest {
+  object test extends ScalaNativeTests with TestModule.Utest {
     def ivyDeps = super.ivyDeps() ++ Agg(utest)
   }
 }
@@ -270,7 +270,7 @@ object integration extends ScalaModule {
     }
   }
   def scalaVersion = Versions.scala3
-  object test extends Tests with TestModule.Utest with BuildInfo {
+  object test extends ScalaTests with TestModule.Utest with BuildInfo {
     def buildInfoMembers = Seq(
       BuildInfo.Value("port", testServerPort.toString),
       BuildInfo.Value("scalaVersions", scalaVersions.mkString(":")),
@@ -294,7 +294,7 @@ trait SnunitPluginsShared extends CrossScalaModule with Publish with BuildInfo {
     BuildInfo.Value("snunitVersion", publishVersion())
   )
   def buildInfoPackageName = "snunit.plugin.internal"
-  object test extends Tests with TestModule.Utest {
+  object test extends ScalaTests with TestModule.Utest {
     def ivyDeps = super.ivyDeps() ++ Agg(
       utest,
       osLib
