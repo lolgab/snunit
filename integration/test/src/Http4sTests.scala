@@ -42,5 +42,32 @@ object Http4sTests extends TestSuite {
         }
       }
     }
+    test("unit-requests-limits") {
+      withDeployedExample("http4s-app") {
+        val limitsResult = os
+          .proc(
+            if (sys.env.contains("CI")) Seq("sudo") else Seq.empty[String],
+            "curl",
+            "-s",
+            "--unix-socket",
+            BuildInfo.unitControl,
+            "-XPUT",
+            "-d",
+            """{"requests": 1}""",
+            "localhost/config/applications/app/limits"
+          )
+          .call()
+          .out
+          .text()
+          .replaceAll("\\s+", "")
+        assert(limitsResult == """{"success":"Reconfigurationdone."}""")
+        Thread.sleep(1000)
+        for (i <- 0.to(10)) {
+          val result = request.get(baseUrl).text()
+          val expectedResult = "Hello Http4s App!"
+          assert(result == expectedResult)
+        }
+      }
+    }
   }
 }

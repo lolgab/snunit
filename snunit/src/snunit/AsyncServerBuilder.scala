@@ -25,10 +25,16 @@ object AsyncServerBuilder {
     ServerBuilder.setWebsocketHandler(websocketHandler)
     this
   }
+  private var shutdownHandler: (() => Unit) => Unit = _ => ()
+  def setShutdownHandler(shutdownHandler: (() => Unit) => Unit): this.type = {
+    this.shutdownHandler = shutdownHandler
+    this
+  }
   def build(): AsyncServer = {
     ServerBuilder.setBaseHandlers(init)
     init.callbacks.add_port = AsyncServerBuilder.add_port
     init.callbacks.remove_port = AsyncServerBuilder.remove_port
+    init.callbacks.quit = AsyncServerBuilder.quit
     val ctx: nxt_unit_ctx_t_* = nxt_unit_init(init)
     if (ctx.isNull) {
       throw new Exception("Failed to create Unit object")
@@ -70,65 +76,68 @@ object AsyncServerBuilder {
       }
   }
 
+  private val quit: quit_t = quit_t { (ctx: nxt_unit_ctx_t_*) =>
+    // println("quit: calling shutdown handler")
+    shutdownHandler { () =>
+      // println("quit: called nxt_unit_done")
+      nxt_unit_done(ctx)
+    }
+  }
+
   private class PortData private (
       val ctx: nxt_unit_ctx_t_*,
       val port: nxt_unit_port_t_*
   ) {
     private var stopped: Boolean = false
-    private var scheduled: Boolean = false
-
-    private def process_port_msg_impl(): Boolean = {
-      val rc = nxt_unit_process_port_msg(ctx, port)
-
-      // ideally this shouldn't be needed
-      // in theory rc == NXT_UNIT_AGAIN
-      // would mean that there aren't any messages
-      // to read. In practice if we stop at rc == NXT_UNIT_AGAIN
-      // there are some unprocessed messages which effect in
-      // epollcat (which uses edge-triggering) to hang on close
-      // since one port to remain open and one callback registered
-      def continueReading: Boolean = {
-        val bytesAvailable = stackalloc[Int]()
-        ioctl(port.in_fd, FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
-        !bytesAvailable > 0
-      }
-
-      rc == NXT_UNIT_OK || continueReading
-    }
     val process_port_msg: Runnable = new Runnable {
       def run(): Unit = {
-        val continue = process_port_msg_impl()
-        if (continue && !scheduled && !stopped) {
+        val rc = nxt_unit_process_port_msg(ctx, port)
+
+        // ideally this shouldn't be needed.
+        // in theory rc == NXT_UNIT_AGAIN
+        // would mean that there aren't any messages
+        // to read. In practice if we stop at rc == NXT_UNIT_AGAIN
+        // there are some unprocessed messages which effect in
+        // epollcat (which uses edge-triggering) to hang on close
+        // since one port to remain open and one callback registered
+        def continueReading: Boolean = {
+          val bytesAvailable = stackalloc[Int]()
+          ioctl(port.in_fd, FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
+          !bytesAvailable > 0
+        }
+
+        val continue = rc == NXT_UNIT_OK || continueReading
+
+        if (stopped && PortData.isLastFDStopped) {
+          shutdownHandler { () =>
+            nxt_unit_done(ctx)
+          }
+        } else if (continue) {
           // The NGINX Unit implementation uses a cancelable timer
           // so it can cancel this callback in stop()
           // We don't do that here, also because doing that would
           // allocate a new Lambda for every process_port_msg
           // and it's hard to cancel since it happens immediately
-          EventPollingExecutorScheduler.execute(timer_callback)
-          scheduled = true
+          EventPollingExecutorScheduler.execute(process_port_msg)
         }
       }
     }
 
     val stopMonitorCallback: Runnable = EventPollingExecutorScheduler.monitorReads(port.in_fd, process_port_msg)
 
-    val timer_callback: Runnable = new Runnable {
-      def run(): Unit = {
-        scheduled = false
-        if (!stopped) {
-          process_port_msg.run()
-        }
-      }
-    }
-
     def stop(): Unit = {
       stopped = true
       stopMonitorCallback.run()
+      PortData.stopped.put(this, ())
     }
   }
 
   private object PortData {
     private[this] val references = new java.util.IdentityHashMap[PortData, Unit]
+
+    private[this] val stopped = new java.util.IdentityHashMap[PortData, Unit]
+
+    def isLastFDStopped: Boolean = references == stopped
 
     def register(ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*): Unit =
       val portData = new PortData(ctx, port)
@@ -136,9 +145,7 @@ object AsyncServerBuilder {
       port.data = fromRawPtr(Intrinsics.castObjectToRawPtr(portData))
 
     def fromPort(port: nxt_unit_port_t_*): PortData = {
-      val result = Intrinsics.castRawPtrToObject(toRawPtr(port.data)).asInstanceOf[PortData]
-      references.remove(result)
-      result
+      Intrinsics.castRawPtrToObject(toRawPtr(port.data)).asInstanceOf[PortData]
     }
   }
 }

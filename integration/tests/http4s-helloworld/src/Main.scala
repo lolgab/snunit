@@ -17,7 +17,6 @@ object Http4sHelloWorld extends EpollApp.Simple {
     SNUnitServerBuilder
       .default[IO]
       .withHttpApp(helloWorldRoutes.orNotFound)
-      .build
-      .useForever
+      .run
   }
 }
