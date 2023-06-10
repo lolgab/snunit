@@ -77,9 +77,7 @@ object AsyncServerBuilder {
   }
 
   private val quit: quit_t = quit_t { (ctx: nxt_unit_ctx_t_*) =>
-    // println("quit: calling shutdown handler")
     shutdownHandler { () =>
-      // println("quit: called nxt_unit_done")
       nxt_unit_done(ctx)
     }
   }
