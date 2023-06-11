@@ -25,7 +25,7 @@ object AsyncServerBuilder {
     ServerBuilder.setWebsocketHandler(websocketHandler)
     this
   }
-  private var shutdownHandler: (() => Unit) => Unit = _ => ()
+  private var shutdownHandler: (() => Unit) => Unit = shutdown => shutdown()
   def setShutdownHandler(shutdownHandler: (() => Unit) => Unit): this.type = {
     this.shutdownHandler = shutdownHandler
     this

@@ -21,11 +21,7 @@ class SNUnitServerBuilder[F[_]: Async](
   def withErrorHandler(errorHandler: Throwable => F[Response[F]]): SNUnitServerBuilder[F] =
     copy(errorHandler = errorHandler)
   def withHttpApp(httpApp: HttpApp[F]): SNUnitServerBuilder[F] = copy(httpApp = httpApp)
-  def run: F[Unit] = Dispatcher
-    .parallel[F](await = true)
-    .use { dispatcher =>
-      Impl.buildServer[F](dispatcher, httpApp, errorHandler)
-    }
+  def run: F[Unit] = Impl.buildServer[F](httpApp, errorHandler)
 
 }
 object SNUnitServerBuilder {
