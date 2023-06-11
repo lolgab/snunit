@@ -98,7 +98,7 @@ trait Publish extends CiReleaseModule with Mima {
         Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lolgab")
       )
     )
-  def mimaPreviousVersions = Seq("0.5.0")
+  def mimaPreviousVersions = Seq("0.7.0")
 }
 object `snunit-internal-api` extends JavaModule
 object snunit extends Cross[SNUnitModule](scalaVersions)
@@ -145,7 +145,6 @@ trait SNUnitTapirModule extends Common.Cross with Publish {
 }
 object `snunit-tapir-cats` extends Cross[SNUnitTapirCats](scalaVersions)
 trait SNUnitTapirCats extends Common.Cross with Publish {
-  def mimaPreviousArtifacts = Agg.empty[Dep]
   def moduleDeps = Seq(
     `snunit-tapir`(crossScalaVersion),
     `snunit-async-epollcat`(crossScalaVersion)
