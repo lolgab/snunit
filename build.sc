@@ -237,6 +237,9 @@ object integration extends ScalaModule {
     object `tapir-helloworld` extends Common.Scala3Only {
       override def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion))
     }
+    object `tapir-app` extends Common.Scala3Only {
+      override def moduleDeps = Seq(`snunit-tapir-cats`(crossScalaVersion))
+    }
     object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](http4sVersions)
     trait Http4sHelloWorldModule extends Common.Scala3Only with Cross.Module[String] {
       def http4sVersion = crossValue

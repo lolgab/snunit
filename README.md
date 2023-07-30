@@ -119,6 +119,30 @@ Currently three interpreters are available:
 - An interpreter for cats hidden behind `snunit.tapir.SNUnitServerBuilder` in the `snunit-tapir-cats` artifact.
   - You can find an example [in tests](./integration/tests/tapir-helloworld-cats/src/Main.scala)
 
+### Automatic server creation
+
+`snunit.TapirApp` extends `epollcat.EpollApp` building the SNUnit server.
+
+It exposes a `def serverEndpoints: Resource[IO, List[ServerEndpoint[Any, IO]]]` that you need to
+implement with your server logic.
+
+Here an example "Hello world" app:
+
+```scala
+import cats.effect.*
+import sttp.tapir.*
+
+object Main extends snunit.TapirApp {
+  def serverEndpoints = Resource.pure(
+    endpoint.get
+      .in("hello")
+      .in(query[String]("name"))
+      .out(stringBody)
+      .serverLogic[IO](name => IO(Right(s"Hello $name!"))) :: Nil
+  )
+}
+```
+
 ## Http4s support
 
 SNUnit offers a server implementation for [http4s](https://http4s.org).
