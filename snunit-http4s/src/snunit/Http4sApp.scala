@@ -1,6 +1,7 @@
 package snunit
 
-import cats.effect.{IO, Resource}
+import cats.effect.IO
+import cats.effect.Resource
 import org.http4s.HttpApp
 import snunit.http4s.SNUnitServerBuilder
 
