@@ -2,6 +2,8 @@ package snunit
 
 import snunit.unsafe.{*, given}
 
+import cats.effect.*
+
 import scala.annotation.tailrec
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.string.strerror
@@ -14,7 +16,7 @@ import scala.scalanative.runtime.toRawPtr
 import scala.scalanative.unsafe.*
 import scala.util.control.NonFatal
 
-object AsyncServerBuilder {
+object CEAsyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)
   private val init: nxt_unit_init_t_* = initArray.at(0).asInstanceOf[nxt_unit_init_t_*]
   def setRequestHandler(requestHandler: RequestHandler): this.type = {
@@ -30,16 +32,16 @@ object AsyncServerBuilder {
     this.shutdownHandler = shutdownHandler
     this
   }
-  def build(): AsyncServer = {
+  def build(): IO[Unit] = {
     ServerBuilder.setBaseHandlers(init)
-    init.callbacks.add_port = AsyncServerBuilder.add_port
-    init.callbacks.remove_port = AsyncServerBuilder.remove_port
-    init.callbacks.quit = AsyncServerBuilder.quit
+    init.callbacks.add_port = CEAsyncServerBuilder.add_port
+    init.callbacks.remove_port = CEAsyncServerBuilder.remove_port
+    init.callbacks.quit = CEAsyncServerBuilder.quit
     val ctx: nxt_unit_ctx_t_* = nxt_unit_init(init)
     if (ctx.isNull) {
       throw new Exception("Failed to create Unit object")
     }
-    new AsyncServer(ctx)
+    IO { () }
   }
 
   private val add_port: add_port_t = add_port_t { (ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
@@ -87,45 +89,36 @@ object AsyncServerBuilder {
       val port: nxt_unit_port_t_*
   ) {
     private var stopped: Boolean = false
-    val process_port_msg: Runnable = new Runnable {
-      def run(): Unit = {
-        val rc = nxt_unit_process_port_msg(ctx, port)
 
-        // ideally this shouldn't be needed.
-        // in theory rc == NXT_UNIT_AGAIN
-        // would mean that there aren't any messages
-        // to read. In practice if we stop at rc == NXT_UNIT_AGAIN
-        // there are some unprocessed messages which effect in
-        // epollcat (which uses edge-triggering) to hang on close
-        // since one port to remain open and one callback registered
-        def continueReading: Boolean = {
-          val bytesAvailable = stackalloc[Int]()
-          ioctl(port.in_fd, FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
-          !bytesAvailable > 0
-        }
-
-        val continue = rc == NXT_UNIT_OK // || continueReading
-
-        if (stopped && PortData.isLastFDStopped) {
-          shutdownHandler { () =>
-            nxt_unit_done(ctx)
-          }
-        } else if (continue) {
-          // The NGINX Unit implementation uses a cancelable timer
-          // so it can cancel this callback in stop()
-          // We don't do that here, also because doing that would
-          // allocate a new Lambda for every process_port_msg
-          // and it's hard to cancel since it happens immediately
-          EventPollingExecutorScheduler.execute(process_port_msg)
-        }
-      }
+    // ideally this shouldn't be needed.
+    // in theory rc == NXT_UNIT_AGAIN
+    // would mean that there aren't any messages
+    // to read. In practice if we stop at rc == NXT_UNIT_AGAIN
+    // there are some unprocessed messages which effect in
+    // epollcat (which uses edge-triggering) to hang on close
+    // since one port to remain open and one callback registered
+    def continueReading: Boolean = {
+      val bytesAvailable = stackalloc[Int]()
+      ioctl(port.in_fd, FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
+      !bytesAvailable > 0
     }
 
-    val stopMonitorCallback: Runnable = EventPollingExecutorScheduler.monitorReads(port.in_fd, process_port_msg)
+    (for
+      pollers <- Resource.eval(IO.pollers)
+      poller = pollers.head.asInstanceOf[FileDescriptorPoller]
+      handle <- poller.registerFileDescriptor(port.in_fd, monitorReadReady = true, monitorWriteReady = false)
+      res <- Resource.eval(handle.pollReadRec(()) { _ =>
+        IO {
+          // process messages until we are blocked
+          while (nxt_unit_process_port_msg(ctx, port) == NXT_UNIT_OK || continueReading) {}
+          // suspend until more data is available on the socket, then we will be invoked again
+          Left(())
+        }
+      })
+    yield res).useForever.unsafeRunAndForget()(cats.effect.unsafe.implicits.global)
 
     def stop(): Unit = {
       stopped = true
-      stopMonitorCallback.run()
       PortData.stopped.put(this, ())
     }
   }

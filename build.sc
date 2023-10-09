@@ -163,7 +163,10 @@ trait SNUnitHttp4s extends Common.Cross with Cross.Module2[String, String] with 
     case s"1.$_"    => "1"
   }
   def artifactName = s"snunit-http4s$http4sBinaryVersion"
-  def ivyDeps = super.ivyDeps() ++ Agg(ivy"org.http4s::http4s-server::$http4sVersion")
+  def ivyDeps = super.ivyDeps() ++ Agg(
+    ivy"org.http4s::http4s-server::$http4sVersion",
+    ivy"org.typelevel::cats-effect::3.6-0142603",
+  )
   def sources = T.sources {
     super.sources() ++ Agg(PathRef(millSourcePath / s"http4s-$http4sBinaryVersion" / "src"))
   }

@@ -23,7 +23,7 @@ private[http4s] object Impl {
         .parallel[F](await = true)
         .use { dispatcher =>
           Async[F].delay(
-            snunit.AsyncServerBuilder
+            snunit.CEAsyncServerBuilder
               .setRequestHandler(new snunit.RequestHandler {
                 def handleRequest(req: snunit.Request): Unit = {
                   val run = httpApp
