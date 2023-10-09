@@ -2,20 +2,19 @@
 
 ```scala
 import snunit.*
-object HelloWorldExample {
-  def main(args: Array[String]): Unit = {
-    SyncServerBuilder
-      .setRequestHandler(req =>
-        req.send(
-          statusCode = StatusCode.OK,
-          content = "Hello world!\n",
-          headers = Headers("Content-Type" -> "text/plain")
-        )
+
+@main
+def run =
+  SyncServerBuilder
+    .setRequestHandler(req =>
+      req.send(
+        statusCode = StatusCode.OK,
+        content = "Hello world!\n",
+        headers = Headers("Content-Type" -> "text/plain")
       )
-      .build()
-      .listen()
-  }
-}
+    )
+    .build()
+    .listen()
 ```
 
 SNUnit is a Scala Native library to write HTTP server applications on top of
@@ -96,14 +95,10 @@ anything else while listening.
 Moreover, all the request handlers need to respond directly and can't be implemented
 using `Future`s or any other asyncronous mechanism since no `Future` will run, being
 the process stuck on the `listen()` Unit event loop.
-With `AsyncServerBuilder` the server is automatically scheduled to run either on the
-[scala-native-loop](https://github.com/scala-native/scala-native-loop) event loop
-(based on the libuv library) or [epollcat](https://github.com/armanbilge/epollcat) event
-loop, based on epoll/kqueue.
+With http4s or tapir-cats-effect the server is automatically scheduled to run either on the
+cats effect event loop, based on epoll/kqueue.
 This allows you to complete requests asyncronously using whatever mechanism you prefer.
 A process can accept multiple requests concurrently, allowing great parallelism.
-Add either `snunit-async-loop` or `snunit-async-epollcat` to decide what implementation
-you want to use.
 
 ## Tapir support
 
@@ -111,17 +106,15 @@ SNUnit offers interpreters for [Tapir](https://tapir.softwaremill.com) server en
 You can write all your application using Tapir and the convert your Tapir endpoints
 with logic into a SNUnit `Handler`.
 
-Currently three interpreters are available:
+Currently two interpreters are available:
 - `SNUnitIdServerInterpreter` which works best with `SyncServerHandler` for synchronous applications
   - You can find an example [in tests](./integration/tests/tapir-helloworld/src/Main.scala)
-- `SNUnitFutureServerInterpreter` which requires `AsyncServerHandler` for asynchronous applications
-  - You can find an example [in tests](./integration/tests/tapir-helloworld-future/src/Main.scala)
 - An interpreter for cats hidden behind `snunit.tapir.SNUnitServerBuilder` in the `snunit-tapir-cats-effect` artifact.
   - You can find an example [in tests](./integration/tests/tapir-helloworld-cats-effect/src/Main.scala)
 
 ### Automatic server creation
 
-`snunit.TapirApp` extends `epollcat.EpollApp` building the SNUnit server.
+`snunit.TapirApp` extends `cats.effect.IOApp` building the SNUnit server.
 
 It exposes a `def serverEndpoints: Resource[IO, List[ServerEndpoint[Any, IO]]]` that you need to
 implement with your server logic.
@@ -152,7 +145,7 @@ There are two ways you can build a http4s server.
 
 ### Automatic server creation
 
-`snunit.Http4sApp` extends `epollcat.EpollApp` building the SNUnit server.
+`snunit.Http4sApp` extends `cats.effect.IOApp` building the SNUnit server.
 
 It exposes a `def routes: Resource[IO, HttpApp[IO]]` that you need to implement with your
 server logic.
@@ -160,9 +153,9 @@ server logic.
 Here an example "Hello world" app:
 
 ```scala
-import cats.effect._
-import org.http4s._
-import org.http4s.dsl.io._
+import cats.effect.*
+import org.http4s.*
+import org.http4s.dsl.io.*
 
 object app extends snunit.Http4sApp {
   def routes = Resource.pure(
@@ -180,29 +173,26 @@ object app extends snunit.Http4sApp {
 If you want to have more control over the server creation, you can use the
 `SNUnitServerBuilder` and manually use it.
 
-For example, here you see it in combination with `epollcat.EpollApp`
+For example, here you see it in combination with `cats.effect.IOApp`
 
 ```scala
 package snunit.tests
 
-import cats.effect._
-import epollcat.EpollApp
-import org.http4s._
-import org.http4s.dsl.io._
-import snunit.http4s._
+import cats.effect.*
+import org.http4s.*
+import org.http4s.dsl.io.*
+import snunit.http4s.*
 
-object Http4sHelloWorld extends EpollApp.Simple {
-  def helloWorldRoutes: HttpRoutes[IO] = {
+object Http4sHelloWorld extends IOApp.Simple {
+  def helloWorldRoutes: HttpRoutes[IO] =
     HttpRoutes.of[IO] { case GET -> Root =>
       Ok("Hello Http4s!")
     }
-  }
 
-  def run: IO[Unit] = {
+  def run: IO[Unit] =
     SNUnitServerBuilder
       .default[IO]
       .withHttpApp(helloWorldRoutes.orNotFound)
       .run
-  }
 }
 ```

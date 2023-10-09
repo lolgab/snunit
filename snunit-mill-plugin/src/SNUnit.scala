@@ -1,7 +1,6 @@
 package snunit.plugin
 
 import mill._
-import mill.define._
 import mill.scalanativelib._
 
 trait SNUnit extends ScalaNativeModule {

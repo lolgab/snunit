@@ -97,35 +97,21 @@ trait Publish extends CiReleaseModule with Mima {
     )
   def mimaPreviousVersions = Seq("0.8.0")
 }
-object `snunit-internal-api` extends JavaModule
 object snunit extends Cross[SNUnitModule](scalaVersions)
 trait SNUnitModule extends Common.Cross with Publish {
-  def compileModuleDeps = Seq(`snunit-internal-api`)
   object test extends ScalaNativeTests with TestModule.Utest {
     def ivyDeps = super.ivyDeps() ++ Agg(utest)
   }
 }
 
-object `snunit-async-loop` extends Cross[SNUnitAsyncModule](scalaVersions)
-trait SNUnitAsyncModule extends Common.Cross with Publish {
+object `snunit-async-cats-effect` extends Cross[SNUnitAsyncCatsEffectModule](scalaVersions)
+trait SNUnitAsyncCatsEffectModule extends Common.Cross with Publish {
   def moduleDeps = Seq(snunit())
 
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
-        ivy"com.github.lolgab::native-loop-core::${Versions.scalaNativeLoop}"
-      )
-    }
-}
-
-object `snunit-async-epollcat` extends Cross[SNUnitAsyncEpollcatModule](scalaVersions)
-trait SNUnitAsyncEpollcatModule extends Common.Cross with Publish {
-  def moduleDeps = Seq(snunit())
-
-  def ivyDeps =
-    T {
-      super.ivyDeps() ++ Agg(
-        ivy"com.armanbilge::epollcat::${Versions.epollcat}"
+        ivy"org.typelevel::cats-effect::${Versions.catsEffect}"
       )
     }
 }
@@ -143,8 +129,8 @@ trait SNUnitTapirModule extends Common.Cross with Publish {
 object `snunit-tapir-cats-effect` extends Cross[SNUnitTapirCatsEffect](scalaVersions)
 trait SNUnitTapirCatsEffect extends Common.Cross with Publish {
   def moduleDeps = Seq(
-    `snunit-tapir`(crossScalaVersion),
-    `snunit-async-epollcat`(crossScalaVersion)
+    `snunit-tapir`(),
+    `snunit-async-cats-effect`()
   )
   def ivyDeps = super.ivyDeps() ++ Agg(
     ivy"com.softwaremill.sttp.tapir::tapir-cats-effect::${Versions.tapir}"
@@ -156,14 +142,16 @@ trait SNUnitHttp4s extends Common.Cross with Cross.Module2[String, String] with 
   val http4sVersion = crossValue2
   def moduleDeps = Seq(
     snunit(),
-    `snunit-async-epollcat`(crossScalaVersion)
+    `snunit-async-cats-effect`()
   )
   val http4sBinaryVersion = http4sVersion match {
     case s"0.23.$_" => "0.23"
     case s"1.$_"    => "1"
   }
   def artifactName = s"snunit-http4s$http4sBinaryVersion"
-  def ivyDeps = super.ivyDeps() ++ Agg(ivy"org.http4s::http4s-server::$http4sVersion")
+  def ivyDeps = super.ivyDeps() ++ Agg(
+    ivy"org.http4s::http4s-server::$http4sVersion"
+  )
   def sources = T.sources {
     super.sources() ++ Agg(PathRef(millSourcePath / s"http4s-$http4sBinaryVersion" / "src"))
   }
@@ -205,15 +193,6 @@ object integration extends ScalaModule {
     }
     object `multiple-handlers` extends Common.Scala3Only {
       def moduleDeps = Seq(snunit(crossScalaVersion))
-    }
-    object async extends Common.Scala3Only {
-      def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
-    }
-    object `async-epollcat` extends Common.Scala3Only {
-      def moduleDeps = Seq(`snunit-async-epollcat`(crossScalaVersion))
-    }
-    object `async-multiple-handlers` extends Common.Scala3Only {
-      def moduleDeps = Seq(`snunit-async-loop`(crossScalaVersion))
     }
     object `undertow-helloworld` extends CrossPlatform {
       object native extends CrossPlatformScalaModule with Common.Scala3Only {
@@ -258,12 +237,6 @@ object integration extends ScalaModule {
         ivy"org.http4s::http4s-dsl::$http4sVersion"
       )
     }
-    object `tapir-helloworld-future` extends Common.Scala3Only {
-      def moduleDeps = Seq(
-        `snunit-async-loop`(crossScalaVersion),
-        `snunit-tapir`(crossScalaVersion)
-      )
-    }
     object `tapir-helloworld-cats-effect` extends Common.Scala3Only {
       def moduleDeps = Seq(
         `snunit-tapir-cats-effect`(crossScalaVersion)
@@ -276,7 +249,6 @@ object integration extends ScalaModule {
       BuildInfo.Value("port", testServerPort.toString),
       BuildInfo.Value("scalaVersions", scalaVersions.mkString(":")),
       BuildInfo.Value("http4sVersions", http4sVersions.mkString(":")),
-      BuildInfo.Value("scala213", Versions.scala213),
       BuildInfo.Value("unitControl", unitd.control.toString)
     )
     def buildInfoPackageName = "snunit.test"
@@ -303,15 +275,15 @@ trait SnunitPluginsShared extends CrossScalaModule with Publish with BuildInfo {
   }
 }
 object `snunit-mill-plugin` extends ScalaModule with Publish {
-  def artifactName = s"mill-snunit_mill${Versions.mill010.split('.').take(2).mkString(".")}"
+  def artifactName = s"mill-snunit_mill${Versions.mill011.split('.').take(2).mkString(".")}"
   def moduleDeps = Seq(`snunit-plugins-shared`(Versions.scala213))
   def scalaVersion = Versions.scala213
   def compileIvyDeps = super.compileIvyDeps() ++ Agg(
-    ivy"com.lihaoyi::mill-scalanativelib:${Versions.mill010}"
+    ivy"com.lihaoyi::mill-scalanativelib:${Versions.mill011}"
   )
 }
 object `snunit-mill-plugin-itest` extends MillIntegrationTestModule {
-  def millTestVersion = Versions.mill010
+  def millTestVersion = Versions.mill011
   def pluginsUnderTest = Seq(`snunit-mill-plugin`)
   def temporaryIvyModules = Seq(`snunit-plugins-shared`(Versions.scala213), snunit(Versions.scala3))
 }
