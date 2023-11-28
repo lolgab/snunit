@@ -3,9 +3,6 @@ package snunit.http4s
 import cats.effect.Async
 import org.http4s
 import org.http4s.Entity
-import org.http4s.Entity.Default
-import org.http4s.Entity.Empty
-import org.http4s.Entity.Strict
 import scodec.bits.ByteVector
 import snunit.*
 
@@ -21,12 +18,12 @@ object VersionSpecific {
       headers: snunit.Headers
   ): F[Unit] = {
     response.entity match {
-      case Default(body, _) =>
-        Utils.sendStreaming(req, body, statusCode, headers)
-      case Empty =>
-        Async[F].delay(req.send(StatusCode(statusCode), Array.emptyByteArray, headers))
-      case Strict(bytes) =>
+      case Entity.Strict(bytes) =>
         Async[F].delay(req.send(StatusCode(statusCode), bytes.toArray, headers))
+      case Entity.Streamed(body, _) =>
+        Utils.sendStreaming(req, body, statusCode, headers)
+      case Entity.Empty =>
+        Async[F].delay(req.send(StatusCode(statusCode), Array.emptyByteArray, headers))
     }
   }
 }

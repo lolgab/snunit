@@ -116,8 +116,8 @@ Currently three interpreters are available:
   - You can find an example [in tests](./integration/tests/tapir-helloworld/src/Main.scala)
 - `SNUnitFutureServerInterpreter` which requires `AsyncServerHandler` for asynchronous applications
   - You can find an example [in tests](./integration/tests/tapir-helloworld-future/src/Main.scala)
-- An interpreter for cats hidden behind `snunit.tapir.SNUnitServerBuilder` in the `snunit-tapir-cats` artifact.
-  - You can find an example [in tests](./integration/tests/tapir-helloworld-cats/src/Main.scala)
+- An interpreter for cats hidden behind `snunit.tapir.SNUnitServerBuilder` in the `snunit-tapir-cats-effect` artifact.
+  - You can find an example [in tests](./integration/tests/tapir-helloworld-cats-effect/src/Main.scala)
 
 ### Automatic server creation
 

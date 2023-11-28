@@ -140,13 +140,15 @@ trait SNUnitTapirModule extends Common.Cross with Publish {
   def moduleDeps = Seq(snunit())
   def ivyDeps = super.ivyDeps() ++ Agg(ivy"com.softwaremill.sttp.tapir::tapir-server::${Versions.tapir}")
 }
-object `snunit-tapir-cats` extends Cross[SNUnitTapirCats](scalaVersions)
-trait SNUnitTapirCats extends Common.Cross with Publish {
+object `snunit-tapir-cats-effect` extends Cross[SNUnitTapirCatsEffect](scalaVersions)
+trait SNUnitTapirCatsEffect extends Common.Cross with Publish {
   def moduleDeps = Seq(
     `snunit-tapir`(crossScalaVersion),
     `snunit-async-epollcat`(crossScalaVersion)
   )
-  def ivyDeps = super.ivyDeps() ++ Agg(ivy"com.softwaremill.sttp.tapir::tapir-cats::${Versions.tapir}")
+  def ivyDeps = super.ivyDeps() ++ Agg(
+    ivy"com.softwaremill.sttp.tapir::tapir-cats-effect::${Versions.tapir}"
+  )
 }
 
 object `snunit-http4s` extends Cross[SNUnitHttp4s](http4sAndScalaVersions)
@@ -170,7 +172,7 @@ trait SNUnitHttp4s extends Common.Cross with Cross.Module2[String, String] with 
 def caskSources = T {
   val dest = T.dest
   os.proc("git", "clone", "--branch", Versions.cask, "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
-  os.proc("git", "apply", os.pwd / "cask.patch").call(cwd = dest / "cask")
+  os.proc("git", "apply", T.workspace / "cask.patch").call(cwd = dest / "cask")
   PathRef(dest)
 }
 object `snunit-cask` extends Cross[SNUnitCaskModule](scalaVersions)
@@ -235,7 +237,7 @@ object integration extends ScalaModule {
       override def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion))
     }
     object `tapir-app` extends Common.Scala3Only {
-      override def moduleDeps = Seq(`snunit-tapir-cats`(crossScalaVersion))
+      override def moduleDeps = Seq(`snunit-tapir-cats-effect`(crossScalaVersion))
     }
     object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](http4sVersions)
     trait Http4sHelloWorldModule extends Common.Scala3Only with Cross.Module[String] {
@@ -262,9 +264,9 @@ object integration extends ScalaModule {
         `snunit-tapir`(crossScalaVersion)
       )
     }
-    object `tapir-helloworld-cats` extends Common.Scala3Only {
+    object `tapir-helloworld-cats-effect` extends Common.Scala3Only {
       def moduleDeps = Seq(
-        `snunit-tapir-cats`(crossScalaVersion)
+        `snunit-tapir-cats-effect`(crossScalaVersion)
       )
     }
   }
@@ -301,15 +303,15 @@ trait SnunitPluginsShared extends CrossScalaModule with Publish with BuildInfo {
   }
 }
 object `snunit-mill-plugin` extends ScalaModule with Publish {
-  def artifactName = s"mill-snunit_mill${Versions.mill.split('.').take(2).mkString(".")}"
+  def artifactName = s"mill-snunit_mill${Versions.mill010.split('.').take(2).mkString(".")}"
   def moduleDeps = Seq(`snunit-plugins-shared`(Versions.scala213))
   def scalaVersion = Versions.scala213
   def compileIvyDeps = super.compileIvyDeps() ++ Agg(
-    ivy"com.lihaoyi::mill-scalanativelib:${Versions.mill}"
+    ivy"com.lihaoyi::mill-scalanativelib:${Versions.mill010}"
   )
 }
 object `snunit-mill-plugin-itest` extends MillIntegrationTestModule {
-  def millTestVersion = Versions.mill
+  def millTestVersion = Versions.mill010
   def pluginsUnderTest = Seq(`snunit-mill-plugin`)
   def temporaryIvyModules = Seq(`snunit-plugins-shared`(Versions.scala213), snunit(Versions.scala3))
 }

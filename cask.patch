@@ -38,7 +38,7 @@ index 9951628..afd46c5 100644
        val deque = queryParams.get(k)
        val arr = new Array[String](deque.size)
 diff --git a/cask/src/cask/endpoints/WebSocketEndpoint.scala b/cask/src/cask/endpoints/WebSocketEndpoint.scala
-index d96d6ac..f3b1dc2 100644
+index ea5bbd6..b59217f 100644
 --- a/cask/src/cask/endpoints/WebSocketEndpoint.scala
 +++ b/cask/src/cask/endpoints/WebSocketEndpoint.scala
 @@ -42,31 +42,31 @@ extends WebsocketResult with WebSocketConnectionCallback {
@@ -80,7 +80,7 @@ index d96d6ac..f3b1dc2 100644
         }
       )
 diff --git a/cask/src/cask/main/Main.scala b/cask/src/cask/main/Main.scala
-index 3e53c18..3ca3d72 100644
+index 9bf7132..e93f66e 100644
 --- a/cask/src/cask/main/Main.scala
 +++ b/cask/src/cask/main/Main.scala
 @@ -62,10 +62,10 @@ abstract class Main{
@@ -100,8 +100,8 @@ index 3e53c18..3ca3d72 100644
                        (implicit log: Logger) extends HttpHandler() {
      def handleRequest(exchange: HttpServerExchange): Unit = try {
        //        println("Handling Request: " + exchange.getRequestPath)
--      val (effectiveMethod, runner) = if (exchange.getRequestHeaders.getFirst("Upgrade") == "websocket") {
-+      val (effectiveMethod, runner) = if (exchange.getRequestHeaders().getFirst("Upgrade") == "websocket") {
+-      val (effectiveMethod, runner) = if ("websocket".equalsIgnoreCase(exchange.getRequestHeaders.getFirst("Upgrade"))) {
++      val (effectiveMethod, runner) = if ("websocket".equalsIgnoreCase(exchange.getRequestHeaders().getFirst("Upgrade"))) {
          Tuple2(
            "websocket",
            (r: Any) =>
@@ -119,7 +119,7 @@ index 3e53c18..3ca3d72 100644
          case None => Main.writeResponse(exchange, handleNotFound())
          case Some((methodMap, routeBindings, remaining)) =>
            methodMap.get(effectiveMethod) match {
-@@ -163,24 +163,24 @@ object Main{
+@@ -164,24 +164,24 @@ object Main{
  
    def writeResponse(exchange: HttpServerExchange, response: Response.Raw) = {
      response.data.headers.foreach{case (k, v) =>
