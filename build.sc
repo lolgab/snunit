@@ -1,4 +1,4 @@
-// import $ivy.`com.goyeau::mill-scalafix::0.2.11`
+import $ivy.`com.goyeau::mill-scalafix::0.3.1`
 import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
 import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.1`
 import $ivy.`com.github.lolgab::mill-crossplatform::0.2.3`
@@ -8,7 +8,7 @@ import $ivy.`com.github.lolgab::mill-mima::0.0.23`
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.api.ZincWorkerUtil.isScala3
 import mill.scalalib.publish._
-// import com.goyeau.mill.scalafix.ScalafixModule
+import com.goyeau.mill.scalafix.ScalafixModule
 import io.kipp.mill.ci.release.CiReleaseModule
 import de.tobiasroeser.mill.integrationtest._
 import mill.contrib.buildinfo.BuildInfo
@@ -35,7 +35,7 @@ val utest = ivy"com.lihaoyi::utest::${Versions.utest}"
 val testServerPort = 8081
 
 object Common {
-  trait Shared extends ScalaModule /* with ScalafixModule */ {
+  trait Shared extends ScalaModule with ScalafixModule {
     def organization = "com.github.lolgab"
     def name = "snunit"
     def crossScalaVersion: String
@@ -43,9 +43,6 @@ object Common {
     def scalacOptions = super.scalacOptions() ++
       Seq("-deprecation") ++
       (if (isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
-
-    // Disabled because of https://github.com/liancheng/scalafix-organize-imports/issues/221
-    // def scalafixIvyDeps = Agg(ivy"com.github.liancheng::organize-imports:0.6.0")
   }
   trait SharedNative extends Shared with ScalaNativeModule {
     def scalaNativeVersion = versions.Versions.scalaNative
@@ -238,6 +235,9 @@ object integration extends ScalaModule {
     }
     object `tapir-helloworld` extends Common.Scala3Only {
       override def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion))
+    }
+    object `tapir-app` extends Common.Scala3Only {
+      override def moduleDeps = Seq(`snunit-tapir-cats-effect`(crossScalaVersion))
     }
     object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](http4sVersions)
     trait Http4sHelloWorldModule extends Common.Scala3Only with Cross.Module[String] {
