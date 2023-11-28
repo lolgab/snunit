@@ -3,7 +3,7 @@ import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
 import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.1`
 import $ivy.`com.github.lolgab::mill-crossplatform::0.2.3`
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
-import $ivy.`com.github.lolgab::mill-mima::0.0.23`
+import $ivy.`com.github.lolgab::mill-mima::0.1.0`
 
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.api.ZincWorkerUtil.isScala3
@@ -95,7 +95,7 @@ trait Publish extends CiReleaseModule with Mima {
         Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lolgab")
       )
     )
-  def mimaPreviousVersions = Seq("0.7.0")
+  def mimaPreviousVersions = Seq("0.8.0")
 }
 object `snunit-internal-api` extends JavaModule
 object snunit extends Cross[SNUnitModule](scalaVersions)
