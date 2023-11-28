@@ -33,7 +33,8 @@ private[tapir] trait SNUnitGenericServerInterpreter {
 
   private val requestBody: RequestBody[Wrapper, NoStreams] = new RequestBody[Wrapper, NoStreams] {
     val streams = NoStreams
-    def toStream(serverRequest: ServerRequest, maxBytes: Option[Long]): streams.BinaryStream = throw new UnsupportedOperationException
+    def toStream(serverRequest: ServerRequest, maxBytes: Option[Long]): streams.BinaryStream =
+      throw new UnsupportedOperationException
     override def toRaw[RAW](serverRequest: ServerRequest, bodyType: RawBodyType[RAW]): Wrapper[RawValue[RAW]] = {
       inline def req = serverRequest.underlying.asInstanceOf[snunit.Request]
 
