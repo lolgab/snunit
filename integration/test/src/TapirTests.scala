@@ -14,8 +14,8 @@ object TapirTests extends TestSuite {
         tapirHelloWorldTest(baseUrl)
       }
     }
-    test("tapir-helloworld-cats") {
-      withDeployedExample("tapir-helloworld-cats") {
+    test("tapir-helloworld-cats-effect") {
+      withDeployedExample("tapir-helloworld-cats-effect") {
         tapirHelloWorldTest(baseUrl)
       }
     }
