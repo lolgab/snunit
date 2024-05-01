@@ -108,6 +108,9 @@ object `snunit-async-cats-effect` extends Cross[SNUnitAsyncCatsEffectModule](sca
 trait SNUnitAsyncCatsEffectModule extends Common.Cross with Publish {
   def moduleDeps = Seq(snunit())
 
+  // TODO: Delete once a version is published
+  override def mimaPreviousArtifacts: Target[Agg[Dep]] = Agg.empty[Dep]
+
   def ivyDeps =
     T {
       super.ivyDeps() ++ Agg(
