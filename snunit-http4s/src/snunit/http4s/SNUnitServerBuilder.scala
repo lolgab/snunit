@@ -1,13 +1,14 @@
 package snunit.http4s
 
 import cats.effect.Resource
+import cats.effect.LiftIO
 import cats.effect.kernel.Async
 import cats.effect.std.Dispatcher
 import org.http4s.HttpApp
 import org.http4s.Response
 import org.http4s.Status
 
-class SNUnitServerBuilder[F[_]: Async](
+class SNUnitServerBuilder[F[_]: Async: LiftIO](
     private val httpApp: HttpApp[F],
     private val errorHandler: Throwable => F[Response[F]]
 ) {
@@ -25,7 +26,7 @@ class SNUnitServerBuilder[F[_]: Async](
 
 }
 object SNUnitServerBuilder {
-  def default[F[_]: Async]: SNUnitServerBuilder[F] = {
+  def default[F[_]: Async: LiftIO]: SNUnitServerBuilder[F] = {
     val serverFailure = Response(Status.InternalServerError).putHeaders(org.http4s.headers.`Content-Length`.zero)
     def errorHandler: Throwable => F[Response[F]] = { case (_: Throwable) =>
       Async[F].pure(serverFailure.covary[F])

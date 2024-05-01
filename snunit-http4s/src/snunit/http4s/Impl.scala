@@ -2,8 +2,8 @@ package snunit.http4s
 
 import cats.effect.*
 import cats.effect.std.Dispatcher
-import cats.effect.syntax.all._
-import cats.syntax.all._
+import cats.effect.syntax.all.*
+import cats.syntax.all.*
 import org.http4s
 import org.http4s.HttpApp
 import org.typelevel.ci.CIString
@@ -13,20 +13,24 @@ import snunit.*
 import java.util.concurrent.CancellationException
 
 private[http4s] object Impl {
-  def buildServer[F[_]: Async](
+  def buildServer[F[_]: Async: LiftIO](
       httpApp: HttpApp[F],
       errorHandler: Throwable => F[http4s.Response[F]]
   ): F[Unit] = {
     for
-      shutdownDeferred <- Deferred[F, F[Unit]]
+      shutdownDeferred <- Deferred[IO, IO[Unit]].to[F]
+      pollers <- IO.pollers.to[F]
       shutdown <- Dispatcher
         .parallel[F](await = true)
         .use { dispatcher =>
-          Async[F].delay(
-            snunit.AsyncServerBuilder
-              .setRequestHandler(new snunit.RequestHandler {
-                def handleRequest(req: snunit.Request): Unit = {
-                  val run = httpApp
+          snunit.CEAsyncServerBuilder
+            .setDispatcher(dispatcher)
+            .setFileDescriptorPoller(pollers.head.asInstanceOf)
+            .setShutdownDeferred(shutdownDeferred)
+            .setRequestHandler(new snunit.RequestHandler {
+              def handleRequest(req: snunit.Request): Unit = {
+                dispatcher.unsafeRunAndForget(
+                  httpApp
                     .run {
                       val method = req.method match {
                         case snunit.Method.GET     => http4s.Method.GET
@@ -86,16 +90,13 @@ private[http4s] object Impl {
                       val headers = Headers(response.headers.headers, _.name.toString, _.value)
                       VersionSpecific.writeResponse(req, response, response.status.code, headers)
                     }
-                  dispatcher.unsafeRunAndForget(run)
-                }
-              })
-              .setShutdownHandler(shutdown =>
-                dispatcher.unsafeRunAndForget(shutdownDeferred.complete(Async[F].delay(shutdown())))
-              )
-              .build()
-          ) *> shutdownDeferred.get
+                )
+              }
+            })
+            .build
+            .to[F] *> shutdownDeferred.get.to[F]
         }
-      _ <- shutdown
+      _ <- shutdown.to[F]
     yield ()
   }
 }

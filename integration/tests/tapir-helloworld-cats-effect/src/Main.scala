@@ -1,10 +1,10 @@
 package snunit.tests
 
-import cats.effect._
-import snunit.tapir._
-import sttp.tapir._
+import cats.effect.*
+import snunit.tapir.*
+import sttp.tapir.*
 
-object TapirHelloWorldIO extends epollcat.EpollApp.Simple {
+object TapirHelloWorldIO extends IOApp.Simple {
   val helloWorld = endpoint.get
     .in("hello")
     .in(query[String]("name"))

@@ -2,6 +2,9 @@ package snunit
 
 import snunit.unsafe.{*, given}
 
+import cats.effect.*
+import cats.effect.std.Dispatcher
+
 import scala.annotation.tailrec
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.string.strerror
@@ -13,10 +16,30 @@ import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.toRawPtr
 import scala.scalanative.unsafe.*
 import scala.util.control.NonFatal
+import scala.concurrent.Future
 
-object AsyncServerBuilder {
+private[snunit] object CEAsyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)
   private val init: nxt_unit_init_t_* = initArray.at(0).asInstanceOf[nxt_unit_init_t_*]
+
+  private var dispatcher: Dispatcher[IO] = dispatcher
+  def setDispatcher[F[_]: LiftIO](dispatcher: Dispatcher[F]): this.type =
+    this.dispatcher = new Dispatcher[IO] {
+      override def unsafeToFutureCancelable[A](fa: IO[A]): (Future[A], () => Future[Unit]) =
+        dispatcher.unsafeToFutureCancelable[A](summon[LiftIO[F]].liftIO(fa))
+    }
+    this
+
+  private var poller: FileDescriptorPoller = null
+  def setFileDescriptorPoller(poller: FileDescriptorPoller): this.type =
+    this.poller = poller
+    this
+
+  private var shutdownDeferred: Deferred[IO, IO[Unit]] = null
+  def setShutdownDeferred(deferred: Deferred[IO, IO[Unit]]): this.type =
+    this.shutdownDeferred = deferred
+    this
+
   def setRequestHandler(requestHandler: RequestHandler): this.type = {
     ServerBuilder.setRequestHandler(requestHandler)
     this
@@ -25,22 +48,16 @@ object AsyncServerBuilder {
     ServerBuilder.setWebsocketHandler(websocketHandler)
     this
   }
-  private var shutdownHandler: (() => Unit) => Unit = shutdown => shutdown()
-  def setShutdownHandler(shutdownHandler: (() => Unit) => Unit): this.type = {
-    this.shutdownHandler = shutdownHandler
-    this
-  }
-  def build(): AsyncServer = {
+  def build: IO[Unit] = IO {
     ServerBuilder.setBaseHandlers(init)
-    init.callbacks.add_port = AsyncServerBuilder.add_port
-    init.callbacks.remove_port = AsyncServerBuilder.remove_port
-    init.callbacks.quit = AsyncServerBuilder.quit
-    val ctx: nxt_unit_ctx_t_* = nxt_unit_init(init)
-    if (ctx.isNull) {
-      throw new Exception("Failed to create Unit object")
-    }
-    new AsyncServer(ctx)
-  }
+    init.callbacks.add_port = CEAsyncServerBuilder.add_port
+    init.callbacks.remove_port = CEAsyncServerBuilder.remove_port
+    init.callbacks.quit = CEAsyncServerBuilder.quit
+    nxt_unit_init(init)
+  }.flatMap(ctx =>
+    if (ctx.isNull) IO.raiseError(new Exception("Failed to create Unit object"))
+    else IO.unit
+  )
 
   private val add_port: add_port_t = add_port_t { (ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
     {
@@ -67,19 +84,18 @@ object AsyncServerBuilder {
     }
   }
 
-  private val remove_port: remove_port_t = remove_port_t {
-    (_: nxt_unit_t_*, ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
+  private val remove_port: remove_port_t =
+    remove_port_t { (_: nxt_unit_t_*, ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*) =>
       {
         if (port.data != null && !ctx.isNull) {
-          PortData.fromPort(port).stop()
+          val portData = PortData.fromPort(port)
+          portData.stop()
         }
       }
-  }
+    }
 
   private val quit: quit_t = quit_t { (ctx: nxt_unit_ctx_t_*) =>
-    shutdownHandler { () =>
-      nxt_unit_done(ctx)
-    }
+    dispatcher.unsafeRunAndForget(shutdownDeferred.complete(IO(nxt_unit_done(ctx))))
   }
 
   private class PortData private (
@@ -87,45 +103,31 @@ object AsyncServerBuilder {
       val port: nxt_unit_port_t_*
   ) {
     private var stopped: Boolean = false
-    val process_port_msg: Runnable = new Runnable {
-      def run(): Unit = {
-        val rc = nxt_unit_process_port_msg(ctx, port)
 
-        // ideally this shouldn't be needed.
-        // in theory rc == NXT_UNIT_AGAIN
-        // would mean that there aren't any messages
-        // to read. In practice if we stop at rc == NXT_UNIT_AGAIN
-        // there are some unprocessed messages which effect in
-        // epollcat (which uses edge-triggering) to hang on close
-        // since one port to remain open and one callback registered
-        def continueReading: Boolean = {
-          val bytesAvailable = stackalloc[Int]()
-          ioctl(port.in_fd, FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
-          !bytesAvailable > 0
-        }
+    dispatcher
+      .unsafeRunAndForget(
+        poller
+          .registerFileDescriptor(port.in_fd, monitorReadReady = true, monitorWriteReady = false)
+          .use(handle =>
+            handle
+              .pollReadRec[Unit, Unit](()) { _ =>
+                IO {
+                  // process messages until we are blocked
+                  while (nxt_unit_process_port_msg(ctx, port) == NXT_UNIT_OK) {}
 
-        val continue = rc == NXT_UNIT_OK || continueReading
-
-        if (stopped && PortData.isLastFDStopped) {
-          shutdownHandler { () =>
-            nxt_unit_done(ctx)
-          }
-        } else if (continue) {
-          // The NGINX Unit implementation uses a cancelable timer
-          // so it can cancel this callback in stop()
-          // We don't do that here, also because doing that would
-          // allocate a new Lambda for every process_port_msg
-          // and it's hard to cancel since it happens immediately
-          EventPollingExecutorScheduler.execute(process_port_msg)
-        }
-      }
-    }
-
-    val stopMonitorCallback: Runnable = EventPollingExecutorScheduler.monitorReads(port.in_fd, process_port_msg)
+                  if (stopped && PortData.isLastFDStopped)
+                    Right(())
+                  else
+                    // suspend until more data is available on the socket, then we will be invoked again
+                    Left(())
+                }
+              }
+              .race(shutdownDeferred.get)
+          )
+      )
 
     def stop(): Unit = {
       stopped = true
-      stopMonitorCallback.run()
       PortData.stopped.put(this, ())
     }
   }
