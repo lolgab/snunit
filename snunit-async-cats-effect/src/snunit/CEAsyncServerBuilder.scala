@@ -104,19 +104,6 @@ private[snunit] object CEAsyncServerBuilder {
   ) {
     private var stopped: Boolean = false
 
-    // ideally this shouldn't be needed.
-    // in theory rc == NXT_UNIT_AGAIN
-    // would mean that there aren't any messages
-    // to read. In practice if we stop at rc == NXT_UNIT_AGAIN
-    // there are some unprocessed messages which effect in
-    // epollcat (which uses edge-triggering) to hang on close
-    // since one port to remain open and one callback registered
-    def continueReading: Boolean = {
-      val bytesAvailable = stackalloc[Int]()
-      ioctl(port.in_fd, FIONREAD, bytesAvailable.asInstanceOf[Ptr[Byte]])
-      !bytesAvailable > 0
-    }
-
     dispatcher
       .unsafeRunAndForget(
         poller
@@ -126,7 +113,7 @@ private[snunit] object CEAsyncServerBuilder {
               .pollReadRec[Unit, Unit](()) { _ =>
                 IO {
                   // process messages until we are blocked
-                  while (nxt_unit_process_port_msg(ctx, port) == NXT_UNIT_OK || continueReading) {}
+                  while (nxt_unit_process_port_msg(ctx, port) == NXT_UNIT_OK) {}
 
                   if (stopped && PortData.isLastFDStopped)
                     Right(())
