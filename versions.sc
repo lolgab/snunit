@@ -5,7 +5,6 @@ object Versions {
   val upickle = "3.2.0"
   val undertow = "2.3.10.Final"
   val scala212 = "2.12.19"
-  val scala213 = mill.main.BuildInfo.scalaVersion
   val scala3 = "3.3.3"
   val tapir = "1.9.2"
   val cask = "0.9.1"

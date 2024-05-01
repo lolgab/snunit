@@ -264,7 +264,7 @@ object integration extends ScalaModule {
   }
 }
 
-object `snunit-plugins-shared` extends Cross[SnunitPluginsShared](Versions.scala213, Versions.scala212)
+object `snunit-plugins-shared` extends Cross[SnunitPluginsShared](mill.main.BuildInfo.scalaVersion, Versions.scala212)
 trait SnunitPluginsShared extends CrossScalaModule with Publish with BuildInfo {
   def buildInfoMembers = Seq(
     BuildInfo.Value("snunitVersion", publishVersion())
@@ -279,8 +279,8 @@ trait SnunitPluginsShared extends CrossScalaModule with Publish with BuildInfo {
 }
 object `snunit-mill-plugin` extends ScalaModule with Publish {
   def artifactName = s"mill-snunit_mill${Versions.mill011.split('.').take(2).mkString(".")}"
-  def moduleDeps = Seq(`snunit-plugins-shared`(Versions.scala213))
-  def scalaVersion = Versions.scala213
+  def moduleDeps = Seq(`snunit-plugins-shared`(mill.main.BuildInfo.scalaVersion))
+  def scalaVersion = mill.main.BuildInfo.scalaVersion
   def compileIvyDeps = super.compileIvyDeps() ++ Agg(
     ivy"com.lihaoyi::mill-scalanativelib:${Versions.mill011}"
   )
@@ -288,7 +288,7 @@ object `snunit-mill-plugin` extends ScalaModule with Publish {
 object `snunit-mill-plugin-itest` extends MillIntegrationTestModule {
   def millTestVersion = Versions.mill011
   def pluginsUnderTest = Seq(`snunit-mill-plugin`)
-  def temporaryIvyModules = Seq(`snunit-plugins-shared`(Versions.scala213), snunit(Versions.scala3))
+  def temporaryIvyModules = Seq(`snunit-plugins-shared`(mill.main.BuildInfo.scalaVersion), snunit(Versions.scala3))
 }
 
 def buildSources = T(Seq(PathRef(os.pwd / "build.sc")))
