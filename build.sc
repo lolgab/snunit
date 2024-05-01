@@ -95,7 +95,7 @@ trait Publish extends CiReleaseModule with Mima {
         Developer("lolgab", "Lorenzo Gabriele", "https://github.com/lolgab")
       )
     )
-  def mimaPreviousVersions = Seq("0.8.0")
+  def mimaPreviousVersions = Seq("0.9.0")
 }
 object snunit extends Cross[SNUnitModule](scalaVersions)
 trait SNUnitModule extends Common.Cross with Publish {
@@ -107,9 +107,6 @@ trait SNUnitModule extends Common.Cross with Publish {
 object `snunit-async-cats-effect` extends Cross[SNUnitAsyncCatsEffectModule](scalaVersions)
 trait SNUnitAsyncCatsEffectModule extends Common.Cross with Publish {
   def moduleDeps = Seq(snunit())
-
-  // TODO: Delete once a version is published
-  override def mimaPreviousArtifacts: Target[Agg[Dep]] = Agg.empty[Dep]
 
   def ivyDeps =
     T {
