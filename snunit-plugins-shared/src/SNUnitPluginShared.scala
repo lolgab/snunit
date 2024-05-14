@@ -76,39 +76,46 @@ private[plugin] class SNUnitPluginShared(buildTool: BuildTool, logger: Logger, s
 
   private def doCurl(control: File, command: String*) =
     (snunitCurlCommand ++ Seq("-sL", "--unix-socket", control.toString) ++ command).!!
-  def deployToNGINXUnit(executable: String, port: Int): Unit = {
+  def deployToNGINXUnit(appName: String, config: String, executable: String): Unit = {
     require(isUnitInstalled(), "unitd is not installed")
     val control = unitControlSocket()
     require(controlSocketExists(control), "control socket doesn't exist")
     require(isUnitRunning(control), "unitd is not available")
-    val config = s"""{
-      "applications": {
-        "app": {
-          "type": "external",
-          "executable": "$executable"
-        }
-      },
-      "listeners": {
-        "*:$port": {
-          "pass": "applications/app"
-        }
-      }
-    }"""
+    val configToApply = config.replaceAllLiterally(SNUnitPluginShared.binaryPlaceholder, executable)
+    println(configToApply)
     val result = doCurl(
       control,
       "-X",
       "PUT",
       "-d",
-      config,
+      configToApply,
       "http://localhost/config"
     )
     logger.info(result)
-    restartApp(control)
+    restartApp(control, appName = appName)
   }
 
-  private def restartApp(control: File) = {
-    val result = doCurl(control, "http://localhost/control/applications/app/restart")
+  private def restartApp(control: File, appName: String) = {
+    val result = doCurl(control, s"http://localhost/control/applications/$appName/restart")
 
     logger.info(result)
+  }
+}
+private[plugin] object SNUnitPluginShared {
+  private final val binaryPlaceholder = "$SNUNIT_BINARY"
+  def defaultConfig(appName: String, port: Int): String = {
+    s"""{
+      "listeners": {
+        "*:$port": {
+          "pass": "applications/$appName"
+        }
+      },
+      "applications": {
+        "$appName": {
+          "type": "external",
+          "executable": "$binaryPlaceholder"
+        }
+      }
+    }"""
   }
 }
