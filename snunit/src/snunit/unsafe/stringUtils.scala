@@ -5,6 +5,7 @@ import java.nio.CharBuffer
 import java.nio._
 import java.nio.charset.Charset
 import java.nio.charset.CoderResult
+import scala.scalanative.memory.PointerBuffer
 import scala.scalanative.runtime.GC
 import scala.scalanative.runtime.Intrinsics.castObjectToRawPtr
 import scala.scalanative.runtime.Intrinsics.castRawPtrToObject
@@ -17,11 +18,6 @@ import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.toRawPtr
 import scala.scalanative.unsafe._
 
-@extern
-private object libc {
-  // to avoid unsigned number in Scala Native's libc
-  def memcpy(dest: Ptr[Byte], src: Ptr[Byte], size: Long): Ptr[Byte] = extern
-}
 private val charset = Charset.defaultCharset()
 private val encoder = charset.newEncoder()
 private val decoder = charset.newDecoder()
@@ -29,26 +25,16 @@ private val decoder = charset.newDecoder()
 private final val sharedBufferSize = 4000
 private final val sharedBuffer = ByteBuffer.allocate(sharedBufferSize)
 
-private final val emptyCharArray = new Array[Char](0)
-
 private[snunit] def fromCStringAndSize(cstr: CString, size: Int): String = {
   if (size > 0) {
-    val inputBuffer =
-      if (size < sharedBufferSize) {
-        sharedBuffer.clear()
-        sharedBuffer.limit(size)
-        sharedBuffer
-      } else
-        ByteBuffer.allocate(size)
-
-    libc.memcpy(inputBuffer.array().at(0), cstr, size)
+    val inputBuffer = PointerBuffer.wrap(cstr, size)
 
     val output: CharBuffer = CharBuffer.allocate(size)
     decoder.reset()
     decoder.decode(inputBuffer, output, true)
 
     // write String fields
-    val result = new String(emptyCharArray)
+    val result = new String(Array.emptyCharArray)
     val resultRawPtr = castObjectToRawPtr(result)
     val resultPtr = fromRawPtr[Byte](resultRawPtr)
     storeObject(toRawPtr(resultPtr + 8), castObjectToRawPtr(output.array()))

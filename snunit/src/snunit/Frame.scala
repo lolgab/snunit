@@ -22,7 +22,7 @@ extension (frame: Frame) {
     if (contentLength > 0) {
       val array = new Array[Byte](contentLength.toInt)
 
-      nxt_unit_websocket_read(frame, array.at(0), contentLength)
+      nxt_unit_websocket_read(frame, array.at(0), contentLength.toCSSize)
       array
     } else Array.emptyByteArray
   }

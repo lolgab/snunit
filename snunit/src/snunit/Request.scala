@@ -58,7 +58,7 @@ extension (req: Request) {
     if (contentLength > 0) {
       val array = new Array[Byte](contentLength.toInt)
 
-      nxt_unit_request_read(req, array.at(0), contentLength)
+      nxt_unit_request_read(req, array.at(0), contentLength.toCSSize)
       array
     } else Array.emptyByteArray
   }
@@ -96,8 +96,8 @@ extension (req: Request) {
     val res = nxt_unit_response_write_nb(
       req,
       bytePtr,
-      1L,
-      0L
+      1.toCSSize,
+      0.toCSSize
     )
     if (res < 0) {
       throw new Exception("Failed to send byte")
@@ -108,7 +108,7 @@ extension (req: Request) {
       req,
       data,
       len,
-      0L
+      0.toCSSize
     )
     if (res < 0) {
       throw new Exception("Failed to send batch")
@@ -119,7 +119,7 @@ extension (req: Request) {
       req,
       data.at(off),
       len,
-      0L
+      0.toCSSize
     )
     if (res < 0) {
       throw new Exception("Failed to send batch")

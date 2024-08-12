@@ -207,7 +207,7 @@ final val NXT_UNIT_LOG_INFO = 4
 final val NXT_UNIT_LOG_DEBUG = 5
 
 @inline def nxt_unit_warn(ctx: nxt_unit_ctx_t_*, message: String): Unit =
-  Zone { implicit z =>
+  Zone {
     nxt_unit_log(ctx, NXT_UNIT_LOG_WARN, toCString(message))
   }
 
