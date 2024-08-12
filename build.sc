@@ -104,17 +104,17 @@ trait SNUnitModule extends Common.Cross with Publish {
   }
 }
 
-object `snunit-async-cats-effect` extends Cross[SNUnitAsyncCatsEffectModule](scalaVersions)
-trait SNUnitAsyncCatsEffectModule extends Common.Cross with Publish {
-  def moduleDeps = Seq(snunit())
+// object `snunit-async-cats-effect` extends Cross[SNUnitAsyncCatsEffectModule](scalaVersions)
+// trait SNUnitAsyncCatsEffectModule extends Common.Cross with Publish {
+//   def moduleDeps = Seq(snunit())
 
-  def ivyDeps =
-    T {
-      super.ivyDeps() ++ Agg(
-        ivy"org.typelevel::cats-effect::${Versions.catsEffect}"
-      )
-    }
-}
+//   def ivyDeps =
+//     T {
+//       super.ivyDeps() ++ Agg(
+//         ivy"org.typelevel::cats-effect::${Versions.catsEffect}"
+//       )
+//     }
+// }
 
 object `snunit-undertow` extends Cross[SNUnitUndertow](scalaVersions)
 trait SNUnitUndertow extends Common.Cross with Publish {
@@ -126,36 +126,36 @@ trait SNUnitTapirModule extends Common.Cross with Publish {
   def moduleDeps = Seq(snunit())
   def ivyDeps = super.ivyDeps() ++ Agg(ivy"com.softwaremill.sttp.tapir::tapir-server::${Versions.tapir}")
 }
-object `snunit-tapir-cats-effect` extends Cross[SNUnitTapirCatsEffect](scalaVersions)
-trait SNUnitTapirCatsEffect extends Common.Cross with Publish {
-  def moduleDeps = Seq(
-    `snunit-tapir`(),
-    `snunit-async-cats-effect`()
-  )
-  def ivyDeps = super.ivyDeps() ++ Agg(
-    ivy"com.softwaremill.sttp.tapir::tapir-cats-effect::${Versions.tapir}"
-  )
-}
+// object `snunit-tapir-cats-effect` extends Cross[SNUnitTapirCatsEffect](scalaVersions)
+// trait SNUnitTapirCatsEffect extends Common.Cross with Publish {
+//   def moduleDeps = Seq(
+//     `snunit-tapir`(),
+//     `snunit-async-cats-effect`()
+//   )
+//   def ivyDeps = super.ivyDeps() ++ Agg(
+//     ivy"com.softwaremill.sttp.tapir::tapir-cats-effect::${Versions.tapir}"
+//   )
+// }
 
-object `snunit-http4s` extends Cross[SNUnitHttp4s](http4sAndScalaVersions)
-trait SNUnitHttp4s extends Common.Cross with Cross.Module2[String, String] with Publish {
-  val http4sVersion = crossValue2
-  def moduleDeps = Seq(
-    snunit(),
-    `snunit-async-cats-effect`()
-  )
-  val http4sBinaryVersion = http4sVersion match {
-    case s"0.23.$_" => "0.23"
-    case s"1.$_"    => "1"
-  }
-  def artifactName = s"snunit-http4s$http4sBinaryVersion"
-  def ivyDeps = super.ivyDeps() ++ Agg(
-    ivy"org.http4s::http4s-server::$http4sVersion"
-  )
-  def sources = T.sources {
-    super.sources() ++ Agg(PathRef(millSourcePath / s"http4s-$http4sBinaryVersion" / "src"))
-  }
-}
+// object `snunit-http4s` extends Cross[SNUnitHttp4s](http4sAndScalaVersions)
+// trait SNUnitHttp4s extends Common.Cross with Cross.Module2[String, String] with Publish {
+//   val http4sVersion = crossValue2
+//   def moduleDeps = Seq(
+//     snunit(),
+//     `snunit-async-cats-effect`()
+//   )
+//   val http4sBinaryVersion = http4sVersion match {
+//     case s"0.23.$_" => "0.23"
+//     case s"1.$_"    => "1"
+//   }
+//   def artifactName = s"snunit-http4s$http4sBinaryVersion"
+//   def ivyDeps = super.ivyDeps() ++ Agg(
+//     ivy"org.http4s::http4s-server::$http4sVersion"
+//   )
+//   def sources = T.sources {
+//     super.sources() ++ Agg(PathRef(millSourcePath / s"http4s-$http4sBinaryVersion" / "src"))
+//   }
+// }
 
 def caskSources = T {
   val dest = T.dest
@@ -163,24 +163,24 @@ def caskSources = T {
   os.proc("git", "apply", T.workspace / "cask.patch").call(cwd = dest / "cask")
   PathRef(dest)
 }
-object `snunit-cask` extends Cross[SNUnitCaskModule](scalaVersions)
-trait SNUnitCaskModule extends Common.Cross with Publish {
-  override def generatedSources = T {
-    val cask = caskSources().path / "cask"
-    val util = cask / "util"
-    val scala2 = cask / "src-2"
-    val scala3 = cask / "src-3"
-    val scalaVersionSpecific = if (isScala3(crossScalaVersion)) scala3 else scala2
-    Seq(cask / "src", util / "src", scalaVersionSpecific).map(PathRef(_))
-  }
-  def moduleDeps = Seq(`snunit-undertow`(crossScalaVersion))
-  def ivyDeps = super.ivyDeps() ++ Agg(
-    upickle,
-    ivy"com.lihaoyi::castor::${Versions.castor}",
-    ivy"org.ekrich::sjavatime::${Versions.sjavatime}",
-    ivy"com.lihaoyi::pprint::${Versions.pprint}"
-  )
-}
+// object `snunit-cask` extends Cross[SNUnitCaskModule](scalaVersions)
+// trait SNUnitCaskModule extends Common.Cross with Publish {
+//   override def generatedSources = T {
+//     val cask = caskSources().path / "cask"
+//     val util = cask / "util"
+//     val scala2 = cask / "src-2"
+//     val scala3 = cask / "src-3"
+//     val scalaVersionSpecific = if (isScala3(crossScalaVersion)) scala3 else scala2
+//     Seq(cask / "src", util / "src", scalaVersionSpecific).map(PathRef(_))
+//   }
+//   def moduleDeps = Seq(`snunit-undertow`(crossScalaVersion))
+//   def ivyDeps = super.ivyDeps() ++ Agg(
+//     upickle,
+//     ivy"com.lihaoyi::castor::${Versions.castor}",
+//     ivy"org.ekrich::sjavatime::${Versions.sjavatime}",
+//     ivy"com.lihaoyi::pprint::${Versions.pprint}"
+//   )
+// }
 
 object integration extends ScalaModule {
   object tests extends Module {
@@ -202,46 +202,46 @@ object integration extends ScalaModule {
         def ivyDeps = super.ivyDeps() ++ Agg(undertow)
       }
     }
-    object `cask-helloworld` extends CrossPlatform {
-      object jvm extends CrossPlatformScalaModule with Common.Scala3OnlyJvm {
-        def ivyDeps = super.ivyDeps() ++ Agg(
-          ivy"com.lihaoyi::cask:${Versions.cask}"
-        )
-      }
-      object native extends CrossPlatformScalaModule with Common.Scala3Only {
-        def moduleDeps = Seq(`snunit-cask`(crossScalaVersion))
-      }
-    }
+    // object `cask-helloworld` extends CrossPlatform {
+    //   object jvm extends CrossPlatformScalaModule with Common.Scala3OnlyJvm {
+    //     def ivyDeps = super.ivyDeps() ++ Agg(
+    //       ivy"com.lihaoyi::cask:${Versions.cask}"
+    //     )
+    //   }
+    //   object native extends CrossPlatformScalaModule with Common.Scala3Only {
+    //     def moduleDeps = Seq(`snunit-cask`(crossScalaVersion))
+    //   }
+    // }
     object `tapir-helloworld` extends Common.Scala3Only {
       override def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion))
     }
-    object `tapir-app` extends Common.Scala3Only {
-      override def moduleDeps = Seq(`snunit-tapir-cats-effect`(crossScalaVersion))
-    }
-    object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](http4sVersions)
-    trait Http4sHelloWorldModule extends Common.Scala3Only with Cross.Module[String] {
-      def http4sVersion = crossValue
-      def moduleDeps = Seq(
-        `snunit-http4s`(crossScalaVersion, http4sVersion)
-      )
-      def ivyDeps = super.ivyDeps() ++ Agg(
-        ivy"org.http4s::http4s-dsl::$http4sVersion"
-      )
-    }
-    object `http4s-app` extends Common.Scala3Only {
-      val http4sVersion = Versions.http4s1
-      def moduleDeps = Seq(
-        `snunit-http4s`(crossScalaVersion, http4sVersion)
-      )
-      def ivyDeps = super.ivyDeps() ++ Agg(
-        ivy"org.http4s::http4s-dsl::$http4sVersion"
-      )
-    }
-    object `tapir-helloworld-cats-effect` extends Common.Scala3Only {
-      def moduleDeps = Seq(
-        `snunit-tapir-cats-effect`(crossScalaVersion)
-      )
-    }
+    // object `tapir-app` extends Common.Scala3Only {
+    //   override def moduleDeps = Seq(`snunit-tapir-cats-effect`(crossScalaVersion))
+    // }
+    // object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](http4sVersions)
+    // trait Http4sHelloWorldModule extends Common.Scala3Only with Cross.Module[String] {
+    //   def http4sVersion = crossValue
+    //   def moduleDeps = Seq(
+    //     `snunit-http4s`(crossScalaVersion, http4sVersion)
+    //   )
+    //   def ivyDeps = super.ivyDeps() ++ Agg(
+    //     ivy"org.http4s::http4s-dsl::$http4sVersion"
+    //   )
+    // }
+    // object `http4s-app` extends Common.Scala3Only {
+    //   val http4sVersion = Versions.http4s1
+    //   def moduleDeps = Seq(
+    //     `snunit-http4s`(crossScalaVersion, http4sVersion)
+    //   )
+    //   def ivyDeps = super.ivyDeps() ++ Agg(
+    //     ivy"org.http4s::http4s-dsl::$http4sVersion"
+    //   )
+    // }
+    // object `tapir-helloworld-cats-effect` extends Common.Scala3Only {
+    //   def moduleDeps = Seq(
+    //     `snunit-tapir-cats-effect`(crossScalaVersion)
+    //   )
+    // }
   }
   def scalaVersion = Versions.scala3
   object test extends ScalaTests with TestModule.Utest with BuildInfo {
