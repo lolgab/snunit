@@ -11,9 +11,9 @@ private[snunit] def newCharBuffer(string: String): CharBuffer = {
   // deconstructing string
   val stringRawPtr = castObjectToRawPtr(string)
   val stringPtr = fromRawPtr[Byte](stringRawPtr)
-  val array: Array[Char] = loadObject(toRawPtr(stringPtr + 8)).asInstanceOf[Array[Char]]
-  val offset: Int = loadInt(toRawPtr(stringPtr + 16))
-  val count: Int = loadInt(toRawPtr(stringPtr + 20))
+  val array: Array[Char] = loadObject(toRawPtr(stringPtr + Constants.StringCharArrayOffset)).asInstanceOf[Array[Char]]
+  val offset: Int = loadInt(toRawPtr(stringPtr + Constants.StringOffsetOffset))
+  val count: Int = loadInt(toRawPtr(stringPtr + Constants.StringCountOffset))
 
   CharBuffer.wrap(array, offset, count)
 }
