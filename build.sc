@@ -96,6 +96,8 @@ trait Publish extends CiReleaseModule with Mima {
       )
     )
   def mimaPreviousVersions = Seq("0.9.0")
+  // Remove after first release with Scala Native 0.5
+  def mimaPreviousArtifacts = T { Seq.empty }
 }
 object snunit extends Cross[SNUnitModule](scalaVersions)
 trait SNUnitModule extends Common.Cross with Publish {
