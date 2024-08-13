@@ -5,6 +5,7 @@ import snunit.unsafe.{*, given}
 import scala.annotation.targetName
 import scala.collection.immutable.ArraySeq
 import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 opaque type Request = nxt_unit_request_info_t_*
 
@@ -58,7 +59,7 @@ extension (req: Request) {
     if (contentLength > 0) {
       val array = new Array[Byte](contentLength.toInt)
 
-      nxt_unit_request_read(req, array.at(0), contentLength.toCSSize)
+      nxt_unit_request_read(req, array.at(0), contentLength.toCSize)
       array
     } else Array.emptyByteArray
   }
@@ -96,8 +97,8 @@ extension (req: Request) {
     val res = nxt_unit_response_write_nb(
       req,
       bytePtr,
-      1.toCSSize,
-      0.toCSSize
+      1.toCSize,
+      0.toCSize
     )
     if (res < 0) {
       throw new Exception("Failed to send byte")
@@ -107,8 +108,8 @@ extension (req: Request) {
     val res = nxt_unit_response_write_nb(
       req,
       data,
-      len,
-      0.toCSSize
+      len.toCSize,
+      0.toCSize
     )
     if (res < 0) {
       throw new Exception("Failed to send batch")
@@ -118,8 +119,8 @@ extension (req: Request) {
     val res = nxt_unit_response_write_nb(
       req,
       data.at(off),
-      len,
-      0.toCSSize
+      len.toCSize,
+      0L.toCSize
     )
     if (res < 0) {
       throw new Exception("Failed to send batch")

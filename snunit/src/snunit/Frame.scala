@@ -4,6 +4,7 @@ import snunit.unsafe.{*, given}
 
 import scala.annotation.targetName
 import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 opaque type Frame = nxt_unit_websocket_frame_t_*
 
@@ -22,7 +23,7 @@ extension (frame: Frame) {
     if (contentLength > 0) {
       val array = new Array[Byte](contentLength.toInt)
 
-      nxt_unit_websocket_read(frame, array.at(0), contentLength.toCSSize)
+      nxt_unit_websocket_read(frame, array.at(0), contentLength.toCSize)
       array
     } else Array.emptyByteArray
   }
@@ -33,5 +34,5 @@ extension (frame: Frame) {
   }
 
   @inline def sendFrame(opcode: Byte, last: Byte, content: Array[Byte]): Unit =
-    nxt_unit_websocket_send(frame.req, opcode, last, content.at(0), content.length)
+    nxt_unit_websocket_send(frame.req, opcode, last, content.at(0), content.length.toCSize)
 }

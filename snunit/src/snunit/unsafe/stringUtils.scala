@@ -37,10 +37,10 @@ private[snunit] def fromCStringAndSize(cstr: CString, size: Int): String = {
     val result = new String(Array.emptyCharArray)
     val resultRawPtr = castObjectToRawPtr(result)
     val resultPtr = fromRawPtr[Byte](resultRawPtr)
-    storeObject(toRawPtr(resultPtr + Constants.StringCharArrayOffset), castObjectToRawPtr(output.array()))
-    storeInt(toRawPtr(resultPtr + Constants.StringOffsetOffset), 0)
+    storeObject(toRawPtr(resultPtr + StringCharArrayOffset), castObjectToRawPtr(output.array()))
+    storeInt(toRawPtr(resultPtr + StringOffsetOffset), 0)
     val length = output.position()
-    storeInt(toRawPtr(resultPtr + Constants.StringCountOffset), length)
+    storeInt(toRawPtr(resultPtr + StringCountOffset), length)
     result
   } else ""
 }
