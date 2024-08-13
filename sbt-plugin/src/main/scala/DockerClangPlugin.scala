@@ -5,6 +5,7 @@ import Keys._
 import sbt.util.CacheImplicits._
 import scala.scalanative.sbtplugin.ScalaNativePlugin
 import sjsonnew.{:*:, LList, LNil}
+import java.nio.file.Paths
 
 private[plugin] object SjsonnewImplicits {
   implicit val ScriptIso = LList.iso(
@@ -37,13 +38,11 @@ object DockerClangPlugin extends AutoPlugin {
       )
       cached.apply(())
     },
-    ScalaNativePlugin.autoImport.nativeClang := {
+    ScalaNativePlugin.autoImport.nativeConfig := {
       val scripts = createDockerClangScripts.value
-      new java.io.File(scripts.clang.path)
-    },
-    ScalaNativePlugin.autoImport.nativeClangPP := {
-      val scripts = createDockerClangScripts.value
-      new java.io.File(scripts.clangpp.path)
+      ScalaNativePlugin.autoImport.nativeConfig.value
+        .withClang(Paths.get(scripts.clang.path))
+        .withClangPP(Paths.get(scripts.clangpp.path))
     }
   )
 }

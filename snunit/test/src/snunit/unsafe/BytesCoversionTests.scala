@@ -18,6 +18,9 @@ object foo {
 
 object BytesConversionTests extends TestSuite {
   val tests = Tests {
+    test("fromCStringAndSize") {
+      fromCStringAndSize(c"hello", 5) ==> "hello"
+    }
     test("readStringBytesWith") {
       test("simple") {
         readStringBytesWith("hello") { buffer =>

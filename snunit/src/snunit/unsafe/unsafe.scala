@@ -12,7 +12,7 @@ import scala.scalanative.unsafe._
  * requests in other thread, one need to allocate context and use it
  * further in this thread.
  */
-opaque type nxt_unit_ctx_t = CStruct2[Ptr[Byte], nxt_unit_t]
+opaque type nxt_unit_ctx_t = CStruct2[CVoidPtr, nxt_unit_t]
 opaque type nxt_unit_ctx_t_* = Ptr[nxt_unit_ctx_t]
 
 /*
@@ -70,9 +70,10 @@ opaque type nxt_unit_callbacks_t = CStruct11[
 ]
 opaque type nxt_unit_callbacks_t_* = Ptr[nxt_unit_callbacks_t]
 
-opaque type nxt_unit_init_t = CStruct11[
-  Ptr[Byte],
-  Ptr[Byte],
+opaque type nxt_unit_init_t = CStruct14[
+  CVoidPtr,
+  CVoidPtr,
+  CInt,
   CInt,
   CInt,
   CInt,
@@ -81,13 +82,16 @@ opaque type nxt_unit_init_t = CStruct11[
   CInt,
   nxt_unit_port_t,
   nxt_unit_port_t,
+  CInt,
+  CInt,
   CInt
 ]
 opaque type nxt_unit_init_t_* = Ptr[nxt_unit_init_t]
 
-given Tag[nxt_unit_init_t] = Tag.materializeCStruct11Tag[
-  Ptr[Byte],
-  Ptr[Byte],
+given Tag[nxt_unit_init_t] = Tag.materializeCStruct14Tag[
+  CVoidPtr,
+  CVoidPtr,
+  CInt,
   CInt,
   CInt,
   CInt,
@@ -96,6 +100,8 @@ given Tag[nxt_unit_init_t] = Tag.materializeCStruct11Tag[
   CInt,
   nxt_unit_port_t,
   nxt_unit_port_t,
+  CInt,
+  CInt,
   CInt
 ]
 
@@ -169,24 +175,24 @@ object externs {
   def nxt_unit_response_write_nb(
       req: nxt_unit_request_info_t_*,
       start: CString,
-      size: CSSize,
-      min_size: CSSize
+      size: CSize,
+      min_size: CSize
   ): CSSize = extern
 
   def nxt_unit_buf_send(buf: nxt_unit_buf_t_*): CInt = extern
 
-  def nxt_unit_request_read(req: nxt_unit_request_info_t_*, dst: Ptr[Byte], size: CSSize): CSSize = extern
+  def nxt_unit_request_read(req: nxt_unit_request_info_t_*, dst: CVoidPtr, size: CSize): CSSize = extern
 
   def nxt_unit_request_done(req: nxt_unit_request_info_t_*, rc: CInt): Unit = extern
 
-  def nxt_unit_websocket_read(ws: nxt_unit_websocket_frame_t_*, dest: Ptr[Byte], size: CSSize): CSSize = extern
+  def nxt_unit_websocket_read(ws: nxt_unit_websocket_frame_t_*, dest: CVoidPtr, size: CSize): CSSize = extern
 
   def nxt_unit_websocket_send(
       req: nxt_unit_request_info_t_*,
       opcode: Byte,
       last: Byte,
-      start: Ptr[Byte],
-      size: CSSize
+      start: CVoidPtr,
+      size: CSize
   ): CInt = extern
 
   def nxt_unit_websocket_done(ws: nxt_unit_websocket_frame_t_*): Unit = extern
@@ -207,7 +213,7 @@ final val NXT_UNIT_LOG_INFO = 4
 final val NXT_UNIT_LOG_DEBUG = 5
 
 @inline def nxt_unit_warn(ctx: nxt_unit_ctx_t_*, message: String): Unit =
-  Zone { implicit z =>
+  Zone {
     nxt_unit_log(ctx, NXT_UNIT_LOG_WARN, toCString(message))
   }
 
@@ -217,21 +223,21 @@ final val NXT_UNIT_LOG_DEBUG = 5
  * Only user @inline defined 'data' pointer exposed here.  The rest is unit
  * implementation specific and hidden.
  */
-opaque type nxt_unit_t = CStruct1[Ptr[Byte]]
+opaque type nxt_unit_t = CStruct1[CVoidPtr]
 opaque type nxt_unit_t_* = Ptr[nxt_unit_t]
 
 extension (ptr: nxt_unit_t_*) {
-  @inline def data: Ptr[Byte] = ptr._1
-  @inline def data_=(v: Ptr[Byte]): Unit = ptr._1 = v
+  @inline def data: CVoidPtr = ptr._1
+  @inline def data_=(v: CVoidPtr): Unit = ptr._1 = v
 }
 
 extension (ptr: nxt_unit_ctx_t_*) {
   @inline def isNull: Boolean = ptr == null
 
   @targetName("ctx_t_data")
-  @inline def data: Ptr[Byte] = ptr._1
+  @inline def data: CVoidPtr = ptr._1
   @targetName("ctx_t_data_=")
-  @inline def data_=(v: Ptr[Byte]): Unit = ptr._1 = v
+  @inline def data_=(v: CVoidPtr): Unit = ptr._1 = v
 
   @inline def unit: nxt_unit_t_* = ptr.at2
   @inline def unit_=(v: nxt_unit_t_*): Unit = ptr._2 = v
@@ -252,7 +258,7 @@ extension (ptr: nxt_unit_port_id_t_*) {
  * unit provides port storage which is able to store and find the following
  * data structures.
  */
-opaque type nxt_unit_port_t = CStruct4[nxt_unit_port_id_t, Int, Int, Ptr[Byte]]
+opaque type nxt_unit_port_t = CStruct4[nxt_unit_port_id_t, Int, Int, CVoidPtr]
 opaque type nxt_unit_port_t_* = Ptr[nxt_unit_port_t]
 
 extension (ptr: nxt_unit_port_t_*) {
@@ -266,9 +272,9 @@ extension (ptr: nxt_unit_port_t_*) {
   @inline def out_fd_=(v: CInt): Unit = ptr._3 = v
 
   @targetName("port_t_data")
-  @inline def data: Ptr[Byte] = ptr._4
+  @inline def data: CVoidPtr = ptr._4
   @targetName("port_t_data_=")
-  @inline def data_=(v: Ptr[Byte]): Unit = ptr._4 = v
+  @inline def data_=(v: CVoidPtr): Unit = ptr._4 = v
 }
 
 opaque type nxt_unit_buf_t = CStruct3[Ptr[CChar], Ptr[CChar], Ptr[CChar]]
@@ -416,7 +422,7 @@ opaque type nxt_unit_request_info_t = CStruct12[
   nxt_unit_buf_t_*,
   CLongLong, // CUnsignedLongLong,
   CInt,
-  Ptr[Byte]
+  CVoidPtr
 ]
 opaque type nxt_unit_request_info_t_* = Ptr[nxt_unit_request_info_t]
 
@@ -454,8 +460,8 @@ extension (ptr: nxt_unit_request_info_t_*) {
   // @inline def content_fd: CInt = ptr._11
   // @inline def content_fd_=(v: CInt): Unit = !ptr.at11 = v
 
-  // @inline def data: Ptr[Byte] = ptr._12
-  // @inline def data_=(v: Ptr[Byte]): Unit = !ptr.at12 = v
+  // @inline def data: CVoidPtr = ptr._12
+  // @inline def data_=(v: CVoidPtr): Unit = !ptr.at12 = v
 }
 
 extension (ptr: nxt_unit_callbacks_t_*) {
@@ -480,12 +486,12 @@ extension (ptr: nxt_unit_callbacks_t_*) {
 
 extension (ptr: nxt_unit_init_t_*) {
   @targetName("init_t_data")
-  @inline def data: Ptr[Byte] = ptr._1
+  @inline def data: CVoidPtr = ptr._1
   @targetName("init_t_data_=")
-  @inline def data_=(v: Ptr[Byte]): Unit = ptr._1 = v
+  @inline def data_=(v: CVoidPtr): Unit = ptr._1 = v
 
-  @inline def ctx_data: Ptr[Byte] = ptr._2
-  @inline def ctx_data_=(v: Ptr[Byte]): Unit = ptr._2 = v
+  @inline def ctx_data: CVoidPtr = ptr._2
+  @inline def ctx_data_=(v: CVoidPtr): Unit = ptr._2 = v
 
   @inline def max_pending_requests: CInt = ptr._3
   @inline def max_pending_requests_=(v: CInt): Unit = ptr._3 = v
@@ -496,23 +502,32 @@ extension (ptr: nxt_unit_init_t_*) {
   @inline def shm_limit: CInt = ptr._5
   @inline def shm_limit_=(v: CInt): Unit = ptr._5 = v
 
-  @inline def callbacks: nxt_unit_callbacks_t_* = ptr.at6
-  @inline def callbacks_=(v: nxt_unit_callbacks_t_*): Unit = ptr._6 = v
+  @inline def request_limit: CInt = ptr._6
+  @inline def request_limit_=(v: CInt): Unit = ptr._6 = v
 
-  @inline def ready_port: nxt_unit_port_t_* = ptr.at7
-  @inline def ready_port_=(v: nxt_unit_port_t_*): Unit = ptr._7 = v
+  @inline def callbacks: nxt_unit_callbacks_t_* = ptr.at7
+  @inline def callbacks_=(v: nxt_unit_callbacks_t_*): Unit = ptr._7 = v
 
-  @inline def ready_stream: CInt = ptr._8
-  @inline def ready_stream_=(v: CInt): Unit = ptr._8 = v
+  @inline def ready_port: nxt_unit_port_t_* = ptr.at8
+  @inline def ready_port_=(v: nxt_unit_port_t_*): Unit = ptr._8 = v
 
-  @inline def router_port: nxt_unit_port_t_* = ptr.at9
-  @inline def router_port_=(v: nxt_unit_port_t_*): Unit = ptr._9 = v
+  @inline def ready_stream: CInt = ptr._9
+  @inline def ready_stream_=(v: CInt): Unit = ptr._9 = v
 
-  @inline def read_port: nxt_unit_port_t_* = ptr.at10
-  @inline def read_port_=(v: nxt_unit_port_t_*): Unit = ptr._10 = v
+  @inline def router_port: nxt_unit_port_t_* = ptr.at10
+  @inline def router_port_=(v: nxt_unit_port_t_*): Unit = ptr._10 = v
 
-  @inline def log_fd: CInt = ptr._11
-  @inline def log_fd_=(v: CInt): Unit = ptr._11 = v
+  @inline def read_port: nxt_unit_port_t_* = ptr.at11
+  @inline def read_port_=(v: nxt_unit_port_t_*): Unit = ptr._11 = v
+
+  @inline def shared_port_fd: CInt = ptr._12
+  @inline def shared_port_fd_=(v: CInt): Unit = ptr._12 = v
+
+  @inline def shared_queue_fd: CInt = ptr._13
+  @inline def shared_queue_fd_=(v: CInt): Unit = ptr._13 = v
+
+  @inline def log_fd: CInt = ptr._14
+  @inline def log_fd_=(v: CInt): Unit = ptr._14 = v
 }
 
 extension (ptr: nxt_websocket_header_t_*) {
@@ -547,7 +562,7 @@ opaque type nxt_unit_websocket_frame_t = CStruct6[
   nxt_unit_request_info_t_*,
   CLongInt,
   nxt_websocket_header_t_*,
-  Ptr[Byte],
+  CVoidPtr,
   nxt_unit_buf_t_*,
   CLongLong // CUnsignedLongLong
 ]
@@ -557,7 +572,7 @@ extension (ptr: nxt_unit_websocket_frame_t_*) {
   @inline def req: nxt_unit_request_info_t_* = ptr._1
   @inline def payload_len: CLongInt = ptr._2
   @inline def header: nxt_websocket_header_t_* = ptr._3
-  @inline def mask: Ptr[Byte] = ptr._4
+  @inline def mask: CVoidPtr = ptr._4
   @inline def content_buf: nxt_unit_buf_t = ptr._5
   @targetName("frame_content_length")
   @inline def content_length: CLongLong = ptr._6 // CUnsignedLongLong
