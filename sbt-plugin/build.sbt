@@ -44,7 +44,7 @@ lazy val snunitSbtPlugin = project
     credentials += Credentials(
       "Sonatype Nexus Repository Manager",
       "oss.sonatype.org",
-      sys.env.getOrElse("SONATYPE_USER", "username"),
+      sys.env.getOrElse("SONATYPE_USERNAME", "username"),
       sys.env.getOrElse("SONATYPE_PASSWORD", "password")
     ),
     scriptedLaunchOpts := {
