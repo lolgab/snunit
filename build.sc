@@ -6,7 +6,6 @@ import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
 import $ivy.`com.github.lolgab::mill-mima::0.1.0`
 
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
-import mill.scalalib.api.ZincWorkerUtil.isScala3
 import mill.scalalib.publish._
 import com.goyeau.mill.scalafix.ScalafixModule
 import io.kipp.mill.ci.release.CiReleaseModule
@@ -41,8 +40,7 @@ object Common {
     def crossScalaVersion: String
 
     def scalacOptions = super.scalacOptions() ++
-      Seq("-deprecation") ++
-      (if (isScala3(crossScalaVersion)) Seq() else Seq("-Ywarn-unused"))
+      Seq("-deprecation")
   }
   trait SharedNative extends Shared with ScalaNativeModule {
     def scalaNativeVersion = versions.Versions.scalaNative
@@ -165,24 +163,26 @@ def caskSources = T {
   os.proc("git", "apply", T.workspace / "cask.patch").call(cwd = dest / "cask")
   PathRef(dest)
 }
-// object `snunit-cask` extends Cross[SNUnitCaskModule](scalaVersions)
-// trait SNUnitCaskModule extends Common.Cross with Publish {
-//   override def generatedSources = T {
-//     val cask = caskSources().path / "cask"
-//     val util = cask / "util"
-//     val scala2 = cask / "src-2"
-//     val scala3 = cask / "src-3"
-//     val scalaVersionSpecific = if (isScala3(crossScalaVersion)) scala3 else scala2
-//     Seq(cask / "src", util / "src", scalaVersionSpecific).map(PathRef(_))
-//   }
-//   def moduleDeps = Seq(`snunit-undertow`(crossScalaVersion))
-//   def ivyDeps = super.ivyDeps() ++ Agg(
-//     upickle,
-//     ivy"com.lihaoyi::castor::${Versions.castor}",
-//     ivy"org.ekrich::sjavatime::${Versions.sjavatime}",
-//     ivy"com.lihaoyi::pprint::${Versions.pprint}"
-//   )
-// }
+def castorSources = T {
+  val dest = T.dest
+  os.proc("git", "clone", "--branch", Versions.castor, "--depth", "1", "https://github.com/com-lihaoyi/castor", dest)
+    .call()
+  PathRef(dest)
+}
+object `snunit-cask` extends Cross[SNUnitCaskModule](scalaVersions)
+trait SNUnitCaskModule extends Common.Cross with Publish {
+  override def generatedSources = T {
+    val cask = caskSources().path / "cask"
+    val castor = castorSources().path / "castor"
+    Seq(cask / "src", cask / "util" / "src", cask / "src-3", castor / "src", castor / "src-js-native").map(PathRef(_))
+  }
+  def moduleDeps = Seq(`snunit-undertow`(crossScalaVersion))
+  def ivyDeps = super.ivyDeps() ++ Agg(
+    upickle,
+    ivy"io.github.cquiroz::scala-java-time::${Versions.scalaJavaTime}",
+    ivy"com.lihaoyi::pprint::${Versions.pprint}"
+  )
+}
 
 object integration extends ScalaModule {
   object tests extends Module {
@@ -204,16 +204,16 @@ object integration extends ScalaModule {
         def ivyDeps = super.ivyDeps() ++ Agg(undertow)
       }
     }
-    // object `cask-helloworld` extends CrossPlatform {
-    //   object jvm extends CrossPlatformScalaModule with Common.Scala3OnlyJvm {
-    //     def ivyDeps = super.ivyDeps() ++ Agg(
-    //       ivy"com.lihaoyi::cask:${Versions.cask}"
-    //     )
-    //   }
-    //   object native extends CrossPlatformScalaModule with Common.Scala3Only {
-    //     def moduleDeps = Seq(`snunit-cask`(crossScalaVersion))
-    //   }
-    // }
+    object `cask-helloworld` extends CrossPlatform {
+      object jvm extends CrossPlatformScalaModule with Common.Scala3OnlyJvm {
+        def ivyDeps = super.ivyDeps() ++ Agg(
+          ivy"com.lihaoyi::cask:${Versions.cask}"
+        )
+      }
+      object native extends CrossPlatformScalaModule with Common.Scala3Only {
+        def moduleDeps = Seq(`snunit-cask`(crossScalaVersion))
+      }
+    }
     object `tapir-helloworld` extends Common.Scala3Only {
       override def moduleDeps = Seq(`snunit-tapir`(crossScalaVersion))
     }

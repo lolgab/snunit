@@ -12,20 +12,20 @@ index 71f4bb4..ab833e1 100644
        .flatMap(_.asScala)
        .flatMap(_.split(", "))
 diff --git a/cask/src/cask/endpoints/JsonEndpoint.scala b/cask/src/cask/endpoints/JsonEndpoint.scala
-index fbab2fa..8218adc 100644
+index 50591a9..9d8c5b4 100644
 --- a/cask/src/cask/endpoints/JsonEndpoint.scala
 +++ b/cask/src/cask/endpoints/JsonEndpoint.scala
-@@ -51,7 +51,7 @@ class postJson(val path: String, override val subpath: Boolean = false)
-       str <-
-         try {
-           val boas = new ByteArrayOutputStream()
--          Util.transferTo(ctx.exchange.getInputStream, boas)
-+          Util.transferTo(ctx.exchange.getInputStream(), boas)
-           Right(new String(boas.toByteArray))
-         }
+@@ -52,7 +52,7 @@ abstract class postJsonBase(val path: String, override val subpath: Boolean = fa
+   def wrapFunction(ctx: Request, delegate: Delegate): Result[Response.Raw] = {
+     val obj = for{
+       json <-
+-        try Right(ujson.read(if (cacheBody) ctx.bytes else ctx.exchange.getInputStream))
++        try Right(ujson.read(if (cacheBody) ctx.bytes else ctx.exchange.getInputStream()))
          catch{case e: Throwable => Left(cask.model.Response(
+           "Input text is invalid JSON: " + e + "\n" + Util.stackTraceString(e),
+           statusCode = 400
 diff --git a/cask/src/cask/endpoints/WebEndpoints.scala b/cask/src/cask/endpoints/WebEndpoints.scala
-index 9951628..afd46c5 100644
+index b2b9731..b831155 100644
 --- a/cask/src/cask/endpoints/WebEndpoints.scala
 +++ b/cask/src/cask/endpoints/WebEndpoints.scala
 @@ -18,7 +18,7 @@ trait WebEndpoint extends HttpEndpoint[Response.Raw, Seq[String]]{
@@ -80,10 +80,10 @@ index ea5bbd6..b59217f 100644
         }
       )
 diff --git a/cask/src/cask/main/Main.scala b/cask/src/cask/main/Main.scala
-index 9bf7132..e93f66e 100644
+index 15c3656..5a0282c 100644
 --- a/cask/src/cask/main/Main.scala
 +++ b/cask/src/cask/main/Main.scala
-@@ -62,10 +62,10 @@ abstract class Main{
+@@ -63,10 +63,10 @@ abstract class Main{
  
    def main(args: Array[String]): Unit = {
      if (!verbose) Main.silenceJboss()
@@ -96,7 +96,7 @@ index 9bf7132..e93f66e 100644
      server.start()
    }
  
-@@ -81,7 +81,7 @@ object Main{
+@@ -82,7 +82,7 @@ object Main{
                        (implicit log: Logger) extends HttpHandler() {
      def handleRequest(exchange: HttpServerExchange): Unit = try {
        //        println("Handling Request: " + exchange.getRequestPath)
@@ -105,7 +105,7 @@ index 9bf7132..e93f66e 100644
          Tuple2(
            "websocket",
            (r: Any) =>
-@@ -95,11 +95,11 @@ object Main{
+@@ -96,12 +96,12 @@ object Main{
              }
          )
        } else Tuple2(
@@ -114,12 +114,13 @@ index 9bf7132..e93f66e 100644
          (r: Any) => Main.writeResponse(exchange, r.asInstanceOf[Response.Raw])
        )
  
--      dispatchTrie.lookup(Util.splitPath(exchange.getRequestPath).toList, Map()) match {
-+      dispatchTrie.lookup(Util.splitPath(exchange.getRequestPath()).toList, Map()) match {
-         case None => Main.writeResponse(exchange, handleNotFound())
-         case Some((methodMap, routeBindings, remaining)) =>
-           methodMap.get(effectiveMethod) match {
-@@ -164,24 +164,24 @@ object Main{
+       val decodedSegments = Util
+-        .splitPath(exchange.getRequestURI)
++        .splitPath(exchange.getRequestURI())
+         .iterator
+         .map(java.net.URLDecoder.decode(_, "UTF-8"))
+         .toList
+@@ -176,24 +176,24 @@ object Main{
  
    def writeResponse(exchange: HttpServerExchange, response: Response.Raw) = {
      response.data.headers.foreach{case (k, v) =>
@@ -150,10 +151,10 @@ index 9bf7132..e93f66e 100644
      })
    }
 diff --git a/cask/src/cask/model/Params.scala b/cask/src/cask/model/Params.scala
-index 3d8d4dd..6fbae2b 100644
+index 56a7135..710c31a 100644
 --- a/cask/src/cask/model/Params.scala
 +++ b/cask/src/cask/model/Params.scala
-@@ -10,9 +10,9 @@ case class Request(exchange: HttpServerExchange, remainingPathSegments: Seq[Stri
+@@ -13,9 +13,9 @@ case class Request(exchange: HttpServerExchange, remainingPathSegments: Seq[Stri
  extends geny.ByteData with geny.Readable {
    import collection.JavaConverters._
    lazy val cookies: Map[String, Cookie] = {
@@ -165,7 +166,7 @@ index 3d8d4dd..6fbae2b 100644
  
    /**
     * Read all the bytes of the incoming request *with* caching
-@@ -28,11 +28,11 @@ extends geny.ByteData with geny.Readable {
+@@ -31,11 +31,11 @@ extends geny.ByteData with geny.Readable {
      baos.toByteArray
    }
    lazy val queryParams: Map[String, collection.Seq[String]] = {
@@ -180,7 +181,7 @@ index 3d8d4dd..6fbae2b 100644
        .toMap
    }
  
-@@ -42,18 +42,18 @@ object Cookie{
+@@ -45,18 +45,18 @@ object Cookie{
  
    def fromUndertow(from: io.undertow.server.handlers.Cookie): Cookie = {
      Cookie(
@@ -211,7 +212,7 @@ index 3d8d4dd..6fbae2b 100644
      )
    }
    def toUndertow(from: Cookie): io.undertow.server.handlers.Cookie = {
-@@ -96,8 +96,8 @@ sealed trait FormEntry{
+@@ -99,8 +99,8 @@ sealed trait FormEntry{
  }
  object FormEntry{
    def fromUndertow(from: io.undertow.server.handlers.form.FormData.FormValue) = {
