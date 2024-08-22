@@ -27,8 +27,7 @@ jobs:
           architecture: "x64"
           distribution: "temurin"
       - name: Download dependencies
-        run:
-          ./mill --disable-ticker __.prepareOffline
+        run: ./mill --disable-ticker __.prepareOffline
       - name: Check formatting
         run:
           ./mill --disable-ticker -j 0 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
@@ -56,6 +55,23 @@ jobs:
             sudo systemctl start unit.service
             sbt scalafmtCheckAll scalafmtSbtCheck scripted
           )
+      - name: Publish to Maven Central
+        run: |
+          ./mill io.kipp.mill.ci.release.ReleaseModule/publishAll
+          if [[ $(git tag --points-at HEAD) != '' ]]; then
+            cd sbt-plugin
+            sbt publishSigned sonatypeBundleRelease
+          fi
+        if: github.repository == 'lolgab/snunit' && startsWith(github.ref, 'refs/tags/')
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          LANG: "en_US.UTF-8"
+          LC_MESSAGES: "en_US.UTF-8"
+          LC_ALL: "en_US.UTF-8"
+
   check-binary-compatibility:
     runs-on: ubuntu-22.04
     steps:
@@ -68,44 +84,3 @@ jobs:
           java-version: "11"
       - name: Check Binary Compatibility
         run: ./mill --disable-ticker __.mimaReportBinaryIssues
-
-  publish-sonatype:
-    if: github.repository == 'lolgab/snunit' && contains(github.ref, 'refs/tags/')
-    needs: build
-    runs-on: ubuntu-22.04
-    env:
-      PGP_PASSPHRASE: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY_PASSWORD }}
-      PGP_SECRET: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY }}
-      SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      LANG: "en_US.UTF-8"
-      LC_MESSAGES: "en_US.UTF-8"
-      LC_ALL: "en_US.UTF-8"
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: coursier/cache-action@v6
-      - name: Compilation cache
-        uses: actions/cache@v2
-        with:
-          path: ./out
-          key: out
-      - uses: actions/setup-java@v3
-        with:
-          distribution: "temurin"
-          java-version: "11"
-      - name: Publish plugin shared locally
-        run: ./mill --disable-ticker snunit-plugins-shared.__.publishLocal
-      - run: ./mill io.kipp.mill.ci.release.ReleaseModule/publishAll
-        env:
-          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      - name: Publish Sbt Plugin
-        run: |
-          if [[ $(git tag --points-at HEAD) != '' ]]; then
-            cd sbt-plugin
-            sbt publishSigned sonatypeBundleRelease
-          fi
