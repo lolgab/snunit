@@ -8,7 +8,16 @@ final class HeaderMap private[undertow] (underlying: collection.Map[String, Stri
   private lazy val underlyingMutable = underlying.asInstanceOf[scala.collection.mutable.Map[String, String]]
 
   def this() = this(collection.mutable.Map.empty[String, String])
-  private[undertow] def asScala = underlying.toSeq
+  private[undertow] def toSNUnitHeaders: snunit.Headers =
+    val headers = snunit.Headers(underlying.size)
+    var i = 0
+    underlying.foreach((k, v) =>
+      headers.updateName(i, k)
+      headers.updateValue(i, v)
+      i += 1
+    )
+    headers
+
   def getFirst(headerName: String): String = underlying.getOrElse(headerName, null)
   def get(headerName: String): java.util.Collection[String] = {
     val l = new java.util.ArrayList[String]()

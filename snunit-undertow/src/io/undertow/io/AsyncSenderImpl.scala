@@ -5,5 +5,5 @@ import snunit.*
 
 class AsyncSenderImpl(exchange: HttpServerExchange) extends Sender {
   def send(data: String): Unit =
-    exchange.req.send(StatusCode(exchange.getStatusCode()), data, Headers(exchange.getResponseHeaders().asScala: _*))
+    exchange.req.send(StatusCode(exchange.getStatusCode()), data, exchange.getResponseHeaders().toSNUnitHeaders)
 }

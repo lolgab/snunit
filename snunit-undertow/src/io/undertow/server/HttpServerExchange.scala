@@ -110,7 +110,7 @@ object HttpServerExchange {
           override def flush(): Unit = ???
 
           override def close(): Unit = {
-            exchange.req.send(StatusCode(exchange.state), responseData, Headers(exchange.responseHeaders.asScala: _*))
+            exchange.req.send(StatusCode(exchange.state), responseData, exchange.responseHeaders.toSNUnitHeaders)
           }
         }
       }
