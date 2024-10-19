@@ -5,7 +5,9 @@ import io.undertow.server._
 final class BlockingHandler(handler: HttpHandler) extends HttpHandler {
   def handleRequest(exchange: HttpServerExchange): Unit = {
     exchange.startBlocking()
-    handler.handleRequest(exchange)
-    exchange.endExchange()
+    scala.concurrent.ExecutionContext.global.execute(() =>
+      try { handler.handleRequest(exchange) }
+      finally { exchange.endExchange() }
+    )
   }
 }
