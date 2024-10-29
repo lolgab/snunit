@@ -7,11 +7,14 @@ import scala.sys.process._
 
 val snunitVersion = Def.setting {
   val snunitDir = baseDirectory.value / ".."
-  val versionString =
-    Process(
-      Seq("./mill", "--disable-ticker", "show", s"snunit-plugins-shared[${Versions.scala212}].publishVersion"),
-      cwd = snunitDir
-    ).!!
+  Process(
+    Seq("./mill", "--disable-ticker", s"snunit-plugins-shared[${Versions.scala212}].publishLocal"),
+    cwd = snunitDir
+  ).!!
+  val versionString = Process(
+    Seq("./mill", "--disable-ticker", "show", s"snunit-plugins-shared[${Versions.scala212}].publishVersion"),
+    cwd = snunitDir
+  ).!!
   val JString(version) = Parser.parseFromString(versionString).get
   version
 }
