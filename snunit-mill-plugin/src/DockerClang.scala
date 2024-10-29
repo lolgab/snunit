@@ -17,7 +17,7 @@ trait DockerClang extends ScalaNativeModule {
   private def createAndWriteClangScripts = T {
     ClangScripts.createAndWriteClangScripts(
       dest = T.dest.toString,
-      pwd = os.pwd.toString
+      pwd = T.workspace.toString
     )
   }
 
