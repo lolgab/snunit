@@ -1,3 +1,5 @@
+package build
+
 import $ivy.`com.goyeau::mill-scalafix::0.3.1`
 import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
 import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.1`
@@ -13,9 +15,7 @@ import de.tobiasroeser.mill.integrationtest._
 import mill.contrib.buildinfo.BuildInfo
 import com.github.lolgab.mill.mima._
 import com.github.lolgab.mill.crossplatform._
-import $file.versions
 import versions.Versions
-import $file.unitd
 
 val scalaVersions = Seq(Versions.scala3)
 
@@ -62,7 +62,7 @@ object Common {
       )
     }
 
-    def deployTestApp() = T.command {
+    def deployTestApp() = Task.Command {
       val binary = nativeLink()
       unitd.runBackground(baseTestConfig(binary))
     }
@@ -95,7 +95,7 @@ trait Publish extends CiReleaseModule with Mima {
     )
   def mimaPreviousVersions = Seq("0.9.0")
   // Remove after first release with Scala Native 0.5
-  def mimaPreviousArtifacts = T { Seq.empty }
+  def mimaPreviousArtifacts = Task { Seq.empty }
 }
 object snunit extends Cross[SNUnitModule](scalaVersions)
 trait SNUnitModule extends Common.Cross with Publish {
@@ -109,7 +109,7 @@ trait SNUnitModule extends Common.Cross with Publish {
 //   def moduleDeps = Seq(snunit())
 
 //   def ivyDeps =
-//     T {
+//     Task {
 //       super.ivyDeps() ++ Agg(
 //         ivy"org.typelevel::cats-effect::${Versions.catsEffect}"
 //       )
@@ -157,13 +157,13 @@ trait SNUnitTapirModule extends Common.Cross with Publish {
 //   }
 // }
 
-def caskSources = T {
+def caskSources = Task {
   val dest = T.dest
   os.proc("git", "clone", "--branch", Versions.cask, "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
   os.proc("git", "apply", T.workspace / "cask.patch").call(cwd = dest / "cask")
   PathRef(dest)
 }
-def castorSources = T {
+def castorSources = Task {
   val dest = T.dest
   os.proc("git", "clone", "--branch", Versions.castor, "--depth", "1", "https://github.com/com-lihaoyi/castor", dest)
     .call()
@@ -171,7 +171,7 @@ def castorSources = T {
 }
 object `snunit-cask` extends Cross[SNUnitCaskModule](scalaVersions)
 trait SNUnitCaskModule extends Common.Cross with Publish {
-  override def generatedSources = T {
+  override def generatedSources = Task {
     val cask = caskSources().path / "cask"
     val castor = castorSources().path / "castor"
     Seq(cask / "src", cask / "util" / "src", cask / "src-3", castor / "src", castor / "src-js-native").map(PathRef(_))
@@ -289,5 +289,3 @@ object `snunit-mill-plugin-itest` extends MillIntegrationTestModule {
   def pluginsUnderTest = Seq(`snunit-mill-plugin`)
   def temporaryIvyModules = Seq(`snunit-plugins-shared`(mill.main.BuildInfo.scalaVersion), snunit(Versions.scala3))
 }
-
-def buildSources = T(Seq(PathRef(os.pwd / "build.sc")))

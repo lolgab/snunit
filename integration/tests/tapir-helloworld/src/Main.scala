@@ -11,8 +11,13 @@ object TapirHelloWorld {
     .serverLogic[Id](name => Right(s"Hello $name!"))
 
   def main(args: Array[String]): Unit =
+    val parallelHandler = new snunit.RequestHandler {
+      def handleRequest(req: snunit.Request) = {
+        scala.concurrent.ExecutionContext.global.execute(() => toHandler(helloWorld :: Nil))
+      }
+    }
     snunit.SyncServerBuilder
-      .setRequestHandler(toHandler(helloWorld :: Nil))
+      .setRequestHandler(parallelHandler)
       .build()
       .listen()
 }

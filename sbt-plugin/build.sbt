@@ -9,7 +9,7 @@ val snunitVersion = Def.setting {
   val snunitDir = baseDirectory.value / ".."
   val versionString =
     Process(
-      Seq("./mill", "--disable-ticker", "show", s"snunit-plugins-shared[${Versions.scala212}].publishVersion"),
+      Seq("./mill", "--disable-ticker", "show", s"snunit-plugins-shared[${build.Versions.scala212}].publishVersion"),
       cwd = snunitDir
     ).!!
   val JString(version) = Parser.parseFromString(versionString).get
@@ -22,9 +22,9 @@ lazy val snunitSbtPlugin = project
     name := "sbt-snunit",
     version := snunitVersion.value,
     sbtPlugin := true,
-    scalaVersion := Versions.scala212,
+    scalaVersion := build.Versions.scala212,
     organization := "com.github.lolgab",
-    addSbtPlugin("org.scala-native" % "sbt-scala-native" % Versions.scalaNative),
+    addSbtPlugin("org.scala-native" % "sbt-scala-native" % build.Versions.scalaNative),
     libraryDependencies ++= Seq(
       "com.github.lolgab" %% "snunit-plugins-shared" % snunitVersion.value
     ),

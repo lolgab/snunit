@@ -1,3 +1,5 @@
+package build
+
 // This file is system-linked in sbt-plugin/project/Versions.scala
 // It needs to be a valid Scala file so we can't use top level `val`s
 object Versions {

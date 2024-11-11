@@ -1,3 +1,5 @@
+package build
+
 import java.util.concurrent.atomic.AtomicBoolean
 
 private val dest = os.home / ".cache" / "snunit"
