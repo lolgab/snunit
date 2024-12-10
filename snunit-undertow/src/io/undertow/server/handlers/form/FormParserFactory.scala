@@ -7,6 +7,7 @@ class FormParserFactory private (builder: FormParserFactory.Builder) {
 }
 object FormParserFactory {
   final class Builder private[FormParserFactory] () {
+    def withDefaultCharset(defaultCharset: String): Builder = this
     def build(): FormParserFactory = new FormParserFactory(this)
   }
   def builder(): Builder = new Builder()
