@@ -32,7 +32,7 @@ jobs:
       - name: Check formatting
         run:
           ./mill --disable-ticker mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
-          ./mill --disable-ticker --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll
+          ./mill --disable-ticker --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
       # - name: Check scalafix
       #   run: ./mill --disable-ticker __.fix --check
       - name: Compile
