@@ -1,6 +1,5 @@
 package snunit.test
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.chaining._
 import scala.util.control.NonFatal
@@ -11,8 +10,8 @@ import sttp.client3.HttpClientFutureBackend
 private def runMillCommand(command: String) = os
   .proc(
     "./mill",
-    "--no-build-lock",
     // adding `-i` breaks the ability to close unitd processes
+    "--no-build-lock",
     "--disable-ticker",
     "show",
     command

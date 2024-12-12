@@ -13,7 +13,7 @@ object TapirHelloWorld {
   def main(args: Array[String]): Unit =
     val parallelHandler = new snunit.RequestHandler {
       def handleRequest(req: snunit.Request) = {
-        scala.concurrent.ExecutionContext.global.execute(() => toHandler(helloWorld :: Nil))
+        toHandler(helloWorld :: Nil)
       }
     }
     snunit.SyncServerBuilder
