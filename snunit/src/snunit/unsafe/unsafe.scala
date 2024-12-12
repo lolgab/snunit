@@ -412,7 +412,7 @@ extension (ptr: nxt_unit_response_t) {
 
 // Too big structs break Scala Native optimizer
 // We need a single field, so we access it manually using
-// pointer aritmetics
+// pointer arithmetics
 // opaque type nxt_unit_request_info_t = CStruct12[
 //   nxt_unit_t_*,
 //   nxt_unit_ctx_t_*,
@@ -440,7 +440,8 @@ extension (ptr: nxt_unit_request_info_t_*) {
   // @inline def response_port: nxt_unit_port_t = ptr._3
   // @inline def response_port_=(v: nxt_unit_port_t): Unit = !ptr.at3 = v
 
-  @inline def request: nxt_unit_request_t_* = !(ptr.asInstanceOf[Ptr[nxt_unit_request_t_*]] + 3)
+  @inline def request: nxt_unit_request_t_* =
+    (!(ptr.asInstanceOf[Ptr[CVoidPtr]] + 3)).asInstanceOf[nxt_unit_request_t_*]
   // @inline def request: nxt_unit_request_t_* = ptr._4
   // @inline def request_=(v: nxt_unit_request_t): Unit = !ptr.at4 = v
 
