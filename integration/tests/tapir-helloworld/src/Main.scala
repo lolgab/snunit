@@ -11,13 +11,8 @@ object TapirHelloWorld {
     .serverLogic[Id](name => Right(s"Hello $name!"))
 
   def main(args: Array[String]): Unit =
-    val parallelHandler = new snunit.RequestHandler {
-      def handleRequest(req: snunit.Request) = {
-        toHandler(helloWorld :: Nil)
-      }
-    }
     snunit.SyncServerBuilder
-      .setRequestHandler(parallelHandler)
+      .setRequestHandler(toHandler(helloWorld :: Nil))
       .build()
       .listen()
 }
