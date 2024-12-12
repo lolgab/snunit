@@ -16,7 +16,9 @@ private def runMillCommand(command: String) = os
     "show",
     command
   )
-  .call()
+  .call(
+    cwd = os.Path(sys.env("MILL_WORKSPACE_ROOT"))
+  )
 
 def withDeployedExample[T](projectName: String, crossSuffix: String = "")(f: => T): T = {
   runMillCommand(s"integration.tests.$projectName$crossSuffix.deployTestApp")
