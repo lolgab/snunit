@@ -51,40 +51,22 @@ opaque type port_send_t = CFuncPtr1[nxt_unit_request_info_t_*, Unit]
 opaque type port_recv_t = CFuncPtr1[nxt_unit_request_info_t_*, Unit]
 // end TODO
 
-// The Scala Native compiler materializes CFuncPtrs in structs
-// as virtual calls, which inhibit inliniing.
-// so we use opaque pointers and manually cast them to `CFuncPtr`s
-
-// opaque type nxt_unit_callbacks_t = CStruct11[
-//   request_handler_t,
-//   data_handler_t,
-//   websocket_handler_t,
-//   close_handler_t,
-//   add_port_t,
-//   remove_port_t,
-//   remove_pid_t,
-//   quit_t,
-//   shm_ack_handler_t,
-//   port_send_t,
-//   port_recv_t
-// ]
-
 /*
  * Set of application-specific callbacks. Application may leave all optional
  * ctx: nxt_unit_ctx_t_* as NULL.
  */
 opaque type nxt_unit_callbacks_t = CStruct11[
-  CVoidPtr, //   request_handler_t
-  CVoidPtr, //   data_handler_t
-  CVoidPtr, //   websocket_handler_t
-  CVoidPtr, //   close_handler_t
-  CVoidPtr, //   add_port_t
-  CVoidPtr, //   remove_port_t
-  CVoidPtr, //   remove_pid_t
-  CVoidPtr, //   quit_t
-  CVoidPtr, //   shm_ack_handler_t
-  CVoidPtr, //   port_send_t
-  CVoidPtr //   port_recv_t
+  request_handler_t,
+  data_handler_t,
+  websocket_handler_t,
+  close_handler_t,
+  add_port_t,
+  remove_port_t,
+  remove_pid_t,
+  quit_t,
+  shm_ack_handler_t,
+  port_send_t,
+  port_recv_t
 ]
 opaque type nxt_unit_callbacks_t_* = Ptr[nxt_unit_callbacks_t]
 
@@ -459,6 +441,7 @@ extension (ptr: nxt_unit_request_info_t_*) {
   // @inline def response_port_=(v: nxt_unit_port_t): Unit = !ptr.at3 = v
 
   @inline def request: nxt_unit_request_t_* = !(ptr.asInstanceOf[Ptr[nxt_unit_request_t_*]] + 3)
+  // @inline def request: nxt_unit_request_t_* = ptr._4
   // @inline def request_=(v: nxt_unit_request_t): Unit = !ptr.at4 = v
 
   // @inline def request_buf: nxt_unit_buf_t = ptr._5
@@ -487,23 +470,23 @@ extension (ptr: nxt_unit_request_info_t_*) {
 }
 
 extension (ptr: nxt_unit_callbacks_t_*) {
-  @inline def request_handler: request_handler_t = CFuncPtr.fromPtr[request_handler_t](ptr._1)
-  @inline def request_handler_=(v: request_handler_t): Unit = ptr._1 = CFuncPtr.toPtr(v)
+  @inline def request_handler: request_handler_t = ptr._1
+  @inline def request_handler_=(v: request_handler_t): Unit = ptr._1 = v
 
-  // @inline def data_handler: data_handler_t = CFuncPtr.fromPtr[data_handler_t](ptr._2)
-  // @inline def data_handler_=(v: data_handler_t): Unit = ptr._2 = CFuncPtr.toPtr(v)
+  // @inline def data_handler: data_handler_t = ptr._2
+  // @inline def data_handler_=(v: data_handler_t): Unit = ptr._2 = v
 
-  @inline def websocket_handler: websocket_handler_t = CFuncPtr.fromPtr[websocket_handler_t](ptr._3)
-  @inline def websocket_handler_=(v: websocket_handler_t): Unit = ptr._3 = CFuncPtr.toPtr(v)
+  @inline def websocket_handler: websocket_handler_t = ptr._3
+  @inline def websocket_handler_=(v: websocket_handler_t): Unit = ptr._3 = v
 
-  @inline def add_port: add_port_t = CFuncPtr.fromPtr[add_port_t](ptr._5)
-  @inline def add_port_=(v: add_port_t): Unit = ptr._5 = CFuncPtr.toPtr(v)
+  @inline def add_port: add_port_t = ptr._5
+  @inline def add_port_=(v: add_port_t): Unit = ptr._5 = v
 
-  @inline def remove_port: remove_port_t = CFuncPtr.fromPtr[remove_port_t](ptr._6)
-  @inline def remove_port_=(v: remove_port_t): Unit = ptr._6 = CFuncPtr.toPtr(v)
+  @inline def remove_port: remove_port_t = ptr._6
+  @inline def remove_port_=(v: remove_port_t): Unit = ptr._6 = v
 
-  @inline def quit: quit_t = CFuncPtr.fromPtr[quit_t](ptr._8)
-  @inline def quit_=(v: quit_t): Unit = ptr._8 = CFuncPtr.toPtr(v)
+  @inline def quit: quit_t = ptr._8
+  @inline def quit_=(v: quit_t): Unit = ptr._8 = v
 }
 
 extension (ptr: nxt_unit_init_t_*) {
