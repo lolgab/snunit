@@ -27,10 +27,10 @@ jobs:
           architecture: "x64"
           distribution: "temurin"
       - name: Download dependencies
-        run:
+        run: |
           ./mill --disable-ticker __.prepareOffline
       - name: Check formatting
-        run:
+        run: |
           ./mill --disable-ticker mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
           ./mill --disable-ticker --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
       # - name: Check scalafix
