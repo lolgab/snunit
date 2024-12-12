@@ -19,7 +19,7 @@ jobs:
           echo "deb https://packages.nginx.org/unit/ubuntu/ jammy unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
           echo "deb-src https://packages.nginx.org/unit/ubuntu/ jammy unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
           sudo apt-get update
-          unit_version="1.32*"
+          unit_version="1.33*"
           sudo apt-get install -y libuv1-dev libidn2-dev unit=$unit_version unit-dev=$unit_version
       - uses: actions/setup-java@v3
         with:
@@ -27,12 +27,12 @@ jobs:
           architecture: "x64"
           distribution: "temurin"
       - name: Download dependencies
-        run:
+        run: |
           ./mill --disable-ticker __.prepareOffline
       - name: Check formatting
-        run:
+        run: |
           ./mill --disable-ticker mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
-          ./mill --disable-ticker --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll
+          ./mill --disable-ticker --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
       # - name: Check scalafix
       #   run: ./mill --disable-ticker __.fix --check
       - name: Compile

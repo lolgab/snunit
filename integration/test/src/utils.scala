@@ -1,6 +1,5 @@
 package snunit.test
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.chaining._
 import scala.util.control.NonFatal
@@ -12,11 +11,14 @@ private def runMillCommand(command: String) = os
   .proc(
     "./mill",
     // adding `-i` breaks the ability to close unitd processes
+    "--no-build-lock",
     "--disable-ticker",
     "show",
     command
   )
-  .call()
+  .call(
+    cwd = os.Path(sys.env("MILL_WORKSPACE_ROOT"))
+  )
 
 def withDeployedExample[T](projectName: String, crossSuffix: String = "")(f: => T): T = {
   runMillCommand(s"integration.tests.$projectName$crossSuffix.deployTestApp")

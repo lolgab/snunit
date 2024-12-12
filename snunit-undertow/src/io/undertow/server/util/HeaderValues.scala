@@ -32,7 +32,7 @@ final class HeaderValues private[undertow] (key: String, value: String)
 
   // Members declared in java.util.List
   def add(x$1: Int, x$2: String): Unit = ???
-  def addAll(x$1: Int, x$2: java.util.Collection[_ <: String]): Boolean = ???
+  def addAll(x$1: Int, x$2: java.util.Collection[? <: String]): Boolean = ???
   def get(x$1: Int): String = ???
   def indexOf(x$1: Object): Int = ???
   def iterator(): java.util.Iterator[String] = Array(value).iterator.asJava
