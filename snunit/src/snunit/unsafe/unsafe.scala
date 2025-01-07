@@ -108,7 +108,7 @@ given Tag[nxt_unit_init_t] = Tag.materializeCStruct14Tag[
 opaque type nxt_websocket_header_t = CStruct3[
   Byte,
   Byte,
-  CArray[Byte, _8]
+  Long
 ]
 opaque type nxt_websocket_header_t_* = Ptr[nxt_websocket_header_t]
 
@@ -318,69 +318,68 @@ extension (ptr: nxt_unit_field_t_*) {
   @inline def value: Ptr[Byte] = nxt_unit_sptr_get(ptr.at6)
 }
 
-opaque type nxt_unit_request_t = CArray[CChar, Nat.Digit2[Nat._9, Nat._6]]
-opaque type nxt_unit_request_t_* = Ptr[nxt_unit_request_t]
+opaque type nxt_unit_request_t_* = Ptr[Byte]
 
 extension (ptr: nxt_unit_request_t_*) {
-  @inline def method_length: Byte = !ptr.at(0)
+  @inline def method_length: Byte = ptr(0)
 
-  @inline def version_length: Byte = !ptr.at(1)
+  @inline def version_length: Byte = ptr(1)
 
-  @inline def remote_length: Byte = !ptr.at(2)
+  @inline def remote_length: Byte = ptr(2)
 
-  @inline def local_addr_length: Byte = !ptr.at(3)
+  @inline def local_addr_length: Byte = ptr(3)
 
-  @inline def local_port_length: Byte = !ptr.at(4)
+  @inline def local_port_length: Byte = ptr(4)
 
-  @inline def tls: Byte = !ptr.at(5)
+  @inline def tls: Byte = ptr(5)
 
-  @inline def websocket_handshake: Byte = !ptr.at(6)
+  @inline def websocket_handshake: Byte = ptr(6)
 
-  @inline def app_target: Byte = !ptr.at(7)
+  @inline def app_target: Byte = ptr(7)
 
-  @inline def server_name_length: CInt = !ptr.at(8).asInstanceOf[Ptr[CInt]]
+  @inline def server_name_length: CInt = ptr.asInstanceOf[Ptr[CInt]](2)
 
-  @inline def target_length: CInt = !ptr.at(12).asInstanceOf[Ptr[CInt]]
+  @inline def target_length: CInt = ptr.asInstanceOf[Ptr[CInt]](3)
 
-  @inline def path_length: CInt = !ptr.at(16).asInstanceOf[Ptr[CInt]]
+  @inline def path_length: CInt = ptr.asInstanceOf[Ptr[CInt]](4)
 
-  @inline def query_length: CInt = !ptr.at(20).asInstanceOf[Ptr[CInt]]
+  @inline def query_length: CInt = ptr.asInstanceOf[Ptr[CInt]](5)
 
-  @inline def fields_count: CInt = !ptr.at(24).asInstanceOf[Ptr[CInt]]
+  @inline def fields_count: CInt = ptr.asInstanceOf[Ptr[CInt]](6)
 
-  @inline def content_length_field: CInt = !ptr.at(28).asInstanceOf[Ptr[CInt]]
+  @inline def content_length_field: CInt = ptr.asInstanceOf[Ptr[CInt]](7)
 
-  @inline def content_type_field: CInt = !ptr.at(32).asInstanceOf[Ptr[CInt]]
+  @inline def content_type_field: CInt = ptr.asInstanceOf[Ptr[CInt]](8)
 
-  @inline def cookie_field: CInt = !ptr.at(36).asInstanceOf[Ptr[CInt]]
+  @inline def cookie_field: CInt = ptr.asInstanceOf[Ptr[CInt]](9)
 
-  @inline def authorization_field: CInt = !ptr.at(40).asInstanceOf[Ptr[CInt]]
+  @inline def authorization_field: CInt = ptr.asInstanceOf[Ptr[CInt]](10)
 
-  @inline def content_length: CLongLong = !ptr.at(48).asInstanceOf[Ptr[CLongLong]] // CUnsignedLongLong
+  @inline def content_length: CLongLong = ptr.asInstanceOf[Ptr[CLongLong]](6) // CUnsignedLongLong
 
   @targetName("request_t_method")
-  @inline def method: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(56).asInstanceOf[nxt_unit_sptr_t_*])
+  @inline def method: Ptr[Byte] = nxt_unit_sptr_get(ptr.asInstanceOf[nxt_unit_sptr_t_*] + 14)
 
-  @inline def version: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(60).asInstanceOf[nxt_unit_sptr_t_*])
+  @inline def version: Ptr[Byte] = nxt_unit_sptr_get(ptr.asInstanceOf[nxt_unit_sptr_t_*] + 15)
 
-  @inline def remote: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(64).asInstanceOf[nxt_unit_sptr_t_*])
+  @inline def remote: Ptr[Byte] = nxt_unit_sptr_get(ptr.asInstanceOf[nxt_unit_sptr_t_*] + 16)
 
-  @inline def local_addr: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(68).asInstanceOf[nxt_unit_sptr_t_*])
+  @inline def local_addr: Ptr[Byte] = nxt_unit_sptr_get(ptr.asInstanceOf[nxt_unit_sptr_t_*] + 17)
 
-  @inline def local_port: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(72).asInstanceOf[nxt_unit_sptr_t_*])
+  @inline def local_port: Ptr[Byte] = nxt_unit_sptr_get(ptr.asInstanceOf[nxt_unit_sptr_t_*] + 18)
 
-  @inline def server_name: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(76).asInstanceOf[nxt_unit_sptr_t_*])
+  @inline def server_name: Ptr[Byte] = nxt_unit_sptr_get(ptr.asInstanceOf[nxt_unit_sptr_t_*] + 19)
 
-  @inline def target: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(80).asInstanceOf[nxt_unit_sptr_t_*])
+  @inline def target: Ptr[Byte] = nxt_unit_sptr_get(ptr.asInstanceOf[nxt_unit_sptr_t_*] + 20)
 
-  @inline def path: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(84).asInstanceOf[nxt_unit_sptr_t_*])
+  @inline def path: Ptr[Byte] = nxt_unit_sptr_get(ptr.asInstanceOf[nxt_unit_sptr_t_*] + 21)
 
-  @inline def query: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(88).asInstanceOf[nxt_unit_sptr_t_*])
+  @inline def query: Ptr[Byte] = nxt_unit_sptr_get(ptr.asInstanceOf[nxt_unit_sptr_t_*] + 22)
 
-  @inline def preread_content: Ptr[Byte] = nxt_unit_sptr_get(ptr.at(92).asInstanceOf[nxt_unit_sptr_t_*])
+  @inline def preread_content: Ptr[Byte] = nxt_unit_sptr_get(ptr.asInstanceOf[nxt_unit_sptr_t_*] + 23)
 
   @inline def fields(i: Int): nxt_unit_field_t_* =
-    ptr.at(96).asInstanceOf[nxt_unit_field_t_*] + i
+    (ptr + 96).asInstanceOf[nxt_unit_field_t_*] + i
 }
 
 opaque type nxt_unit_response_t = CStruct6[CLongInt, CInt, CInt, CShort, nxt_unit_sptr_t, nxt_unit_field_t]
@@ -560,8 +559,8 @@ extension (ptr: nxt_websocket_header_t_*) {
   @targetName("websocket_header_t_mask")
   @inline def mask: Byte =
     ((ptr._2 & (1 << 7)) >> 7).toByte
-  @targetName("websocket_header_t_payload_len_")
-  @inline def payload_len_ : Ptr[CArray[Byte, _8]] = ptr.at3
+  // @targetName("websocket_header_t_payload_len_")
+  // @inline def payload_len_ : Ptr[CArray[Byte, _8]] = ptr.at3
 }
 
 opaque type nxt_unit_websocket_frame_t = CStruct6[
