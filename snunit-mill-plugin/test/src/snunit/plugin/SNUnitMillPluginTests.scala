@@ -5,7 +5,7 @@ import mill.scalalib._
 import mill.testkit.{TestBaseModule, UnitTester}
 import utest._
 
-object SNUnitTests extends TestSuite {
+object SNUnitMillPluginTests extends TestSuite {
   def tests: Tests = Tests {
     test("simple") {
       object build extends TestBaseModule with SNUnit {
@@ -30,6 +30,7 @@ object SNUnitTests extends TestSuite {
               Thread.sleep(5000)
           }
         }
+        eval(build.snunitKillNGINXUnit())
       }
     }
   }
