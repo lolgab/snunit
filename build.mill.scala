@@ -2,7 +2,6 @@ package build
 
 import $ivy.`com.goyeau::mill-scalafix::0.3.1`
 import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
-import $ivy.`de.tototec::de.tobiasroeser.mill.integrationtest::0.7.1`
 import $ivy.`com.github.lolgab::mill-crossplatform::0.2.3`
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
 import $ivy.`com.github.lolgab::mill-mima::0.1.0`
@@ -11,7 +10,6 @@ import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.publish._
 import com.goyeau.mill.scalafix.ScalafixModule
 import io.kipp.mill.ci.release.CiReleaseModule
-import de.tobiasroeser.mill.integrationtest._
 import mill.contrib.buildinfo.BuildInfo
 import com.github.lolgab.mill.mima._
 import com.github.lolgab.mill.crossplatform._
@@ -158,13 +156,13 @@ trait SNUnitTapirModule extends Common.Cross with Publish {
 // }
 
 def caskSources = Task {
-  val dest = T.dest
+  val dest = Task.dest
   os.proc("git", "clone", "--branch", Versions.cask, "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
   os.proc("git", "apply", T.workspace / "cask.patch").call(cwd = dest / "cask")
   PathRef(dest)
 }
 def castorSources = Task {
-  val dest = T.dest
+  val dest = Task.dest
   os.proc("git", "clone", "--branch", Versions.castor, "--depth", "1", "https://github.com/com-lihaoyi/castor", dest)
     .call()
   PathRef(dest)
@@ -263,29 +261,41 @@ object integration extends ScalaModule {
   }
 }
 
-object `snunit-plugins-shared` extends Cross[SnunitPluginsShared](mill.main.BuildInfo.scalaVersion, Versions.scala212)
-trait SnunitPluginsShared extends CrossScalaModule with Publish with BuildInfo {
+object `snunit-mill-plugin` extends ScalaModule with Publish with BuildInfo {
   def buildInfoMembers = Seq(
     BuildInfo.Value("snunitVersion", publishVersion())
   )
   def buildInfoPackageName = "snunit.plugin.internal"
-  object test extends ScalaTests with TestModule.Utest {
-    def ivyDeps = super.ivyDeps() ++ Agg(
-      utest,
-      osLib
-    )
-  }
-}
-object `snunit-mill-plugin` extends ScalaModule with Publish {
   def artifactName = s"mill-snunit_mill${Versions.mill011.split('.').take(2).mkString(".")}"
-  def moduleDeps = Seq(`snunit-plugins-shared`(mill.main.BuildInfo.scalaVersion))
   def scalaVersion = mill.main.BuildInfo.scalaVersion
   def compileIvyDeps = super.compileIvyDeps() ++ Agg(
-    ivy"com.lihaoyi::mill-scalanativelib:${Versions.mill011}"
+    ivy"com.lihaoyi::mill-scalanativelib:${mill.main.BuildInfo.millVersion}"
   )
-}
-object `snunit-mill-plugin-itest` extends MillIntegrationTestModule {
-  def millTestVersion = Versions.mill011
-  def pluginsUnderTest = Seq(`snunit-mill-plugin`)
-  def temporaryIvyModules = Seq(`snunit-plugins-shared`(mill.main.BuildInfo.scalaVersion), snunit(Versions.scala3))
+
+  object test extends ScalaTests with TestModule.Utest with BuildInfo {
+    def ivyDeps = Agg(
+      ivy"com.lihaoyi::mill-testkit:${mill.main.BuildInfo.millVersion}",
+      ivy"com.lihaoyi::mill-scalanativelib:${mill.main.BuildInfo.millVersion}"
+    )
+    def forkEnv = Map("MILL_EXECUTABLE_PATH" -> millExecutable.assembly().path.toString)
+    def buildInfoMembers = Seq(
+      BuildInfo.Value("scalaNativeVersion", versions.Versions.scalaNative),
+      BuildInfo.Value("scalaVersion", versions.Versions.scala3)
+    )
+    def buildInfoPackageName = "snunit.plugin"
+    object millExecutable extends JavaModule {
+      def ivyDeps = Agg(
+        ivy"com.lihaoyi:mill-dist:${mill.main.BuildInfo.millVersion}"
+      )
+      def mainClass = Some("mill.runner.client.MillClientMain")
+      def resources = Task {
+        // make sure snunit is published
+        snunit(versions.Versions.scala3).publishLocal()()
+
+        val p = Task.dest / "mill/local-test-overrides" / s"com.lihaoyi-${`snunit-mill-plugin`.artifactId()}"
+        os.write(p, `snunit-mill-plugin`.localClasspath().map(_.path).mkString("\n"), createFolders = true)
+        Seq(PathRef(Task.dest))
+      }
+    }
+  }
 }

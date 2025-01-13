@@ -7,7 +7,7 @@ object Versions {
   val upickle = "4.0.2"
   val undertow = "2.3.10.Final"
   val scala212 = "2.12.19"
-  val scala3 = "3.4.2"
+  val scala3 = "3.5.2"
   val tapir = "1.11.1"
   val cask = "0.10.2"
   val catsEffect = "3.6-623178c"

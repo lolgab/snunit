@@ -49,13 +49,13 @@ jobs:
         run: sudo systemctl start unit.service
       # - name: Run Mill Plugin Tests
       #   run: ./mill --disable-ticker snunit-mill-plugin-itest.__.test
-      - name: Build and Test Sbt plugin
-        run: |
-          (
-            cd sbt-plugin
-            sudo systemctl start unit.service
-            sbt scalafmtCheckAll scalafmtSbtCheck scripted
-          )
+      # - name: Build and Test Sbt plugin
+      #   run: |
+      #     (
+      #       cd sbt-plugin
+      #       sudo systemctl start unit.service
+      #       sbt scalafmtCheckAll scalafmtSbtCheck scripted
+      #     )
   check-binary-compatibility:
     runs-on: ubuntu-22.04
     steps:
@@ -103,9 +103,10 @@ jobs:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      - name: Publish Sbt Plugin
-        run: |
-          if [[ $(git tag --points-at HEAD) != '' ]]; then
-            cd sbt-plugin
-            sbt publishSigned sonatypeBundleRelease
-          fi
+      # TODO: Support again Sbt plugin once Mill plugin is stable
+      # - name: Publish Sbt Plugin
+      #   run: |
+      #     if [[ $(git tag --points-at HEAD) != '' ]]; then
+      #       cd sbt-plugin
+      #       sbt publishSigned sonatypeBundleRelease
+      #     fi
