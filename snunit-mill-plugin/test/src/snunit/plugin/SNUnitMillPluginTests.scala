@@ -24,7 +24,7 @@ object SNUnitMillPluginTests extends TestSuite {
           ended.set(true)
         }
         var started = false
-        while (!started && !ended.get()) {
+        while (!started || !ended.get()) {
           try {
             val response = requests.get("http://127.0.0.1:8080", check = false).text()
             started = true
@@ -34,6 +34,9 @@ object SNUnitMillPluginTests extends TestSuite {
               println("waiting for server to start...")
               Thread.sleep(5000)
           }
+        }
+        if (ended.get()) {
+          sys.error("NGINX Unit failed to run")
         }
         eval(build.snunitKillNGINXUnit())
       }
