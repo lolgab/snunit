@@ -17,11 +17,11 @@ object SNUnitTests extends TestSuite {
       val resourceFolder = os.Path(sys.env("MILL_TEST_RESOURCE_DIR").split(";").head)
 
       UnitTester(build, resourceFolder / "simple").scoped { eval =>
-        scala.concurrent.ExecutionContext.global.execute(() => eval(build.snunitRunNGINXUnit))
+        scala.concurrent.ExecutionContext.global.execute(() => eval(build.snunitRunNGINXUnit()))
         var started = false
         while (!started) {
           try {
-            val response = requests.get("http://127.0.0.1:8080", check = false).text
+            val response = requests.get("http://127.0.0.1:8080", check = false).text()
             started = true
             response ==> "TEST SNUnit Mill Plugin"
           } catch {

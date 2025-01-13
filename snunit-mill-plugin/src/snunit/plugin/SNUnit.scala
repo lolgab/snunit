@@ -17,12 +17,12 @@ trait SNUnit extends ScalaNativeModule {
   }
 
   def snunitNGINXUnitBinary = Task {
-    val platform = System.getProperty("os.name", "unknown")
+    val platform = System.getProperty("os.name", "unknown").toLowerCase()
 
     val openSslParams =
-      if (platform.contains("mac"))
+      if (platform.contains("mac")) {
         List("--cc-opt=-I/opt/homebrew/opt/openssl@3/include", "--ld-opt=-L/opt/homebrew/opt/openssl@3/lib")
-      else Nil
+      } else Nil
 
     // val unitDir = snunitNGINXUnitSources().path
     val unitDir = os.Path("/Users/lorenzo/unit")

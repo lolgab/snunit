@@ -34,8 +34,6 @@ val testServerPort = 8081
 object Common {
   trait Shared extends ScalaModule with ScalafixModule {
     def organization = "com.github.lolgab"
-    def name = "snunit"
-    def crossScalaVersion: String
 
     def scalacOptions = super.scalacOptions() ++
       Seq("-deprecation")
@@ -261,7 +259,7 @@ object integration extends ScalaModule {
   }
 }
 
-object `snunit-mill-plugin` extends ScalaModule with Publish with BuildInfo {
+object `snunit-mill-plugin` extends Common.Shared with Publish with BuildInfo {
   def buildInfoMembers = Seq(
     BuildInfo.Value("snunitVersion", publishVersion())
   )
