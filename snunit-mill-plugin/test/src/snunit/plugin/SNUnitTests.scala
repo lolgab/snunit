@@ -19,7 +19,7 @@ object SNUnitTests extends TestSuite {
       UnitTester(build, resourceFolder / "simple").scoped { eval =>
         scala.concurrent.ExecutionContext.global.execute(() => eval(build.snunitRunNGINXUnit))
         var started = false
-        while(!started) {
+        while (!started) {
           try {
             val response = requests.get("http://127.0.0.1:8080", check = false).text
             started = true
