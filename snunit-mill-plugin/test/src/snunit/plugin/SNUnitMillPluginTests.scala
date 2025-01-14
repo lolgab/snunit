@@ -9,9 +9,11 @@ import java.util.concurrent.atomic.AtomicBoolean
 object SNUnitMillPluginTests extends TestSuite {
   def tests: Tests = Tests {
     test("simple") {
+      val port = 45354
       object build extends TestBaseModule with SNUnit {
         def scalaVersion = BuildInfo.scalaVersion
         def scalaNativeVersion = BuildInfo.scalaNativeVersion
+        override def snunitPort = port
         override def ivyDeps = Task { super.ivyDeps() ++ Agg(ivy"com.github.lolgab::snunit::$snunitVersion") }
       }
 
@@ -24,11 +26,11 @@ object SNUnitMillPluginTests extends TestSuite {
           ended.set(true)
         }
         var started = false
-        while (!started || !ended.get()) {
+        while (!started && !ended.get()) {
           try {
-            val response = requests.get("http://127.0.0.1:8080", check = false).text()
+            val response = requests.get(s"http://127.0.0.1:$port").text()
             started = true
-            response ==> "TEST SNUnit Mill Plugin"
+            assert(response == "TEST SNUnit Mill Plugin")
           } catch {
             case (_: java.net.ConnectException) | _: requests.UnknownHostException =>
               println("waiting for server to start...")
