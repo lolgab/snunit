@@ -48,7 +48,7 @@ jobs:
       - name: Start NGINX Unit daemon
         run: sudo systemctl start unit.service
       - name: Run Mill Plugin Tests
-        run: ./mill --disable-ticker snunit-mill-plugin.__.test
+        run: ./mill -i --disable-ticker snunit-mill-plugin.__.test
       # - name: Build and Test Sbt plugin
       #   run: |
       #     (
