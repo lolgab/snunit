@@ -7,6 +7,8 @@ import upickle.default._
 trait SNUnit extends ScalaNativeModule {
   def snunitVersion: String = snunit.plugin.internal.BuildInfo.snunitVersion
   def snunitNGINXUnitVersion: Target[String] = Task { "1.34.1" }
+  def snunitNGINXUnitUser: Target[Option[String]] = Task.Input { T.env.get("USER") }
+  def snunitNGINXUnitGroup: Target[Option[String]] = Task.Input { T.env.get("GROUP") }
   def snunitNGINXUnitSources = Task {
     val dir = s"unit-${snunitNGINXUnitVersion()}"
     val file = s"$dir.tar.gz"
@@ -30,6 +32,8 @@ trait SNUnit extends ScalaNativeModule {
       "./configure",
       "--logdir=./logdir",
       "--log=/dev/stdout",
+      snunitNGINXUnitUser().map(user => s"--user=$user"),
+      snunitNGINXUnitGroup().map(group => s"--group=$group"),
       "--runstatedir=./runstatedir",
       "--pid=unit.pid",
       "--control=unix:control.sock",
