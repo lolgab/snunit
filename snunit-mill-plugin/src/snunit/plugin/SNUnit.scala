@@ -24,8 +24,7 @@ trait SNUnit extends ScalaNativeModule {
         List("--cc-opt=-I/opt/homebrew/opt/openssl@3/include", "--ld-opt=-L/opt/homebrew/opt/openssl@3/lib")
       } else Nil
 
-    // val unitDir = snunitNGINXUnitSources().path
-    val unitDir = os.Path("/Users/lorenzo/unit")
+    val unitDir = snunitNGINXUnitSources().path
 
     os.proc(
       "./configure",
