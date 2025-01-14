@@ -40,8 +40,8 @@ trait SNUnit extends ScalaNativeModule {
       // "--otel", TODO: Support otel
       "--openssl",
       openSslParams
-    ).call(cwd = unitDir)
-    os.proc("make", "build/sbin/unitd", "build/lib/libunit.a").call(cwd = unitDir)
+    ).call(cwd = unitDir, stdout = os.Inherit)
+    os.proc("make", "build/sbin/unitd", "build/lib/libunit.a").call(cwd = unitDir, stdout = os.Inherit)
     val unitd = Task.dest / "unitd"
     val libunit = Task.dest / "libunit.a"
     os.copy(unitDir / "build/sbin/unitd", unitd)
@@ -82,7 +82,7 @@ trait SNUnit extends ScalaNativeModule {
     val nginxUnit = snunitNGINXUnitBinary().unitd.path
     val nginxUnitConfig = snunitNGINXUnitConfig()
     os.write(statedir / "conf.json", nginxUnitConfig)
-    os.proc(nginxUnit, "--no-daemon").call(wd)
+    os.proc(nginxUnit, "--no-daemon").call(wd, stdout = os.Inherit)
 
     ()
   }
@@ -91,7 +91,7 @@ trait SNUnit extends ScalaNativeModule {
     val pidFile = snunitNGINXUnitWorkdir() / "unit.pid"
 
     if (os.exists(pidFile)) {
-      os.proc("kill", os.read(snunitNGINXUnitWorkdir() / "unit.pid").trim).call()
+      os.proc("kill", os.read(snunitNGINXUnitWorkdir() / "unit.pid").trim).call(stdout = os.Inherit)
     }
 
     ()
