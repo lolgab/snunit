@@ -30,8 +30,6 @@ lazy val snunitSbtPlugin = project
     ),
     publishTo := sonatypePublishToBundle.value,
     publishMavenStyle := true,
-    sonatypeCredentialHost := "s01.oss.sonatype.org",
-    sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
     sonatypeProfileName := "com.github.lolgab",
     licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
     sonatypeProjectHosting := Some(GitHubHosting("lolgab", "snunit", "lorenzolespaul@gmail.com")),
@@ -45,7 +43,7 @@ lazy val snunitSbtPlugin = project
     ),
     credentials += Credentials(
       "Sonatype Nexus Repository Manager",
-      "s01.oss.sonatype.org",
+      "oss.sonatype.org",
       sys.env.getOrElse("SONATYPE_USERNAME", "username"),
       sys.env.getOrElse("SONATYPE_PASSWORD", "password")
     ),
