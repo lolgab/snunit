@@ -22,7 +22,7 @@ object SNUnitMillPluginTests extends TestSuite {
       UnitTester(build, resourceFolder / "simple").scoped { eval =>
         val ended = new AtomicBoolean(false)
         scala.concurrent.ExecutionContext.global.execute { () =>
-          eval(build.snunitRunNGINXUnit())
+          eval(build.run())
           ended.set(true)
         }
         var started = false
