@@ -75,17 +75,51 @@ trait SNUnit extends ScalaNativeModule {
     Task.dest
   }
 
-  /** Run app on NGINX Unit
-    */
-  def snunitRunNGINXUnit(): Command[Unit] = Task.Command {
+  private def runImpl = Task.Anon {
     val wd = snunitNGINXUnitWorkdir()
     snunitKillNGINXUnit().apply()
     val statedir = wd / "statedir"
     os.makeDir.all(statedir)
     val nginxUnit = snunitNGINXUnitBinary().unitd.path
     val nginxUnitConfig = snunitNGINXUnitConfig()
-    os.write(statedir / "conf.json", nginxUnitConfig)
+    os.write.over(statedir / "conf.json", nginxUnitConfig)
+    (wd, nginxUnit)
+  }
+
+  /** Run app on NGINX Unit
+    */
+  override def run(args: Task[Args] = Task.Anon(Args())): Command[Unit] = Task.Command {
+    val (wd, nginxUnit) = runImpl()
     os.proc(nginxUnit, "--no-daemon").call(wd, stdout = os.Inherit)
+
+    ()
+  }
+
+  override def runBackground(args: String*): Command[Unit] = Task.Command {
+    val (procUuidPath, procLockfile, procUuid) = _root_.mill.snunitinternal.RunModule.backgroundSetup(Task.dest)
+
+    val (wd, nginxUnit) = runImpl()
+
+    mill.util.Jvm.runSubprocess(
+      mainClass = "mill.scalalib.backgroundwrapper.MillBackgroundWrapper",
+      classPath = mill.scalalib.ZincWorkerModule.backgroundWrapperClasspath().map(_.path).toSeq,
+      jvmArgs = Nil,
+      envArgs = forkEnv(),
+      mainArgs = Seq(
+        procUuidPath.toString,
+        procLockfile.toString,
+        procUuid,
+        "500",
+        "<subprocess>",
+        nginxUnit.toString,
+        "--no-daemon"
+      ) ++ args,
+      workingDir = wd,
+      background = true,
+      useCpPassingJar = false,
+      runBackgroundLogToConsole = true,
+      javaHome = mill.scalalib.ZincWorkerModule.javaHome().map(_.path)
+    )
 
     ()
   }
@@ -100,9 +134,9 @@ trait SNUnit extends ScalaNativeModule {
     ()
   }
 
-  def buildDocker(): Command[Unit] = T.command {
-    // TODO
-  }
+  // def buildDocker(): Command[Unit] = T.command {
+  //   // TODO
+  // }
 
   override def nativeLinkingOptions: Target[Seq[String]] = Task {
     val unitBinary = snunitNGINXUnitBinary()
