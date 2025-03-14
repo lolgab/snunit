@@ -28,27 +28,27 @@ jobs:
           distribution: "temurin"
       - name: Download dependencies
         run: |
-          ./mill --disable-ticker __.prepareOffline
+          ./mill --ticker false __.prepareOffline
       - name: Check formatting
         run: |
-          ./mill --disable-ticker mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
-          ./mill --disable-ticker --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+          ./mill --ticker false mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+          ./mill --ticker false --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
       # - name: Check scalafix
-      #   run: ./mill --disable-ticker __.fix --check
+      #   run: ./mill --ticker false __.fix --check
       - name: Compile
-        run: ./mill --disable-ticker __.compile
+        run: ./mill --ticker false __.compile
       - name: Publish libraries locally
-        run: ./mill --disable-ticker __.publishLocal
+        run: ./mill --ticker false __.publishLocal
       - name: Run Unit Tests
-        run: ./mill --disable-ticker snunit[_].test
+        run: ./mill --ticker false snunit[_].test
       - name: Run Integration Tests
         run: |
           sudo systemctl stop unit.service
-          ./mill --disable-ticker integration.test
+          ./mill --ticker false integration.test
       - name: Start NGINX Unit daemon
         run: sudo systemctl start unit.service
       - name: Run Mill Plugin Tests
-        run: ./mill -i --disable-ticker snunit-mill-plugin.__.test
+        run: ./mill -i --ticker false snunit-mill-plugin.__.test
       # - name: Build and Test Sbt plugin
       #   run: |
       #     (
@@ -67,7 +67,7 @@ jobs:
           distribution: "temurin"
           java-version: "11"
       - name: Check Binary Compatibility
-        run: ./mill --disable-ticker __.mimaReportBinaryIssues
+        run: ./mill --ticker false __.mimaReportBinaryIssues
 
   publish-sonatype:
     if: github.repository == 'lolgab/snunit' && contains(github.ref, 'refs/tags/')
@@ -96,7 +96,7 @@ jobs:
           distribution: "temurin"
           java-version: "11"
       - name: Publish plugin shared locally
-        run: ./mill --disable-ticker snunit-plugins-shared.__.publishLocal
+        run: ./mill --ticker false snunit-plugins-shared.__.publishLocal
       - run: ./mill io.kipp.mill.ci.release.ReleaseModule/publishAll
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
