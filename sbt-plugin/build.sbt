@@ -9,7 +9,7 @@ val snunitVersion = Def.setting {
   val snunitDir = baseDirectory.value / ".."
   val versionString =
     Process(
-      Seq("./mill", "--disable-ticker", "show", s"snunit-plugins-shared[${build.Versions.scala212}].publishVersion"),
+      Seq("./mill", "--ticker", "false", "show", s"snunit-plugins-shared[${build.Versions.scala212}].publishVersion"),
       cwd = snunitDir
     ).!!
   val JString(version) = Parser.parseFromString(versionString).get

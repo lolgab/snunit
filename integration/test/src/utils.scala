@@ -12,7 +12,8 @@ private def runMillCommand(command: String) = os
     "./mill",
     // adding `-i` breaks the ability to close unitd processes
     "--no-build-lock",
-    "--disable-ticker",
+    "--ticker",
+    "false",
     "show",
     command
   )
@@ -29,8 +30,8 @@ def withDeployedExampleHttp4s(projectName: String)(f: => Unit) = {
     withDeployedExample(projectName, s"[$versions]")(f)
   }
 }
-def withDeployedExampleMultiplatform(projectName: String, crossSuffix: String = "")(f: => Unit) = {
-  val projectPrefix = s"integration.tests.$projectName$crossSuffix"
+def withDeployedExampleMultiplatform(projectName: String)(f: => Unit) = {
+  val projectPrefix = s"integration.tests.$projectName"
   runMillCommand(s"$projectPrefix.native.deployTestApp")
   val result = runMillCommand(s"$projectPrefix.jvm.launcher").out.lines().head
   val s""""$_:$_:$_:$path"""" = result: @unchecked
@@ -38,16 +39,6 @@ def withDeployedExampleMultiplatform(projectName: String, crossSuffix: String = 
   Thread.sleep(1000)
   try { f }
   finally { process.close() }
-}
-def withDeployedExampleMultiplatformCross(projectName: String)(f: => Unit) = {
-  BuildInfo.scalaVersions.split(':').foreach { scalaVersion =>
-    withDeployedExampleMultiplatform(projectName, s"[$scalaVersion]")(f)
-  }
-}
-def withDeployedExampleCross(projectName: String)(f: => Unit) = {
-  BuildInfo.scalaVersions.split(':').foreach { scalaVersion =>
-    withDeployedExample(projectName, s"[$scalaVersion]")(f)
-  }
 }
 
 private val futureBackend = HttpClientFutureBackend()

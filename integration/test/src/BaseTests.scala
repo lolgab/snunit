@@ -5,7 +5,7 @@ import utest._
 object BaseTests extends TestSuite {
   val tests = Tests {
     test("hello-world") {
-      withDeployedExampleCross("hello-world") {
+      withDeployedExample("hello-world") {
         locally {
           val result = request.get(baseUrl).text()
           val expectedResult = "Hello world!\n"
