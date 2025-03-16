@@ -118,6 +118,9 @@ object `snunit-undertow` extends Common.Native with Publish {
         }
     )
   }
+  // Sometimes it gives problems compiling since our internal API is different
+  // than the java API in the class files.
+  def zincIncrementalCompilation = false
 }
 
 object `snunit-tapir` extends Common.Native with Publish {
