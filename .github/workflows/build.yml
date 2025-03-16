@@ -35,7 +35,7 @@ jobs:
       - name: Publish libraries locally
         run: ./mill --ticker false __.publishLocal
       - name: Run Unit Tests
-        run: ./mill --ticker false snunit[_].test
+        run: ./mill --ticker false snunit.test
       - name: Run Integration Tests
         run: |
           sudo systemctl stop unit.service
