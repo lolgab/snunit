@@ -5,7 +5,7 @@ package build
 object Versions {
   val scalaNative = "0.5.7"
   val upickle = "4.0.2"
-  val undertow = "2.3.10.Final"
+  val undertow = "2.3.18.Final"
   val scala212 = "2.12.19"
   val scala3 = "3.3.4"
   val tapir = "1.11.1"
