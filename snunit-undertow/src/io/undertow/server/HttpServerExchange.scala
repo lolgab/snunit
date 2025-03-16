@@ -5,6 +5,7 @@ import io.undertow.io.BlockingSenderImpl
 import io.undertow.io.Sender
 import io.undertow.server.handlers.Cookie
 import io.undertow.util.HeaderMap
+import io.undertow.util.HttpString
 import snunit.*
 
 import java.io.InputStream
@@ -19,7 +20,7 @@ final class HttpServerExchange private[undertow] (private[undertow] val req: Req
 
   def getRequestHeaders(): HeaderMap = new HeaderMap(req.headers.toMap)
   def getResponseHeaders(): HeaderMap = responseHeaders
-  def getRequestMethod(): String = req.method
+  def getRequestMethod(): HttpString = HttpString(req.method)
   def getInputStream(): InputStream = {
     blockingHttpExchange.getInputStream()
   }

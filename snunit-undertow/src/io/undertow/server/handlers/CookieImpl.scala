@@ -14,14 +14,14 @@ class CookieImpl(name: String, value: String) extends Cookie {
   override def isSecure(): Boolean = ???
   override def getSameSiteMode(): String = ???
 
-  override def setComment(comment: String): Cookie = ???
-  override def setDomain(dommain: String): Cookie = ???
-  override def setExpires(expires: java.util.Date): Cookie = ???
-  override def setMaxAge(maxAge: Integer): Cookie = ???
-  override def setPath(path: String): Cookie = ???
-  override def setVersion(version: Int): Cookie = ???
-  override def setDiscard(discard: Boolean): Cookie = ???
-  override def setHttpOnly(httpOnly: Boolean): Cookie = ???
-  override def setSecure(secure: Boolean): Cookie = ???
-  override def setSameSiteMode(sameSite: String): Cookie = ???
+  override def setComment(comment: String): CookieImpl = ???
+  override def setDomain(dommain: String): CookieImpl = ???
+  override def setExpires(expires: java.util.Date): CookieImpl = ???
+  override def setMaxAge(maxAge: Integer): CookieImpl = ???
+  override def setPath(path: String): CookieImpl = ???
+  override def setVersion(version: Int): CookieImpl = ???
+  override def setDiscard(discard: Boolean): CookieImpl = ???
+  override def setHttpOnly(httpOnly: Boolean): CookieImpl = ???
+  override def setSecure(secure: Boolean): CookieImpl = ???
+  override def setSameSiteMode(sameSite: String): CookieImpl = ???
 }
