@@ -3,7 +3,7 @@ package io.undertow.server
 import io.undertow.io.AsyncSenderImpl
 import io.undertow.io.BlockingSenderImpl
 import io.undertow.io.Sender
-import io.undertow.server.handlers.Cookie
+import io.undertow.server.handlers.*
 import io.undertow.util.HeaderMap
 import io.undertow.util.HttpString
 import snunit.*
@@ -17,15 +17,28 @@ final class HttpServerExchange private[undertow] (private[undertow] val req: Req
   private val responseHeaders = new HeaderMap
   private var blockingHttpExchange: BlockingHttpExchange = null
   private var sender: Sender = null
+  private lazy val headers: Headers = req.headers
 
-  def getRequestHeaders(): HeaderMap = new HeaderMap(req.headers.toMap)
+  def getRequestHeaders(): HeaderMap = new HeaderMap(headers.toMap)
   def getResponseHeaders(): HeaderMap = responseHeaders
   def getRequestMethod(): HttpString = HttpString(req.method)
   def getInputStream(): InputStream = {
     blockingHttpExchange.getInputStream()
   }
   def getRequestCookies(): java.util.Map[String, Cookie] = {
-    ???
+    val result = new java.util.HashMap[String, Cookie]
+    if (req.cookieFieldIndex == -1) result
+    else {
+      val cookieString = headers.value(req.cookieFieldIndex)
+      cookieString.split(';').foreach {
+        case s"$n=$v" =>
+          val name = n.trim()
+          val cookie = CookieImpl(name, v)
+          result.put(name, cookie)
+        case _ =>
+      }
+    }
+    result
   }
   def setResponseCookie(cookie: Cookie): HttpServerExchange = {
     ???

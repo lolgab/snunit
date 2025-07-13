@@ -261,41 +261,42 @@ object integration extends ScalaModule {
   }
 }
 
-object `snunit-mill-plugin` extends Common.Shared with Publish with BuildInfo {
-  def buildInfoMembers = Seq(
-    BuildInfo.Value("snunitVersion", publishVersion())
-  )
-  def buildInfoPackageName = "snunit.plugin.internal"
-  def artifactName = s"mill-snunit_mill${Versions.mill011.split('.').take(2).mkString(".")}"
-  def scalaVersion = mill.main.BuildInfo.scalaVersion
-  def compileIvyDeps = super.compileIvyDeps() ++ Agg(
-    ivy"com.lihaoyi::mill-scalanativelib:${mill.main.BuildInfo.millVersion}"
-  )
+// TODO: Update to latest Mill API
+// object `snunit-mill-plugin` extends Common.Shared with Publish with BuildInfo {
+//   def buildInfoMembers = Seq(
+//     BuildInfo.Value("snunitVersion", publishVersion())
+//   )
+//   def buildInfoPackageName = "snunit.plugin.internal"
+//   def artifactName = s"mill-snunit_mill${Versions.mill011.split('.').take(2).mkString(".")}"
+//   def scalaVersion = mill.main.BuildInfo.scalaVersion
+//   def compileIvyDeps = super.compileIvyDeps() ++ Agg(
+//     ivy"com.lihaoyi::mill-scalanativelib:${mill.main.BuildInfo.millVersion}"
+//   )
 
-  object test extends ScalaTests with TestModule.Utest with BuildInfo {
-    def ivyDeps = Agg(
-      ivy"com.lihaoyi::mill-testkit:${mill.main.BuildInfo.millVersion}",
-      ivy"com.lihaoyi::mill-scalanativelib:${mill.main.BuildInfo.millVersion}"
-    )
-    def forkEnv = Map("MILL_EXECUTABLE_PATH" -> millExecutable.assembly().path.toString)
-    def buildInfoMembers = Seq(
-      BuildInfo.Value("scalaNativeVersion", versions.Versions.scalaNative),
-      BuildInfo.Value("scalaVersion", versions.Versions.scala3)
-    )
-    def buildInfoPackageName = "snunit.plugin"
-    object millExecutable extends JavaModule {
-      def ivyDeps = Agg(
-        ivy"com.lihaoyi:mill-dist:${mill.main.BuildInfo.millVersion}"
-      )
-      def mainClass = Some("mill.runner.client.MillClientMain")
-      def resources = Task {
-        // make sure snunit is published
-        snunit.publishLocal()()
+//   object test extends ScalaTests with TestModule.Utest with BuildInfo {
+//     def ivyDeps = Agg(
+//       ivy"com.lihaoyi::mill-testkit:${mill.main.BuildInfo.millVersion}",
+//       ivy"com.lihaoyi::mill-scalanativelib:${mill.main.BuildInfo.millVersion}"
+//     )
+//     def forkEnv = Map("MILL_EXECUTABLE_PATH" -> millExecutable.assembly().path.toString)
+//     def buildInfoMembers = Seq(
+//       BuildInfo.Value("scalaNativeVersion", versions.Versions.scalaNative),
+//       BuildInfo.Value("scalaVersion", versions.Versions.scala3)
+//     )
+//     def buildInfoPackageName = "snunit.plugin"
+//     object millExecutable extends JavaModule {
+//       def ivyDeps = Agg(
+//         ivy"com.lihaoyi:mill-dist:${mill.main.BuildInfo.millVersion}"
+//       )
+//       def mainClass = Some("mill.runner.client.MillClientMain")
+//       def resources = Task {
+//         // make sure snunit is published
+//         snunit.publishLocal()()
 
-        val p = Task.dest / "mill/local-test-overrides" / s"com.lihaoyi-${`snunit-mill-plugin`.artifactId()}"
-        os.write(p, `snunit-mill-plugin`.localClasspath().map(_.path).mkString("\n"), createFolders = true)
-        Seq(PathRef(Task.dest))
-      }
-    }
-  }
-}
+//         val p = Task.dest / "mill/local-test-overrides" / s"com.lihaoyi-${`snunit-mill-plugin`.artifactId()}"
+//         os.write(p, `snunit-mill-plugin`.localClasspath().map(_.path).mkString("\n"), createFolders = true)
+//         Seq(PathRef(Task.dest))
+//       }
+//     }
+//   }
+// }
