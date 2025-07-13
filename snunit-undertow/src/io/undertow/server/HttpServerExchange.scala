@@ -33,7 +33,8 @@ final class HttpServerExchange private[undertow] (private[undertow] val req: Req
       cookieString.split(';').foreach {
         case s"$n=$v" =>
           val name = n.trim()
-          val cookie = CookieImpl(name, v)
+          val value = v.trim()
+          val cookie = CookieImpl(name, value)
           result.put(name, cookie)
         case _ =>
       }
