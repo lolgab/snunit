@@ -1,8 +1,8 @@
 package io.undertow.server.handlers
 
 class CookieImpl(name: String, value: String) extends Cookie {
-  override def getName(): String = ???
-  override def getValue(): String = ???
+  override def getName(): String = name
+  override def getValue(): String = value
   override def getComment(): String = ???
   override def getDomain(): String = ???
   override def getExpires(): java.util.Date = ???

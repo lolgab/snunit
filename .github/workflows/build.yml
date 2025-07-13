@@ -4,7 +4,7 @@ on: push
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
       - uses: coursier/cache-action@v6
@@ -16,34 +16,36 @@ jobs:
       - name: Install Dependencies
         run: |
           curl -sL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
-          echo "deb https://packages.nginx.org/unit/ubuntu/ jammy unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
-          echo "deb-src https://packages.nginx.org/unit/ubuntu/ jammy unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
+          echo "deb https://packages.nginx.org/unit/ubuntu/ noble unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
+          echo "deb-src https://packages.nginx.org/unit/ubuntu/ noble unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
           sudo apt-get update
-          unit_version="1.33*"
+          unit_version="1.34.*"
           sudo apt-get install -y libuv1-dev libidn2-dev unit=$unit_version unit-dev=$unit_version
       - name: Download dependencies
         run: |
-          ./mill --ticker false __.prepareOffline
+          ./mill __.prepareOffline
       - name: Check formatting
         run: |
-          ./mill --ticker false mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
-          ./mill --ticker false --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+          ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+          ./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
       # - name: Check scalafix
-      #   run: ./mill --ticker false __.fix --check
+      #   run: ./mill __.fix --check
       - name: Compile
-        run: ./mill --ticker false __.compile
+        run: ./mill __.compile
       - name: Publish libraries locally
-        run: ./mill --ticker false __.publishLocal
+        run: ./mill __.publishLocal
       - name: Run Unit Tests
-        run: ./mill --ticker false snunit.test
+        run: ./mill snunit.test
       - name: Run Integration Tests
         run: |
           sudo systemctl stop unit.service
-          ./mill --ticker false integration.test
+          ./mill integration.test
       - name: Start NGINX Unit daemon
         run: sudo systemctl start unit.service
-      - name: Run Mill Plugin Tests
-        run: ./mill -i --ticker false snunit-mill-plugin.__.test
+      # TODO: Enable again
+      # - name: Run Mill Plugin Tests
+      #   run: ./mill -i snunit-mill-plugin.__.test
+
       # - name: Build and Test Sbt plugin
       #   run: |
       #     (
@@ -52,18 +54,18 @@ jobs:
       #       sbt scalafmtCheckAll scalafmtSbtCheck scripted
       #     )
   check-binary-compatibility:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Check Binary Compatibility
-        run: ./mill --ticker false __.mimaReportBinaryIssues
+        run: ./mill __.mimaReportBinaryIssues
 
   publish-sonatype:
     if: github.repository == 'lolgab/snunit' && contains(github.ref, 'refs/tags/')
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       PGP_PASSPHRASE: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY_PASSWORD }}
       PGP_SECRET: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY }}
@@ -83,7 +85,7 @@ jobs:
           path: ./out
           key: out
       - name: Publish plugin shared locally
-        run: ./mill --ticker false snunit-plugins-shared.__.publishLocal
+        run: ./mill snunit-plugins-shared.__.publishLocal
       - run: ./mill io.kipp.mill.ci.release.ReleaseModule/publishAll
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}

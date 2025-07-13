@@ -70,6 +70,9 @@ extension (req: Request) {
 
   def query: String = fromCStringAndSize(snunit.unsafe.query(req.request), req.request.query_length)
 
+  /* Index of the cookie header. Returns -1 if there is no Cookie header in the request. */
+  def cookieFieldIndex: Int = snunit.unsafe.cookie_field(req.request)
+
   private inline def addHeader(name: String, value: String): Unit = {
     val n = stringBytes(name)
     val v = stringBytes(value)
