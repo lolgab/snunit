@@ -4,7 +4,7 @@ import $ivy.`com.goyeau::mill-scalafix::0.3.1`
 import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
 import $ivy.`com.github.lolgab::mill-crossplatform::0.2.3`
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
-import $ivy.`com.github.lolgab::mill-mima::0.1.0`
+import $ivy.`com.github.lolgab::mill-mima::0.1.1`
 
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.publish._
