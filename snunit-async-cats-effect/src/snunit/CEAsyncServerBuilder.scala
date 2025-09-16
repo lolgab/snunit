@@ -126,9 +126,10 @@ private[snunit] object CEAsyncServerBuilder {
           )
       )
 
-    def stop(): Unit = {
+    def stop(): Unit = this.synchronized {
       stopped = true
-      PortData.stopped.put(this, ())
+      PortData.stop(this)
+      
     }
   }
 
@@ -139,9 +140,14 @@ private[snunit] object CEAsyncServerBuilder {
 
     def isLastFDStopped: Boolean = references == stopped
 
+    def stop(pd: PortData): Unit = 
+      this.synchronized:
+        PortData.stopped.put(pd, ())  
+
     def register(ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*): Unit =
       val portData = new PortData(ctx, port)
-      references.put(portData, ())
+      this.synchronized:
+        references.put(portData, ())
       port.data = fromRawPtr(Intrinsics.castObjectToRawPtr(portData))
 
     def fromPort(port: nxt_unit_port_t_*): PortData = {
