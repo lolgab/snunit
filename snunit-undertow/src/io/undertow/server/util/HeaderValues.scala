@@ -7,28 +7,8 @@ final class HeaderValues private[undertow] (key: String, value: String)
     with java.util.Deque[String]
     with java.util.List[String] {
   def getHeaderName(): String = key
-  def addFirst(x$1: String): Unit = ???
-  def addLast(x$1: String): Unit = ???
   def descendingIterator(): java.util.Iterator[String] = ???
   def element(): String = ???
-  def getFirst(): String = ???
-  def getLast(): String = ???
-  def offer(x$1: String): Boolean = ???
-  def offerFirst(x$1: String): Boolean = ???
-  def offerLast(x$1: String): Boolean = ???
-  def peek(): String = ???
-  def peekFirst(): String = ???
-  def peekLast(): String = ???
-  def poll(): String = ???
-  def pollFirst(): String = ???
-  def pollLast(): String = ???
-  def pop(): String = ???
-  def push(x$1: String): Unit = ???
-  def remove(): String = ???
-  def removeFirst(): String = ???
-  def removeFirstOccurrence(x$1: Object): Boolean = ???
-  def removeLast(): String = ???
-  def removeLastOccurrence(x$1: Object): Boolean = ???
 
   // Members declared in java.util.List
   def add(x$1: Int, x$2: String): Unit = ???
@@ -43,4 +23,19 @@ final class HeaderValues private[undertow] (key: String, value: String)
   def set(x$1: Int, x$2: String): String = ???
   def size(): Int = ???
   def subList(x$1: Int, x$2: Int): java.util.List[String] = ???
+  def offer(x$0: String): Boolean = ???
+  def offerFirst(x$0: String): Boolean = ???
+  def offerLast(x$0: String): Boolean = ???
+  def peek(): String = ???
+  def peekFirst(): String = ???
+  def peekLast(): String = ???
+  def poll(): String = ???
+  def pollFirst(): String = ???
+  def pollLast(): String = ???
+  def pop(): String = ???
+  def push(x$0: String): Unit = ???
+  def remove(): String = ???
+  def removeFirstOccurrence(x$0: Object): Boolean = ???
+  def removeLastOccurrence(x$0: Object): Boolean = ???
+  override def reversed(): HeaderValues = ???
 }

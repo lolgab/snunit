@@ -22,6 +22,9 @@ private[snunit] object CEAsyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)
   private val init: nxt_unit_init_t_* = initArray.at(0).asInstanceOf[nxt_unit_init_t_*]
 
+  private var host: String = "0.0.0.0"
+  private var port: Int = 8080
+
   private var dispatcher: Dispatcher[IO] = dispatcher
   def setDispatcher[F[_]: LiftIO](dispatcher: Dispatcher[F]): this.type =
     this.dispatcher = new Dispatcher[IO] {
@@ -48,12 +51,20 @@ private[snunit] object CEAsyncServerBuilder {
     ServerBuilder.setWebsocketHandler(websocketHandler)
     this
   }
+  def setHost(host: String): this.type = {
+    this.host = host
+    this
+  }
+  def setPort(port: Int): this.type = {
+    this.port = port
+    this
+  }
   def build: IO[Unit] = IO {
     ServerBuilder.setBaseHandlers(init)
     init.callbacks.add_port = CEAsyncServerBuilder.add_port
     init.callbacks.remove_port = CEAsyncServerBuilder.remove_port
     init.callbacks.quit = CEAsyncServerBuilder.quit
-    nxt_unit_init(init)
+    Zone { nxt_unit_init(init, toCString(host), port) }
   }.flatMap(ctx =>
     if (ctx.isNull) IO.raiseError(new Exception("Failed to create Unit object"))
     else IO.unit
