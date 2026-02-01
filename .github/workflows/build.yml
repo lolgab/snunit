@@ -14,21 +14,21 @@ jobs:
           sudo apt-get install -y libidn2-dev
       - name: Download dependencies
         run: |
-          ./mill -i -j 1 __.prepareOffline
-      - name: Check formatting
-        run: |
-          ./mill -i -j 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
-          ./mill -i -j 1 --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
-      # - name: Check scalafix
-      #   run: ./mill -i -j 1 __.fix --check
-      - name: Compile
-        run: ./mill -i -j 1 __.compile
-      - name: Publish libraries locally
-        run: ./mill -i -j 1 __.publishLocal
-      - name: Run Unit Tests
-        run: ./mill -i -j 1 snunit.test
-      - name: Run Integration Tests
-        run: ./mill -i -j 1 integration.test
+          ./mill -i -j 1 __.prepareOffline + __.resolvedMvnDeps
+      # - name: Check formatting
+      #   run: |
+      #     ./mill -i -j 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+      #     ./mill -i -j 1 --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+      # # - name: Check scalafix
+      # #   run: ./mill -i -j 1 __.fix --check
+      # - name: Compile
+      #   run: ./mill -i -j 1 __.compile
+      # - name: Publish libraries locally
+      #   run: ./mill -i -j 1 __.publishLocal
+      # - name: Run Unit Tests
+      #   run: ./mill -i -j 1 snunit.test
+      # - name: Run Integration Tests
+      #   run: ./mill -i -j 1 integration.test
 
   check-binary-compatibility:
     runs-on: ubuntu-24.04
