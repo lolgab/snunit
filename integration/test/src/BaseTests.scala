@@ -33,6 +33,11 @@ object BaseTests extends TestSuite {
           assert(result == expectedResult)
         }
         locally {
+          val result = request.post(uri"$baseUrl/echo").body("hello").text()
+          val expectedResult = "hello"
+          assert(result == expectedResult)
+        }
+        locally {
           val responseHeaders = request
             .get(uri"$baseUrl/headers")
             .header("foo", "bar")
