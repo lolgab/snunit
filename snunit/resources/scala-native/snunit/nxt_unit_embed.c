@@ -308,19 +308,19 @@ nxt_unit_ctx_t *nxt_unit_init(nxt_unit_init_t *init, const char *host, int port)
     int fd, opt = 1;
     struct sockaddr_in sa;
 
-    if (init == NULL) {
+    if (nxt_slow_path(init == NULL)) {
         fprintf(stderr, "nxt_unit_embed: init is NULL\n");
         fflush(stderr);
         return NULL;
     }
-    if (host == NULL || host[0] == '\0') {
+    if (nxt_slow_path(host == NULL || host[0] == '\0')) {
         fprintf(stderr, "nxt_unit_embed: host is NULL or empty\n");
         fflush(stderr);
         return NULL;
     }
 
     emb = (embed_ctx_t *) calloc(1, sizeof(embed_ctx_t));
-    if (emb == NULL) {
+    if (nxt_slow_path(emb == NULL)) {
         fprintf(stderr, "nxt_unit_embed: calloc failed\n");
         fflush(stderr);
         return NULL;
@@ -338,7 +338,7 @@ nxt_unit_ctx_t *nxt_unit_init(nxt_unit_init_t *init, const char *host, int port)
     emb->port = (port > 0) ? port : 8080;
 
     fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd < 0) {
+    if (nxt_slow_path(fd < 0)) {
         fprintf(stderr, "nxt_unit_embed: socket() failed: %s\n", strerror(errno));
         fflush(stderr);
         free(emb);
@@ -352,7 +352,7 @@ nxt_unit_ctx_t *nxt_unit_init(nxt_unit_init_t *init, const char *host, int port)
         sa.sin_addr.s_addr = INADDR_ANY;
     else
         inet_pton(AF_INET, emb->listen_addr, &sa.sin_addr);
-    if (bind(fd, (struct sockaddr *) &sa, sizeof(sa)) != 0) {
+    if (nxt_slow_path(bind(fd, (struct sockaddr *) &sa, sizeof(sa)) != 0)) {
         fprintf(stderr, "nxt_unit_embed: bind(%s:%d) failed: %s\n",
                 emb->listen_addr, emb->port, strerror(errno));
         fflush(stderr);
@@ -360,14 +360,14 @@ nxt_unit_ctx_t *nxt_unit_init(nxt_unit_init_t *init, const char *host, int port)
         free(emb);
         return NULL;
     }
-    if (listen(fd, 128) != 0) {
+    if (nxt_slow_path(listen(fd, 128) != 0)) {
         fprintf(stderr, "nxt_unit_embed: listen() failed: %s\n", strerror(errno));
         fflush(stderr);
         close(fd);
         free(emb);
         return NULL;
     }
-    if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0) {
+    if (nxt_slow_path(fcntl(fd, F_SETFL, O_NONBLOCK) < 0)) {
         fprintf(stderr, "nxt_unit_embed: fcntl(O_NONBLOCK) failed: %s\n", strerror(errno));
         fflush(stderr);
         close(fd);
@@ -384,7 +384,7 @@ nxt_unit_ctx_t *nxt_unit_init(nxt_unit_init_t *init, const char *host, int port)
 static int run_loop_process_conn(embed_ctx_t *emb, conn_t **p, conn_t *c, int can_read, int can_write, int err_or_hup) {
     int n;
     (void) emb;
-    if (err_or_hup) {
+    if (nxt_slow_path(err_or_hup)) {
         *p = c->next;
 #if EMB_USE_EPOLL || EMB_USE_KQUEUE
         embed_ev_remove_conn(emb, c);
@@ -561,7 +561,7 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
     struct sockaddr_in peer;
     socklen_t peer_len;
 
-    if (ctx == NULL) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(ctx == NULL)) return NXT_UNIT_ERROR;
     emb = (embed_ctx_t *) ((char *) ctx - offsetof(embed_ctx_t, ctx));
     emb->quit = 0;
 
@@ -572,8 +572,8 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
         int nevents, i;
 
         emb->ev_fd = epoll_create(1);
-        if (emb->ev_fd < 0) return NXT_UNIT_ERROR;
-        if (embed_ev_add_listen(emb) != 0) {
+        if (nxt_slow_path(emb->ev_fd < 0)) return NXT_UNIT_ERROR;
+        if (nxt_slow_path(embed_ev_add_listen(emb) != 0)) {
             close(emb->ev_fd);
             emb->ev_fd = -1;
             return NXT_UNIT_ERROR;
@@ -581,23 +581,23 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
         while (!emb->quit) {
             /* -1: block until an event. No spinning (0) or long wait (1000ms). */
             nevents = epoll_wait(emb->ev_fd, events, EMB_EPOLL_MAXEV, -1);
-            if (nevents < 0) { if (errno == EINTR) continue; break; }
-            if (nevents == 0) continue;
+            if (nxt_slow_path(nevents < 0)) { if (errno == EINTR) continue; break; }
+            if (nxt_slow_path(nevents == 0)) continue;
 
             for (i = 0; i < nevents; i++) {
                 int rev = events[i].events;
-                if (events[i].data.ptr == NULL) {
+                if (nxt_slow_path(events[i].data.ptr == NULL)) {
                     /* listen fd */
                     peer_len = sizeof(peer);
                     new_fd = accept(emb->listen_fd, (struct sockaddr *) &peer, &peer_len);
-                    if (new_fd >= 0) {
+                    if (nxt_fast_path(new_fd >= 0)) {
                         fcntl(new_fd, F_SETFL, O_NONBLOCK);
                         setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
                         c = conn_new(new_fd, emb);
-                        if (c != NULL) {
+                        if (nxt_fast_path(c != NULL)) {
                             c->next = conns;
                             conns = c;
-                            if (embed_ev_add_conn(emb, c) != 0) {
+                            if (nxt_slow_path(embed_ev_add_conn(emb, c) != 0)) {
                                 conns = c->next;
                                 conn_free(c);
                             }
@@ -609,11 +609,11 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
                 c = (conn_t *) events[i].data.ptr;
                 p = &conns;
                 while (*p != NULL && *p != c) p = &(*p)->next;
-                if (*p == NULL) continue;
-                if (!run_loop_process_conn(emb, p, c,
+                if (nxt_slow_path(*p == NULL)) continue;
+                if (nxt_slow_path(!run_loop_process_conn(emb, p, c,
                     (rev & EPOLLIN) != 0,
                     (rev & EPOLLOUT) != 0,
-                    (rev & (EPOLLERR | EPOLLHUP)) != 0))
+                    (rev & (EPOLLERR | EPOLLHUP)) != 0))))
                     embed_ev_rearm_conn(emb, c);
             }
         }
@@ -628,16 +628,16 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
         int nevents, i;
 
         emb->ev_fd = kqueue();
-        if (emb->ev_fd < 0) return NXT_UNIT_ERROR;
+        if (nxt_slow_path(emb->ev_fd < 0)) return NXT_UNIT_ERROR;
         emb->kq_mchanges = EMB_KQUEUE_MAXCHANGES;
         emb->kq_changes = (struct kevent *) malloc((size_t) emb->kq_mchanges * sizeof(struct kevent));
-        if (emb->kq_changes == NULL) {
+        if (nxt_slow_path(emb->kq_changes == NULL)) {
             close(emb->ev_fd);
             emb->ev_fd = -1;
             return NXT_UNIT_ERROR;
         }
         emb->kq_nchanges = 0;
-        if (embed_ev_add_listen(emb) != 0) {
+        if (nxt_slow_path(embed_ev_add_listen(emb) != 0)) {
             free(emb->kq_changes);
             close(emb->ev_fd);
             emb->ev_fd = -1;
@@ -647,26 +647,26 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
         while (!emb->quit) {
             nevents = kevent(emb->ev_fd, emb->kq_changes, emb->kq_nchanges, events, EMB_KQUEUE_MAXEV, NULL);
             emb->kq_nchanges = 0;
-            if (nevents < 0) { if (errno == EINTR) continue; break; }
-            if (nevents == 0) continue;
+            if (nxt_slow_path(nevents < 0)) { if (errno == EINTR) continue; break; }
+            if (nxt_slow_path(nevents == 0)) continue;
 
             for (i = 0; i < nevents; i++) {
                 int filter = events[i].filter;
                 int flags = events[i].flags;
                 int err_or_hup = (flags & EV_ERROR) != 0 || (flags & EV_EOF) != 0;
-                if (events[i].udata == NULL) {
+                if (nxt_slow_path(events[i].udata == NULL)) {
                     /* listen fd */
-                    if (filter == EVFILT_READ && !err_or_hup) {
+                    if (nxt_fast_path(filter == EVFILT_READ && !err_or_hup)) {
                         peer_len = sizeof(peer);
                         new_fd = accept(emb->listen_fd, (struct sockaddr *) &peer, &peer_len);
-                        if (new_fd >= 0) {
+                        if (nxt_fast_path(new_fd >= 0)) {
                             fcntl(new_fd, F_SETFL, O_NONBLOCK);
                             setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
                             c = conn_new(new_fd, emb);
-                            if (c != NULL) {
+                            if (nxt_fast_path(c != NULL)) {
                                 c->next = conns;
                                 conns = c;
-                                if (embed_ev_add_conn(emb, c) != 0) {
+                                if (nxt_slow_path(embed_ev_add_conn(emb, c) != 0)) {
                                     conns = c->next;
                                     conn_free(c);
                                 }
@@ -679,8 +679,8 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
                 c = (conn_t *) events[i].udata;
                 p = &conns;
                 while (*p != NULL && *p != c) p = &(*p)->next;
-                if (*p == NULL) continue;
-                if (filter == EVFILT_READ)
+                if (nxt_slow_path(*p == NULL)) continue;
+                if (nxt_fast_path(filter == EVFILT_READ))
                     run_loop_process_conn(emb, p, c, 1, 0, err_or_hup);
                 else if (filter == EVFILT_WRITE)
                     run_loop_process_conn(emb, p, c, 0, 1, err_or_hup);
@@ -698,7 +698,7 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
 
         cap = 64;
         pfds = (struct pollfd *) malloc((size_t) cap * sizeof(struct pollfd));
-        if (pfds == NULL) return NXT_UNIT_ERROR;
+        if (nxt_slow_path(pfds == NULL)) return NXT_UNIT_ERROR;
 
         while (!emb->quit) {
             nfds = 0;
@@ -706,10 +706,10 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
             pfds[nfds].events = POLLIN;
             nfds++;
             for (c = conns; c != NULL; c = c->next) {
-                if (nfds >= cap) {
+                if (nxt_slow_path(nfds >= cap)) {
                     cap *= 2;
                     struct pollfd *np = (struct pollfd *) realloc(pfds, (size_t) cap * sizeof(struct pollfd));
-                    if (np == NULL) { free(pfds); return NXT_UNIT_ERROR; }
+                    if (nxt_slow_path(np == NULL)) { free(pfds); return NXT_UNIT_ERROR; }
                     pfds = np;
                 }
                 pfds[nfds].fd = c->fd;
@@ -720,17 +720,17 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
 
             /* -1: block until an event. No spinning (0) or long wait (1000ms). */
             n = poll(pfds, (nfds_t) nfds, -1);
-            if (n < 0) { if (errno == EINTR) continue; break; }
-            if (n == 0) continue;
+            if (nxt_slow_path(n < 0)) { if (errno == EINTR) continue; break; }
+            if (nxt_slow_path(n == 0)) continue;
 
-            if (pfds[0].revents & POLLIN) {
+            if (nxt_fast_path(pfds[0].revents & POLLIN)) {
                 peer_len = sizeof(peer);
                 new_fd = accept(emb->listen_fd, (struct sockaddr *) &peer, &peer_len);
-                if (new_fd >= 0) {
+                if (nxt_fast_path(new_fd >= 0)) {
                     fcntl(new_fd, F_SETFL, O_NONBLOCK);
                     setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
                     c = conn_new(new_fd, emb);
-                    if (c != NULL) {
+                    if (nxt_fast_path(c != NULL)) {
                         c->next = conns;
                         conns = c;
                     } else
@@ -742,11 +742,11 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
             while (*p != NULL) {
                 c = *p;
                 for (i = 1; i < nfds && pfds[i].fd != c->fd; i++) ;
-                if (i >= nfds) { p = &c->next; continue; }
-                if (!run_loop_process_conn(emb, p, c,
+                if (nxt_slow_path(i >= nfds)) { p = &c->next; continue; }
+                if (nxt_slow_path(!run_loop_process_conn(emb, p, c,
                     (pfds[i].revents & POLLIN) != 0,
                     (pfds[i].revents & POLLOUT) != 0,
-                    (pfds[i].revents & (POLLERR | POLLHUP)) != 0))
+                    (pfds[i].revents & (POLLERR | POLLHUP)) != 0))))
                     p = &(*p)->next;
             }
         }
@@ -787,9 +787,9 @@ int nxt_unit_process_port_msg(nxt_unit_ctx_t *ctx, nxt_unit_port_t *port) {
 
 void nxt_unit_done(nxt_unit_ctx_t *ctx) {
     embed_ctx_t *emb;
-    if (ctx == NULL) return;
+    if (nxt_slow_path(ctx == NULL)) return;
     emb = (embed_ctx_t *) ((char *) ctx - offsetof(embed_ctx_t, ctx));
-    if (emb->listen_fd >= 0) {
+    if (nxt_fast_path(emb->listen_fd >= 0)) {
         close(emb->listen_fd);
         emb->listen_fd = -1;
     }
@@ -831,9 +831,9 @@ static conn_t *current_dispatch_conn;
 
 static conn_t *req_to_conn(nxt_unit_request_info_t *req) {
     conn_t *c;
-    if (req == NULL) return NULL;
+    if (nxt_slow_path(req == NULL)) return NULL;
     c = *(conn_t **)((char *) req - sizeof(conn_t *));
-    if (c != NULL && c->req_info == req) return c;
+    if (nxt_fast_path(c != NULL && c->req_info == req)) return c;
     return current_dispatch_conn;
 }
 
@@ -849,12 +849,12 @@ int nxt_unit_response_init(nxt_unit_request_info_t *req,
     uint16_t status, uint32_t max_fields_count, uint32_t max_fields_size) {
     conn_t *c = req_to_conn(req);
     uint32_t alloc_count;
-    if (c == NULL || c->response != NULL) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(c == NULL || c->response != NULL)) return NXT_UNIT_ERROR;
     alloc_count = max_fields_count < RESPONSE_MIN_FIELDS ? RESPONSE_MIN_FIELDS : max_fields_count;
     pool_align_8(c);
     c->response = (nxt_unit_response_t *) (c->req_pool + c->req_pool_used);
     c->req_pool_used += sizeof(nxt_unit_response_t) + (size_t) alloc_count * sizeof(nxt_unit_field_t);
-    if (c->req_pool_used > REQ_POOL_SIZE) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(c->req_pool_used > REQ_POOL_SIZE)) return NXT_UNIT_ERROR;
     c->response->content_length = 0;
     c->response->fields_count = 0;
     c->response->piggyback_content_length = 0;
@@ -883,9 +883,9 @@ int nxt_unit_response_add_field(nxt_unit_request_info_t *req,
     conn_t *c = req_to_conn(req);
     nxt_unit_field_t *f;
     char *dst;
-    if (c == NULL || c->response == NULL) return NXT_UNIT_ERROR;
-    if (c->response->fields_count >= req->response_max_fields) return NXT_UNIT_ERROR;
-    if (c->req_pool_used + (size_t) name_length + (size_t) value_length + 32 > REQ_POOL_SIZE) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(c == NULL || c->response == NULL)) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(c->response->fields_count >= req->response_max_fields)) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(c->req_pool_used + (size_t) name_length + (size_t) value_length + 32 > REQ_POOL_SIZE)) return NXT_UNIT_ERROR;
     f = &c->response->fields[c->response->fields_count];
     dst = c->req_pool + c->req_pool_used;
     f->hash = (uint16_t) field_hash(name, (size_t) name_length);
@@ -906,7 +906,7 @@ int nxt_unit_response_add_field(nxt_unit_request_info_t *req,
 }
 int nxt_unit_response_add_content(nxt_unit_request_info_t *req, const void *src, uint32_t size) {
     conn_t *c = req_to_conn(req);
-    if (c == NULL || c->response_buf.free + size > c->response_buf.end) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(c == NULL || c->response_buf.free + size > c->response_buf.end)) return NXT_UNIT_ERROR;
     memcpy(c->response_buf.free, src, (size_t) size);
     c->response_buf.free += size;
     c->response->content_length += size;
@@ -915,7 +915,7 @@ int nxt_unit_response_add_content(nxt_unit_request_info_t *req, const void *src,
 int nxt_unit_response_send(nxt_unit_request_info_t *req) {
     conn_t *c = req_to_conn(req);
     int r;
-    if (c == NULL) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(c == NULL)) return NXT_UNIT_ERROR;
     r = conn_send_response(c);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     pthread_mutex_lock(&c->dispatch_mutex);
@@ -931,8 +931,8 @@ int nxt_unit_response_is_sent(nxt_unit_request_info_t *req) {
 }
 nxt_unit_buf_t *nxt_unit_response_buf_alloc(nxt_unit_request_info_t *req, uint32_t size) {
     conn_t *c = req_to_conn(req);
-    if (c == NULL) return NULL;
-    if (c->req_pool_used + size > REQ_POOL_SIZE) return NULL;
+    if (nxt_slow_path(c == NULL)) return NULL;
+    if (nxt_slow_path(c->req_pool_used + size > REQ_POOL_SIZE)) return NULL;
     c->response_buf.start = c->req_pool + c->req_pool_used;
     c->response_buf.free = c->response_buf.start;
     c->response_buf.end = c->response_buf.start + size;
@@ -954,10 +954,10 @@ int nxt_unit_response_upgrade(nxt_unit_request_info_t *req) {
     const char *magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     size_t magic_len = 36;
     int i, n;
-    if (req == NULL || req->request == NULL || !req->request->websocket_handshake)
+    if (nxt_slow_path(req == NULL || req->request == NULL || !req->request->websocket_handshake))
         return NXT_UNIT_ERROR;
     c = req_to_conn(req);
-    if (c == NULL) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(c == NULL)) return NXT_UNIT_ERROR;
     r = req->request;
     for (i = 0; i < (int) r->fields_count; i++) {
         f = &r->fields[i];
@@ -967,7 +967,7 @@ int nxt_unit_response_upgrade(nxt_unit_request_info_t *req) {
             break;
         }
     }
-    if (key_ptr == NULL || key_len == 0 || key_len > 64) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(key_ptr == NULL || key_len == 0 || key_len > 64)) return NXT_UNIT_ERROR;
     memcpy(key_buf, key_ptr, key_len);
     memcpy(key_buf + key_len, magic, magic_len);
     sha1_hash(key_buf, key_len + magic_len, accept_bin);
@@ -975,7 +975,7 @@ int nxt_unit_response_upgrade(nxt_unit_request_info_t *req) {
     n = snprintf(c->send_buf, SEND_BUF_SIZE,
         "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: %s\r\nSec-WebSocket-Version: 13\r\n\r\n",
         accept_b64);
-    if (n <= 0 || (size_t) n >= SEND_BUF_SIZE) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(n <= 0 || (size_t) n >= SEND_BUF_SIZE)) return NXT_UNIT_ERROR;
     c->send_len = (size_t) n;
     c->response_sent = 1;
     c->is_websocket = 1;
@@ -1068,7 +1068,7 @@ uint32_t nxt_unit_buf_max(void) { return 65536; }
 uint32_t nxt_unit_buf_min(void) { return 4096; }
 int nxt_unit_response_write(nxt_unit_request_info_t *req, const void *start, size_t size) {
     conn_t *c = req_to_conn(req);
-    if (c == NULL || c->response_buf.free + size > c->response_buf.end) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(c == NULL || c->response_buf.free + size > c->response_buf.end)) return NXT_UNIT_ERROR;
     memcpy(c->response_buf.free, start, size);
     c->response_buf.free += size;
     c->response->content_length += (uint64_t) size;
@@ -1077,7 +1077,7 @@ int nxt_unit_response_write(nxt_unit_request_info_t *req, const void *start, siz
 ssize_t nxt_unit_response_write_nb(nxt_unit_request_info_t *req,
     const void *start, size_t size, size_t min_size) {
     (void) min_size;
-    if (nxt_unit_response_write(req, start, size) != NXT_UNIT_OK) return -1;
+    if (nxt_slow_path(nxt_unit_response_write(req, start, size) != NXT_UNIT_OK)) return -1;
     return (ssize_t) size;
 }
 int nxt_unit_response_write_cb(nxt_unit_request_info_t *req, nxt_unit_read_info_t *read_info) {
@@ -1088,7 +1088,7 @@ int nxt_unit_response_write_cb(nxt_unit_request_info_t *req, nxt_unit_read_info_
 ssize_t nxt_unit_request_read(nxt_unit_request_info_t *req, void *dst, size_t size) {
     conn_t *c = req_to_conn(req);
     size_t avail;
-    if (c == NULL) return -1;
+    if (nxt_slow_path(c == NULL)) return -1;
     avail = c->recv_len - c->recv_parsed;
     if (size > avail) size = avail;
     memcpy(dst, c->recv_buf + c->recv_parsed, size);
@@ -1103,7 +1103,7 @@ ssize_t nxt_unit_request_readline_size(nxt_unit_request_info_t *req, size_t max_
 void nxt_unit_request_done(nxt_unit_request_info_t *req, int rc) {
     conn_t *c = req_to_conn(req);
     (void) rc;
-    if (c != NULL) {
+    if (nxt_fast_path(c != NULL)) {
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
         pthread_mutex_lock(&c->dispatch_mutex);
         c->handler_done = 1;
@@ -1118,12 +1118,12 @@ int nxt_unit_websocket_send(nxt_unit_request_info_t *req, uint8_t opcode,
     conn_t *c;
     size_t len, header_len, total;
     uint8_t *p;
-    if (req == NULL) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(req == NULL)) return NXT_UNIT_ERROR;
     c = req_to_conn(req);
-    if (c == NULL || !c->is_websocket) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(c == NULL || !c->is_websocket)) return NXT_UNIT_ERROR;
     header_len = 2 + (size > 125 ? (size > 65535 ? 8 : 2) : 0);
     total = header_len + size;
-    if (c->send_len + total > SEND_BUF_SIZE) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(c->send_len + total > SEND_BUF_SIZE)) return NXT_UNIT_ERROR;
     p = (uint8_t *) (c->send_buf + c->send_len);
     p[0] = (uint8_t) ((last ? 0x80 : 0) | (opcode & 0x0F));
     if (size <= 125) {
@@ -1145,19 +1145,19 @@ int nxt_unit_websocket_sendv(nxt_unit_request_info_t *req, uint8_t opcode,
     uint8_t last, const struct iovec *iov, int iovcnt) {
     size_t total = 0;
     int i;
-    if (req == NULL || iov == NULL) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(req == NULL || iov == NULL)) return NXT_UNIT_ERROR;
     for (i = 0; i < iovcnt; i++)
         total += iov[i].iov_len;
-    if (total == 0)
+    if (nxt_slow_path(total == 0))
         return nxt_unit_websocket_send(req, opcode, last, NULL, 0);
-    if (total > SEND_BUF_SIZE) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(total > SEND_BUF_SIZE)) return NXT_UNIT_ERROR;
     {
         conn_t *c = req_to_conn(req);
         size_t len, header_len, off = 0;
         uint8_t *p;
-        if (c == NULL || !c->is_websocket) return NXT_UNIT_ERROR;
+        if (nxt_slow_path(c == NULL || !c->is_websocket)) return NXT_UNIT_ERROR;
         header_len = 2 + (total > 125 ? (total > 65535 ? 8 : 2) : 0);
-        if (c->send_len + header_len + total > SEND_BUF_SIZE) return NXT_UNIT_ERROR;
+        if (nxt_slow_path(c->send_len + header_len + total > SEND_BUF_SIZE)) return NXT_UNIT_ERROR;
         p = (uint8_t *) (c->send_buf + c->send_len);
         p[0] = (uint8_t) ((last ? 0x80 : 0) | (opcode & 0x0F));
         if (total <= 125) {
@@ -1184,9 +1184,9 @@ ssize_t nxt_unit_websocket_read(nxt_unit_websocket_frame_t *ws, void *dst, size_
     conn_t *c;
     size_t avail;
     ssize_t res;
-    if (ws == NULL || dst == NULL) return -1;
+    if (nxt_slow_path(ws == NULL || dst == NULL)) return -1;
     c = req_to_conn(ws->req);
-    if (c == NULL) return -1;
+    if (nxt_slow_path(c == NULL)) return -1;
     avail = (size_t) (ws->content_buf->end - ws->content_buf->free);
     if (size > avail) size = avail;
     memcpy(dst, ws->content_buf->free, size);
@@ -1201,9 +1201,9 @@ int nxt_unit_websocket_retain(nxt_unit_websocket_frame_t *ws) {
 }
 void nxt_unit_websocket_done(nxt_unit_websocket_frame_t *ws) {
     conn_t *c;
-    if (ws == NULL) return;
+    if (nxt_slow_path(ws == NULL)) return;
     c = req_to_conn(ws->req);
-    if (c != NULL)
+    if (nxt_fast_path(c != NULL))
         c->recv_parsed += c->ws_frame_size;
 }
 
@@ -1244,7 +1244,7 @@ static uint16_t field_hash(const char *name, size_t len) {
 
 static conn_t *conn_new(int fd, embed_ctx_t *emb) {
     conn_t *c = (conn_t *) calloc(1, sizeof(conn_t));
-    if (c == NULL) return NULL;
+    if (nxt_slow_path(c == NULL)) return NULL;
     c->fd = fd;
     c->emb = emb;
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
@@ -1255,8 +1255,8 @@ static conn_t *conn_new(int fd, embed_ctx_t *emb) {
 }
 
 static void conn_free(conn_t *c) {
-    if (c == NULL) return;
-    if (c->fd >= 0) close(c->fd);
+    if (nxt_slow_path(c == NULL)) return;
+    if (nxt_fast_path(c->fd >= 0)) close(c->fd);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     pthread_mutex_destroy(&c->dispatch_mutex);
     pthread_cond_destroy(&c->dispatch_cond);
@@ -1297,7 +1297,7 @@ static int conn_parse_request(conn_t *c) {
     char *host_value = NULL;
     size_t host_value_len = 0;
 
-    if (c->req_info != NULL) return 0;
+    if (nxt_fast_path(c->req_info != NULL)) return 0;
     end = c->recv_buf + c->recv_len;
     headers_end = 0;
     for (p = c->recv_buf + c->recv_parsed; p + 2 <= end; p++) {
@@ -1310,13 +1310,13 @@ static int conn_parse_request(conn_t *c) {
             break;
         }
     }
-    if (headers_end == 0) return 0;
+    if (nxt_slow_path(headers_end == 0)) return 0;
     c->recv_parsed = headers_end;
     c->headers_end = headers_end;  /* Store for calculating consumed later */
     end = c->recv_buf + headers_end;  /* parse only up to end of headers */
 
     /* Allocate conn* then request_info so req_to_conn can get conn from req (works from any thread) */
-    if (c->req_pool_used + 8 + sizeof(conn_t *) + sizeof(nxt_unit_request_info_t) + sizeof(nxt_unit_request_t) + 64 * sizeof(nxt_unit_field_t) + 4096 > REQ_POOL_MAX)
+    if (nxt_slow_path(c->req_pool_used + 8 + sizeof(conn_t *) + sizeof(nxt_unit_request_info_t) + sizeof(nxt_unit_request_t) + 64 * sizeof(nxt_unit_field_t) + 4096 > REQ_POOL_MAX))
         return -1;
     pool_align_8(c);
     *(conn_t **)(c->req_pool + c->req_pool_used) = c;
@@ -1547,12 +1547,12 @@ static int conn_send_response(conn_t *c) {
     int n, i;
     size_t len, body_len;
 
-    if (c->response_sent)
+    if (nxt_fast_path(c->response_sent))
         return NXT_UNIT_OK;
     /* Note: We always build headers here because response_sent == 0 means we're starting a new response.
      * Reset send_len to 0 to clear any leftover data from a previous response. */
     c->send_len = 0;
-    if (c->response == NULL) {
+    if (nxt_slow_path(c->response == NULL)) {
         snprintf(c->send_buf, sizeof(c->send_buf),
             "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
         c->send_len = strlen(c->send_buf);
@@ -1561,7 +1561,7 @@ static int conn_send_response(conn_t *c) {
     r = c->response;
     body_len = (size_t)(c->response_buf.free - c->response_buf.start);
     n = snprintf(status_line, sizeof(status_line), "HTTP/1.1 %u \r\n", (unsigned) r->status);
-    if (n <= 0 || (size_t) n >= sizeof(status_line)) return NXT_UNIT_ERROR;
+    if (nxt_slow_path(n <= 0 || (size_t) n >= sizeof(status_line))) return NXT_UNIT_ERROR;
     len = 0;
     if (len + (size_t) n <= SEND_BUF_SIZE)
         memcpy(c->send_buf + len, status_line, (size_t) n);
