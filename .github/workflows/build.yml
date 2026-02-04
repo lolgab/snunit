@@ -14,21 +14,21 @@ jobs:
           sudo apt-get install -y libidn2-dev
       - name: Download dependencies
         run: |
-          ./mill -i -j 1 __.prepareOffline + __.resolvedMvnDeps
+          ./mill __.prepareOffline + __.resolvedMvnDeps
       - name: Check formatting
         run: |
-          ./mill -i -j 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
-          ./mill -i -j 1 --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+          ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+          ./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
       # - name: Check scalafix
-      #   run: ./mill -i -j 1 __.fix --check
+      #   run: ./mill __.fix --check
       - name: Compile
-        run: ./mill -i -j 1 __.compile
+        run: ./mill __.compile
       - name: Publish libraries locally
-        run: ./mill -i -j 1 __.publishLocal
+        run: ./mill __.publishLocal
       - name: Run Unit Tests
-        run: ./mill -i -j 1 snunit.test
+        run: ./mill snunit.test
       - name: Run Integration Tests
-        run: ./mill -i -j 1 integration.test
+        run: ./mill integration.test
 
   check-binary-compatibility:
     runs-on: ubuntu-24.04
@@ -37,7 +37,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Check Binary Compatibility
-        run: ./mill -i -j 1 __.mimaReportBinaryIssues
+        run: ./mill __.mimaReportBinaryIssues
 
   publish-sonatype:
     if: github.repository == 'lolgab/snunit' && contains(github.ref, 'refs/tags/')
@@ -60,7 +60,7 @@ jobs:
             echo $SONATYPE_PGP_PRIVATE_KEY | base64 --decode > gpg_key
             gpg --import --no-tty --batch --yes gpg_key
             rm gpg_key
-            ./mill -i -j 1 mill.scalalib.SonatypeCentralPublishModule/publishAll \
+            ./mill mill.scalalib.SonatypeCentralPublishModule/publishAll \
               --username "$SONATYPE_USER" \
               --password "$SONATYPE_PASSWORD" \
               --gpgArgs "--passphrase=$SONATYPE_PGP_PRIVATE_KEY_PASSWORD,--no-tty,--pinentry-mode,loopback,--batch,--yes,-a,-b" \
