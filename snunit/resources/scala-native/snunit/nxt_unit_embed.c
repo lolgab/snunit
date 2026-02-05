@@ -155,6 +155,7 @@ typedef struct {
 typedef struct conn conn_t;
 struct conn {
     conn_t      *next;
+    conn_t     **prev;   /* & of the pointer that points to this node; O(1) unlink (from nxt_unit_mmap_buf); NULL when removed */
     int         fd;
     char        recv_buf[RECV_BUF_SIZE];
     size_t      recv_len;
@@ -194,10 +195,22 @@ static embed_ctx_t *global_emb;
 
 static conn_t *conn_new(int fd, embed_ctx_t *emb);
 static void conn_free(conn_t *c);
+/* O(1) insert/unlink adapted from nxt_unit_mmap_buf_insert/nxt_unit_mmap_buf_unlink (nxt_unit.c) */
+static inline void conn_insert(conn_t **head, conn_t *c) {
+    c->next = *head;
+    if (c->next != NULL) c->next->prev = &c->next;
+    *head = c;
+    c->prev = head;
+}
+static inline void conn_unlink(conn_t *c) {
+    conn_t **p = c->prev;
+    if (c->next != NULL) c->next->prev = p;
+    if (p != NULL) *p = c->next;
+}
 static int conn_parse_request(conn_t *c);
 static int conn_dispatch_request(conn_t *c);
 static int conn_send_response(conn_t *c);
-static int conn_parse_websocket_frames(embed_ctx_t *emb, conn_t **p, conn_t *c);
+static int conn_parse_websocket_frames(embed_ctx_t *emb, conn_t *c);
 static uint16_t field_hash(const char *name, size_t len);
 
 #if EMB_USE_EPOLL
@@ -380,19 +393,23 @@ nxt_unit_ctx_t *nxt_unit_init(nxt_unit_init_t *init, const char *host, int port)
 }
 
 /* --- nxt_unit_run --- */
-/* Returns 1 if conn was removed (caller must not advance p), 0 otherwise. */
-static int run_loop_process_conn(embed_ctx_t *emb, conn_t **p, conn_t *c, int can_read, int can_write, int err_or_hup) {
+/* Returns 1 if conn was removed (caller must not advance p), 0 otherwise.
+ * Removed conns are appended to *pending_free for deferred free (avoids use-after-free when
+ * epoll/kqueue delivers multiple events for the same fd in one batch). */
+static int run_loop_process_conn(embed_ctx_t *emb, conn_t *c, int can_read, int can_write, int err_or_hup, conn_t **pending_free) {
     int n;
     (void) emb;
     if (nxt_slow_path(err_or_hup)) {
-        *p = c->next;
+        conn_unlink(c);
+        c->prev = NULL;
+        c->next = *pending_free;
+        *pending_free = c;
 #if EMB_USE_EPOLL || EMB_USE_KQUEUE
         embed_ev_remove_conn(emb, c);
 #if EMB_USE_KQUEUE
         embed_kq_flush(emb);
 #endif
 #endif
-        conn_free(c);
         return 1;
     }
     /* Drain send buffer: up to EMB_DRAIN_MAX_WRITE write() per wakeup. */
@@ -416,14 +433,16 @@ static int run_loop_process_conn(embed_ctx_t *emb, conn_t **p, conn_t *c, int ca
             }
             if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
                 break;
-            *p = c->next;
+            conn_unlink(c);
+            c->prev = NULL;
+            c->next = *pending_free;
+            *pending_free = c;
 #if EMB_USE_EPOLL || EMB_USE_KQUEUE
             embed_ev_remove_conn(emb, c);
 #if EMB_USE_KQUEUE
             embed_kq_flush(emb);
 #endif
 #endif
-            conn_free(c);
             return 1;
         }
     }
@@ -444,50 +463,58 @@ static int run_loop_process_conn(embed_ctx_t *emb, conn_t **p, conn_t *c, int ca
                 continue;
             }
             if (n == 0) {
-                *p = c->next;
+                conn_unlink(c);
+                c->prev = NULL;
+                c->next = *pending_free;
+                *pending_free = c;
 #if EMB_USE_EPOLL || EMB_USE_KQUEUE
                 embed_ev_remove_conn(emb, c);
 #if EMB_USE_KQUEUE
                 embed_kq_flush(emb);
 #endif
 #endif
-                conn_free(c);
                 return 1;
             }
             if (errno == EAGAIN || errno == EWOULDBLOCK)
                 break;
-            *p = c->next;
+            conn_unlink(c);
+            c->prev = NULL;
+            c->next = *pending_free;
+            *pending_free = c;
 #if EMB_USE_EPOLL || EMB_USE_KQUEUE
             embed_ev_remove_conn(emb, c);
 #if EMB_USE_KQUEUE
             embed_kq_flush(emb);
 #endif
 #endif
-            conn_free(c);
             return 1;
             }
         }
         if (c->recv_len == 0) {
-            *p = c->next;
+            conn_unlink(c);
+            c->prev = NULL;
+            c->next = *pending_free;
+            *pending_free = c;
 #if EMB_USE_EPOLL || EMB_USE_KQUEUE
             embed_ev_remove_conn(emb, c);
 #if EMB_USE_KQUEUE
             embed_kq_flush(emb);
 #endif
 #endif
-            conn_free(c);
             return 1;
         }
         if (c->is_websocket) {
-            if (conn_parse_websocket_frames(emb, p, c) != 0) {
-                *p = c->next;
+            if (conn_parse_websocket_frames(emb, c) != 0) {
+                conn_unlink(c);
+                c->prev = NULL;
+                c->next = *pending_free;
+                *pending_free = c;
 #if EMB_USE_EPOLL || EMB_USE_KQUEUE
                 embed_ev_remove_conn(emb, c);
 #if EMB_USE_KQUEUE
                 embed_kq_flush(emb);
 #endif
 #endif
-                conn_free(c);
                 return 1;
             }
 #if EMB_USE_EPOLL || EMB_USE_KQUEUE
@@ -495,14 +522,16 @@ static int run_loop_process_conn(embed_ctx_t *emb, conn_t **p, conn_t *c, int ca
 #endif
         } else {
             if (conn_parse_request(c) != 0) {
-                *p = c->next;
+                conn_unlink(c);
+                c->prev = NULL;
+                c->next = *pending_free;
+                *pending_free = c;
 #if EMB_USE_EPOLL || EMB_USE_KQUEUE
                 embed_ev_remove_conn(emb, c);
 #if EMB_USE_KQUEUE
                 embed_kq_flush(emb);
 #endif
 #endif
-                conn_free(c);
                 return 1;
             }
             /* If we have req_info but not yet request_ready, we may be waiting for the full body (Content-Length) */
@@ -570,6 +599,7 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
 #define EMB_EPOLL_MAXEV 256
         struct epoll_event events[EMB_EPOLL_MAXEV];
         int nevents, i;
+        conn_t *pending_free;
 
         emb->ev_fd = epoll_create(1);
         if (nxt_slow_path(emb->ev_fd < 0)) return NXT_UNIT_ERROR;
@@ -584,6 +614,7 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
             if (nxt_slow_path(nevents < 0)) { if (errno == EINTR) continue; break; }
             if (nxt_slow_path(nevents == 0)) continue;
 
+            pending_free = NULL;
             for (i = 0; i < nevents; i++) {
                 int rev = events[i].events;
                 if (nxt_slow_path(events[i].data.ptr == NULL)) {
@@ -595,10 +626,9 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
                         setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
                         c = conn_new(new_fd, emb);
                         if (nxt_fast_path(c != NULL)) {
-                            c->next = conns;
-                            conns = c;
+                            conn_insert(&conns, c);
                             if (nxt_slow_path(embed_ev_add_conn(emb, c) != 0)) {
-                                conns = c->next;
+                                conn_unlink(c);
                                 conn_free(c);
                             }
                         } else
@@ -607,14 +637,17 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
                     continue;
                 }
                 c = (conn_t *) events[i].data.ptr;
-                p = &conns;
-                while (*p != NULL && *p != c) p = &(*p)->next;
-                if (nxt_slow_path(*p == NULL)) continue;
-                if (nxt_slow_path(!run_loop_process_conn(emb, p, c,
+                if (nxt_slow_path(c->prev == NULL)) continue;  /* already removed this batch */
+                if (nxt_slow_path(!run_loop_process_conn(emb, c,
                     (rev & EPOLLIN) != 0,
                     (rev & EPOLLOUT) != 0,
-                    (rev & (EPOLLERR | EPOLLHUP)) != 0))))
+                    (rev & (EPOLLERR | EPOLLHUP)) != 0, &pending_free)))
                     embed_ev_rearm_conn(emb, c);
+            }
+            while (pending_free != NULL) {
+                c = pending_free;
+                pending_free = c->next;
+                conn_free(c);
             }
         }
         close(emb->ev_fd);
@@ -626,6 +659,7 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
 #define EMB_KQUEUE_MAXCHANGES 512
         struct kevent events[EMB_KQUEUE_MAXEV];
         int nevents, i;
+        conn_t *pending_free;
 
         emb->ev_fd = kqueue();
         if (nxt_slow_path(emb->ev_fd < 0)) return NXT_UNIT_ERROR;
@@ -650,6 +684,7 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
             if (nxt_slow_path(nevents < 0)) { if (errno == EINTR) continue; break; }
             if (nxt_slow_path(nevents == 0)) continue;
 
+            pending_free = NULL;
             for (i = 0; i < nevents; i++) {
                 int filter = events[i].filter;
                 int flags = events[i].flags;
@@ -664,10 +699,9 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
                             setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
                             c = conn_new(new_fd, emb);
                             if (nxt_fast_path(c != NULL)) {
-                                c->next = conns;
-                                conns = c;
+                                conn_insert(&conns, c);
                                 if (nxt_slow_path(embed_ev_add_conn(emb, c) != 0)) {
-                                    conns = c->next;
+                                    conn_unlink(c);
                                     conn_free(c);
                                 }
                             } else
@@ -677,13 +711,16 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
                     continue;
                 }
                 c = (conn_t *) events[i].udata;
-                p = &conns;
-                while (*p != NULL && *p != c) p = &(*p)->next;
-                if (nxt_slow_path(*p == NULL)) continue;
+                if (nxt_slow_path(c->prev == NULL)) continue;  /* already removed this batch */
                 if (nxt_fast_path(filter == EVFILT_READ))
-                    run_loop_process_conn(emb, p, c, 1, 0, err_or_hup);
+                    run_loop_process_conn(emb, c, 1, 0, err_or_hup, &pending_free);
                 else if (filter == EVFILT_WRITE)
-                    run_loop_process_conn(emb, p, c, 0, 1, err_or_hup);
+                    run_loop_process_conn(emb, c, 0, 1, err_or_hup, &pending_free);
+            }
+            while (pending_free != NULL) {
+                c = pending_free;
+                pending_free = c->next;
+                conn_free(c);
             }
         }
         free(emb->kq_changes);
@@ -695,6 +732,7 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
     {
         struct pollfd *pfds;
         int nfds, cap, i;
+        conn_t *pending_free;
 
         cap = 64;
         pfds = (struct pollfd *) malloc((size_t) cap * sizeof(struct pollfd));
@@ -731,23 +769,28 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
                     setsockopt(new_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
                     c = conn_new(new_fd, emb);
                     if (nxt_fast_path(c != NULL)) {
-                        c->next = conns;
-                        conns = c;
+                        conn_insert(&conns, c);
                     } else
                         close(new_fd);
                 }
             }
 
+            pending_free = NULL;
             p = &conns;
             while (*p != NULL) {
                 c = *p;
                 for (i = 1; i < nfds && pfds[i].fd != c->fd; i++) ;
                 if (nxt_slow_path(i >= nfds)) { p = &c->next; continue; }
-                if (nxt_slow_path(!run_loop_process_conn(emb, p, c,
+                if (nxt_slow_path(!run_loop_process_conn(emb, c,
                     (pfds[i].revents & POLLIN) != 0,
                     (pfds[i].revents & POLLOUT) != 0,
-                    (pfds[i].revents & (POLLERR | POLLHUP)) != 0))))
-                    p = &(*p)->next;
+                    (pfds[i].revents & (POLLERR | POLLHUP)) != 0, &pending_free)))
+                    p = &c->next;
+            }
+            while (pending_free != NULL) {
+                c = pending_free;
+                pending_free = c->next;
+                conn_free(c);
             }
         }
         free(pfds);
@@ -987,13 +1030,11 @@ int nxt_unit_response_is_websocket(nxt_unit_request_info_t *req) {
 }
 
 /* Parse WebSocket frames from recv_buf; dispatch each to websocket_handler. Returns 0 on success, -1 on error/close. */
-static int conn_parse_websocket_frames(embed_ctx_t *emb, conn_t **p, conn_t *c) {
+static int conn_parse_websocket_frames(embed_ctx_t *emb, conn_t *c) {
     size_t payload_len, frame_len, ext_len, i;
     uint8_t *buf;
     uint64_t payload_len64;
     conn_t *prev_conn;
-
-    (void) p;
     while (c->recv_parsed + 2 <= c->recv_len) {
         buf = (uint8_t *) (c->recv_buf + c->recv_parsed);
         memcpy(&c->ws_header, buf, 2);
