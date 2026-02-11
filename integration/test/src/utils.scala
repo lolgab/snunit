@@ -10,7 +10,7 @@ import sttp.client3.HttpClientFutureBackend
 private def runMillCommand(command: String) = os
   .proc(
     "./mill",
-    // adding `-i` breaks the ability to close unitd processes
+    "-i",
     "--no-build-lock",
     "--ticker",
     "false",

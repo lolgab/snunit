@@ -25,6 +25,8 @@ jobs:
         run: ./mill __.compile
       - name: Publish libraries locally
         run: ./mill __.publishLocal
+      - name: Link all test binaries
+        run: ./mill __.nativeLink
       - name: Run Unit Tests
         run: ./mill snunit.test
       - name: Run Integration Tests
