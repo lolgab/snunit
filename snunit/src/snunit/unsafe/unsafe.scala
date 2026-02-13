@@ -145,15 +145,18 @@ object externs {
    * Allocate response structure capable to store limited numer of fields.
    * The structure may be accessed directly via req->response pointer or
    * filled step-by-step using functions add_field and add_content.
+   *
+   * Marked @blocking so handlers run on separate threads (e.g. ExecutionContext)
+   * can call these without preventing the GC from reaching safepoints.
    */
-  def nxt_unit_response_init(
+  @blocking def nxt_unit_response_init(
       req: nxt_unit_request_info_t_*,
       status: CShort,
       max_fields_count: CInt,
       max_fields_size: CInt
   ): CInt = extern
 
-  def nxt_unit_response_add_field(
+  @blocking def nxt_unit_response_add_field(
       req: nxt_unit_request_info_t_*,
       name: CString,
       name_length: Byte,
@@ -161,32 +164,32 @@ object externs {
       value_length: Int
   ): CInt = extern
 
-  def nxt_unit_response_add_content(req: nxt_unit_request_info_t_*, src: CString, size: Int): CInt = extern
+  @blocking def nxt_unit_response_add_content(req: nxt_unit_request_info_t_*, src: CString, size: Int): CInt = extern
 
   @blocking def nxt_unit_response_send(req: nxt_unit_request_info_t_*): CInt = extern
 
-  def nxt_unit_response_buf_alloc(req: nxt_unit_request_info_t_*, size: CInt): nxt_unit_buf_t_* = extern
+  @blocking def nxt_unit_response_buf_alloc(req: nxt_unit_request_info_t_*, size: CInt): nxt_unit_buf_t_* = extern
 
-  def nxt_unit_request_is_websocket_handshake(req: nxt_unit_request_info_t_*): CInt = extern
+  @blocking def nxt_unit_request_is_websocket_handshake(req: nxt_unit_request_info_t_*): CInt = extern
 
-  def nxt_unit_response_upgrade(req: nxt_unit_request_info_t_*): CInt = extern
+  @blocking def nxt_unit_response_upgrade(req: nxt_unit_request_info_t_*): CInt = extern
 
-  def nxt_unit_response_write_nb(
+  @blocking def nxt_unit_response_write_nb(
       req: nxt_unit_request_info_t_*,
       start: CString,
       size: CSize,
       min_size: CSize
   ): CSSize = extern
 
-  def nxt_unit_buf_send(buf: nxt_unit_buf_t_*): CInt = extern
+  @blocking def nxt_unit_buf_send(buf: nxt_unit_buf_t_*): CInt = extern
 
-  def nxt_unit_request_read(req: nxt_unit_request_info_t_*, dst: CVoidPtr, size: CSize): CSSize = extern
+  @blocking def nxt_unit_request_read(req: nxt_unit_request_info_t_*, dst: CVoidPtr, size: CSize): CSSize = extern
 
-  def nxt_unit_request_done(req: nxt_unit_request_info_t_*, rc: CInt): Unit = extern
+  @blocking def nxt_unit_request_done(req: nxt_unit_request_info_t_*, rc: CInt): Unit = extern
 
-  def nxt_unit_websocket_read(ws: nxt_unit_websocket_frame_t_*, dest: CVoidPtr, size: CSize): CSSize = extern
+  @blocking def nxt_unit_websocket_read(ws: nxt_unit_websocket_frame_t_*, dest: CVoidPtr, size: CSize): CSSize = extern
 
-  def nxt_unit_websocket_send(
+  @blocking def nxt_unit_websocket_send(
       req: nxt_unit_request_info_t_*,
       opcode: Byte,
       last: Byte,
@@ -194,7 +197,7 @@ object externs {
       size: CSize
   ): CInt = extern
 
-  def nxt_unit_websocket_done(ws: nxt_unit_websocket_frame_t_*): Unit = extern
+  @blocking def nxt_unit_websocket_done(ws: nxt_unit_websocket_frame_t_*): Unit = extern
 
   def nxt_unit_log(ctx: nxt_unit_ctx_t_*, level: Int, fmt: CString): Unit = extern
 }
