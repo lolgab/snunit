@@ -133,9 +133,9 @@ object externs {
    *
    * The normally function returns when QUIT message received from Unit.
    */
-  def nxt_unit_run(ctx: nxt_unit_ctx_t_*): CInt = extern
+  @blocking def nxt_unit_run(ctx: nxt_unit_ctx_t_*): CInt = extern
 
-  def nxt_unit_run_once(ctx: nxt_unit_ctx_t_*): CInt = extern
+  @blocking def nxt_unit_run_once(ctx: nxt_unit_ctx_t_*): CInt = extern
 
   def nxt_unit_process_port_msg(ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*): CInt = extern
 
@@ -163,7 +163,7 @@ object externs {
 
   def nxt_unit_response_add_content(req: nxt_unit_request_info_t_*, src: CString, size: Int): CInt = extern
 
-  def nxt_unit_response_send(req: nxt_unit_request_info_t_*): CInt = extern
+  @blocking def nxt_unit_response_send(req: nxt_unit_request_info_t_*): CInt = extern
 
   def nxt_unit_response_buf_alloc(req: nxt_unit_request_info_t_*, size: CInt): nxt_unit_buf_t_* = extern
 

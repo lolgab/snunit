@@ -125,6 +125,13 @@ static void base64_encode(const unsigned char *in, size_t inlen, char *out, size
 }
 
 /* --- Embed context --- */
+typedef struct conn conn_t;
+
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+/* Sentinel udata for handler wake pipe (main loop never blocks on a single request, like NGINX Unit). */
+static void *const handler_pipe_udata = (void *) (intptr_t) 1;
+#endif
+
 typedef struct {
     nxt_unit_t      unit;
     nxt_unit_ctx_t  ctx;
@@ -134,6 +141,10 @@ typedef struct {
     char            listen_addr[64];
     int             quit;
     int             ev_fd;  /* epoll fd (Linux) or kqueue fd (BSD/macOS); -1 when not running */
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    int             handler_pipe[2];  /* [0]=read (in event loop), [1]=write (worker signals) */
+    conn_t         **conns;          /* set in run loop so pipe handler can iterate */
+#endif
 #if EMB_USE_KQUEUE
     struct kevent   *kq_changes;   /* batched changes; applied in main loop kevent() */
     int             kq_nchanges;
@@ -152,7 +163,6 @@ typedef struct {
 #define RESPONSE_POOL_RESERVE  8192
 #define REQ_POOL_MAX  (REQ_POOL_SIZE - RESPONSE_POOL_RESERVE)
 
-typedef struct conn conn_t;
 struct conn {
     conn_t      *next;
     conn_t     **prev;   /* & of the pointer that points to this node; O(1) unlink (from nxt_unit_mmap_buf); NULL when removed */
@@ -167,10 +177,12 @@ struct conn {
     int         response_sent;
     embed_ctx_t *emb;
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    /* Sync when handler runs on another thread (e.g. BlockingHandler): main thread waits until handler calls response_send or request_done. */
+    /* Handler runs on another thread (like NGINX Unit: invoke and continue, no blocking). */
     pthread_mutex_t         dispatch_mutex;
     pthread_cond_t          dispatch_cond;
-    int                     handler_done;
+    int                     handler_done;   /* set by worker when response_send/request_done */
+    int                     handler_started; /* main thread dispatched this request */
+    int                     client_closed;  /* client hung up while handler running; free when handler_done */
 #endif
     /* Request/response structs point into req_pool */
     nxt_unit_request_info_t *req_info;
@@ -181,6 +193,7 @@ struct conn {
     nxt_unit_buf_t           content_buf;
     char                     req_pool[REQ_POOL_SIZE];
     size_t                   req_pool_used;
+    size_t                   response_pool_end;  /* when > 0, response allocated from end of pool (worker after cleanup) */
     int                      is_websocket;
     /* WebSocket frame state (when is_websocket) */
     nxt_websocket_header_t   ws_header;
@@ -212,6 +225,9 @@ static int conn_dispatch_request(conn_t *c);
 static int conn_send_response(conn_t *c);
 static int conn_parse_websocket_frames(embed_ctx_t *emb, conn_t *c);
 static uint16_t field_hash(const char *name, size_t len);
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+static void conn_handler_done_cleanup(conn_t *c);
+#endif
 
 #if EMB_USE_EPOLL
 static int embed_ev_add_listen(embed_ctx_t *emb);
@@ -227,6 +243,7 @@ static int embed_ev_add_listen(embed_ctx_t *emb);
 static int embed_ev_add_conn(embed_ctx_t *emb, conn_t *c);
 static void embed_ev_remove_conn(embed_ctx_t *emb, conn_t *c);
 static void embed_ev_want_write(embed_ctx_t *emb, conn_t *c, int want);
+static void embed_ev_rearm_conn(embed_ctx_t *emb, conn_t *c);
 #endif
 
 #if EMB_USE_EPOLL
@@ -313,6 +330,14 @@ static void embed_ev_want_write(embed_ctx_t *emb, conn_t *c, int want) {
     else
         EV_SET(kev, c->fd, EVFILT_WRITE, EV_DISABLE, 0, 0, c);
 }
+/* Re-arm after processing (EV_CLEAR consumes one event; re-enable so we get more). */
+static void embed_ev_rearm_conn(embed_ctx_t *emb, conn_t *c) {
+    struct kevent *kev;
+    kev = embed_kq_change(emb);
+    EV_SET(kev, c->fd, EVFILT_READ, EV_ADD | EV_ENABLE | EV_CLEAR, 0, 0, c);
+    kev = embed_kq_change(emb);
+    EV_SET(kev, c->fd, EVFILT_WRITE, EV_ADD | (c->send_len > 0 ? EV_ENABLE : EV_DISABLE) | EV_CLEAR | EMB_KQ_WRITE_ONESHOT, 0, 0, c);
+}
 #endif
 
 /* --- nxt_unit_init --- */
@@ -388,6 +413,17 @@ nxt_unit_ctx_t *nxt_unit_init(nxt_unit_init_t *init, const char *host, int port)
         return NULL;
     }
     emb->listen_fd = fd;
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    emb->handler_pipe[0] = -1;
+    emb->handler_pipe[1] = -1;
+    if (pipe(emb->handler_pipe) == 0) {
+        fcntl(emb->handler_pipe[0], F_SETFL, O_NONBLOCK);
+    } else {
+        emb->handler_pipe[0] = -1;
+        emb->handler_pipe[1] = -1;
+    }
+    emb->conns = NULL;
+#endif
     global_emb = emb;
     return &emb->ctx;
 }
@@ -400,6 +436,20 @@ static int run_loop_process_conn(embed_ctx_t *emb, conn_t *c, int can_read, int 
     int n;
     (void) emb;
     if (nxt_slow_path(err_or_hup)) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+        /* Client closed connection while async handler may still be running. Defer unlink/free
+         * until handler_done (pipe wake) to avoid use-after-free in nxt_unit_response_send. */
+        if (c->handler_started && !c->handler_done) {
+            c->client_closed = 1;
+#if EMB_USE_EPOLL || EMB_USE_KQUEUE
+            embed_ev_remove_conn(emb, c);
+#if EMB_USE_KQUEUE
+            embed_kq_flush(emb);
+#endif
+#endif
+            return 0;
+        }
+#endif
         conn_unlink(c);
         c->prev = NULL;
         c->next = *pending_free;
@@ -541,7 +591,19 @@ static int run_loop_process_conn(embed_ctx_t *emb, conn_t *c, int can_read, int 
                 c->request_ready = 1;
             }
             if (c->request_ready) {
-                c->response_sent = 0;  /* allow send for this request (keep-alive: next request on same conn) */
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+                /* Like NGINX Unit: invoke handler and continue; cleanup on pipe wake. */
+                if (!c->handler_started) {
+                    c->response_sent = 0;
+                    conn_dispatch_request(c);
+#if EMB_USE_EPOLL || EMB_USE_KQUEUE
+                    if (c->send_len > 0) embed_ev_want_write(emb, c, 1);
+#endif
+                    return 0;
+                }
+                /* handler_started: cleanup when pipe is read; fall through to allow send drain */
+#else
+                c->response_sent = 0;
                 conn_dispatch_request(c);
                 conn_send_response(c);
 #if EMB_USE_EPOLL || EMB_USE_KQUEUE
@@ -549,18 +611,12 @@ static int run_loop_process_conn(embed_ctx_t *emb, conn_t *c, int can_read, int 
 #endif
                 c->request_ready = 0;
                 c->response_sent = 1;
-                /* Calculate consumed: end of headers + body length.
-                 * recv_parsed may have been advanced by nxt_unit_request_read during handler,
-                 * but we need to consume the entire request including the body, even if the app didn't read it. */
                 size_t consumed;
                 if (c->request != NULL && c->request->content_length > 0) {
-                    /* Consume full request: headers_end (stored when parsed) + body length */
                     consumed = c->headers_end + (size_t) c->request->content_length;
                     if (consumed > c->recv_len) consumed = c->recv_len;
-                    /* Also ensure we consume at least what was read (if body was partially read) */
                     if (consumed < c->recv_parsed) consumed = c->recv_parsed;
                 } else {
-                    /* No body, consumed is just what was parsed (end of headers) */
                     consumed = c->recv_parsed;
                 }
                 if (consumed > 0 && consumed < c->recv_len) {
@@ -577,6 +633,7 @@ static int run_loop_process_conn(embed_ctx_t *emb, conn_t *c, int can_read, int 
                     c->request = NULL;
                     c->response = NULL;
                 }
+#endif
             }
         }
     }
@@ -608,7 +665,19 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
             emb->ev_fd = -1;
             return NXT_UNIT_ERROR;
         }
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+        if (emb->handler_pipe[0] >= 0) {
+            struct epoll_event ev;
+            memset(&ev, 0, sizeof(ev));
+            ev.events = EPOLLIN;
+            ev.data.ptr = handler_pipe_udata;
+            epoll_ctl(emb->ev_fd, EPOLL_CTL_ADD, emb->handler_pipe[0], &ev);
+        }
+#endif
         while (!emb->quit) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+            emb->conns = &conns;
+#endif
             /* -1: block until an event. No spinning (0) or long wait (1000ms). */
             nevents = epoll_wait(emb->ev_fd, events, EMB_EPOLL_MAXEV, -1);
             if (nxt_slow_path(nevents < 0)) { if (errno == EINTR) continue; break; }
@@ -617,6 +686,29 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
             pending_free = NULL;
             for (i = 0; i < nevents; i++) {
                 int rev = events[i].events;
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+                if (events[i].data.ptr == handler_pipe_udata) {
+                    char buf[256];
+                    conn_t *dc;
+                    while (read(emb->handler_pipe[0], buf, sizeof(buf)) > 0) ;
+                    for (dc = *emb->conns; dc != NULL; dc = dc->next) {
+                        pthread_mutex_lock(&dc->dispatch_mutex);
+                        if (dc->handler_done) {
+                            conn_handler_done_cleanup(dc);
+                            if (dc->client_closed) {
+                                conn_unlink(dc);
+                                dc->prev = NULL;
+                                dc->next = pending_free;
+                                pending_free = dc;
+                            } else if (dc->send_len > 0) {
+                                embed_ev_want_write(emb, dc, 1);
+                            }
+                        }
+                        pthread_mutex_unlock(&dc->dispatch_mutex);
+                    }
+                    continue;
+                }
+#endif
                 if (nxt_slow_path(events[i].data.ptr == NULL)) {
                     /* listen fd */
                     peer_len = sizeof(peer);
@@ -650,6 +742,10 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
                 conn_free(c);
             }
         }
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+        if (emb->handler_pipe[0] >= 0) { close(emb->handler_pipe[0]); emb->handler_pipe[0] = -1; }
+        if (emb->handler_pipe[1] >= 0) { close(emb->handler_pipe[1]); emb->handler_pipe[1] = -1; }
+#endif
         close(emb->ev_fd);
         emb->ev_fd = -1;
     }
@@ -677,8 +773,17 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
             emb->ev_fd = -1;
             return NXT_UNIT_ERROR;
         }
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+        if (emb->handler_pipe[0] >= 0) {
+            struct kevent *kev = embed_kq_change(emb);
+            EV_SET(kev, emb->handler_pipe[0], EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, handler_pipe_udata);
+        }
+#endif
         /* Single kevent(apply+wait) for low latency. EV_DISPATCH/EV_ONESHOT on write gives one event per enable so we don't spin. */
         while (!emb->quit) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+            emb->conns = &conns;
+#endif
             nevents = kevent(emb->ev_fd, emb->kq_changes, emb->kq_nchanges, events, EMB_KQUEUE_MAXEV, NULL);
             emb->kq_nchanges = 0;
             if (nxt_slow_path(nevents < 0)) { if (errno == EINTR) continue; break; }
@@ -689,6 +794,29 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
                 int filter = events[i].filter;
                 int flags = events[i].flags;
                 int err_or_hup = (flags & EV_ERROR) != 0 || (flags & EV_EOF) != 0;
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+                if (events[i].udata == handler_pipe_udata) {
+                    char buf[256];
+                    conn_t *dc;
+                    while (read(emb->handler_pipe[0], buf, sizeof(buf)) > 0) ;
+                    for (dc = *emb->conns; dc != NULL; dc = dc->next) {
+                        pthread_mutex_lock(&dc->dispatch_mutex);
+                        if (dc->handler_done) {
+                            conn_handler_done_cleanup(dc);
+                            if (dc->client_closed) {
+                                conn_unlink(dc);
+                                dc->prev = NULL;
+                                dc->next = pending_free;
+                                pending_free = dc;
+                            } else if (dc->send_len > 0) {
+                                embed_ev_want_write(emb, dc, 1);
+                            }
+                        }
+                        pthread_mutex_unlock(&dc->dispatch_mutex);
+                    }
+                    continue;
+                }
+#endif
                 if (nxt_slow_path(events[i].udata == NULL)) {
                     /* listen fd */
                     if (nxt_fast_path(filter == EVFILT_READ && !err_or_hup)) {
@@ -712,17 +840,26 @@ int nxt_unit_run(nxt_unit_ctx_t *ctx) {
                 }
                 c = (conn_t *) events[i].udata;
                 if (nxt_slow_path(c->prev == NULL)) continue;  /* already removed this batch */
-                if (nxt_fast_path(filter == EVFILT_READ))
-                    run_loop_process_conn(emb, c, 1, 0, err_or_hup, &pending_free);
-                else if (filter == EVFILT_WRITE)
-                    run_loop_process_conn(emb, c, 0, 1, err_or_hup, &pending_free);
+                if (nxt_fast_path(filter == EVFILT_READ)) {
+                    if (!run_loop_process_conn(emb, c, 1, 0, err_or_hup, &pending_free))
+                        embed_ev_rearm_conn(emb, c);
+                } else if (filter == EVFILT_WRITE) {
+                    if (!run_loop_process_conn(emb, c, 0, 1, err_or_hup, &pending_free))
+                        embed_ev_rearm_conn(emb, c);
+                }
             }
+            /* Apply EV_DELETE for removed conns before closing fds; otherwise next kevent() can get EBADF and exit the loop. */
+            embed_kq_flush(emb);
             while (pending_free != NULL) {
                 c = pending_free;
                 pending_free = c->next;
                 conn_free(c);
             }
         }
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+        if (emb->handler_pipe[0] >= 0) { close(emb->handler_pipe[0]); emb->handler_pipe[0] = -1; }
+        if (emb->handler_pipe[1] >= 0) { close(emb->handler_pipe[1]); emb->handler_pipe[1] = -1; }
+#endif
         free(emb->kq_changes);
         emb->kq_changes = NULL;
         close(emb->ev_fd);
@@ -877,6 +1014,9 @@ static conn_t *req_to_conn(nxt_unit_request_info_t *req) {
     if (nxt_slow_path(req == NULL)) return NULL;
     c = *(conn_t **)((char *) req - sizeof(conn_t *));
     if (nxt_fast_path(c != NULL && c->req_info == req)) return c;
+    /* Worker thread: req_info may have been cleared by main-thread cleanup; if req is in c's pool, use c. */
+    if (c != NULL && (char *)req >= (char *)c->req_pool && (char *)req < (char *)c->req_pool + REQ_POOL_SIZE)
+        return c;
     return current_dispatch_conn;
 }
 
@@ -892,12 +1032,22 @@ int nxt_unit_response_init(nxt_unit_request_info_t *req,
     uint16_t status, uint32_t max_fields_count, uint32_t max_fields_size) {
     conn_t *c = req_to_conn(req);
     uint32_t alloc_count;
+    size_t alloc_size;
     if (nxt_slow_path(c == NULL || c->response != NULL)) return NXT_UNIT_ERROR;
     alloc_count = max_fields_count < RESPONSE_MIN_FIELDS ? RESPONSE_MIN_FIELDS : max_fields_count;
-    pool_align_8(c);
-    c->response = (nxt_unit_response_t *) (c->req_pool + c->req_pool_used);
-    c->req_pool_used += sizeof(nxt_unit_response_t) + (size_t) alloc_count * sizeof(nxt_unit_field_t);
-    if (nxt_slow_path(c->req_pool_used > REQ_POOL_SIZE)) return NXT_UNIT_ERROR;
+    alloc_size = sizeof(nxt_unit_response_t) + (size_t) alloc_count * sizeof(nxt_unit_field_t);
+    alloc_size = (alloc_size + 7u) & (size_t)~(size_t)7;  /* align up to 8 */
+    if (c->req_pool_used == 0 && c->response_pool_end == 0) {
+        /* Cleanup ran; allocate from end of pool so we don't overwrite request_info (req). */
+        if (nxt_slow_path(alloc_size >= REQ_POOL_SIZE)) return NXT_UNIT_ERROR;
+        c->response_pool_end = REQ_POOL_SIZE - alloc_size;
+        c->response = (nxt_unit_response_t *) (c->req_pool + c->response_pool_end);
+    } else {
+        pool_align_8(c);
+        c->response = (nxt_unit_response_t *) (c->req_pool + c->req_pool_used);
+        c->req_pool_used += alloc_size;
+        if (nxt_slow_path(c->req_pool_used > REQ_POOL_SIZE)) return NXT_UNIT_ERROR;
+    }
     c->response->content_length = 0;
     c->response->fields_count = 0;
     c->response->piggyback_content_length = 0;
@@ -926,11 +1076,22 @@ int nxt_unit_response_add_field(nxt_unit_request_info_t *req,
     conn_t *c = req_to_conn(req);
     nxt_unit_field_t *f;
     char *dst;
+    size_t need;
     if (nxt_slow_path(c == NULL || c->response == NULL)) return NXT_UNIT_ERROR;
     if (nxt_slow_path(c->response->fields_count >= req->response_max_fields)) return NXT_UNIT_ERROR;
-    if (nxt_slow_path(c->req_pool_used + (size_t) name_length + (size_t) value_length + 32 > REQ_POOL_SIZE)) return NXT_UNIT_ERROR;
+    need = (size_t) name_length + (size_t) value_length + 2;
+    if (c->response_pool_end != 0) {
+        /* Response allocated from end; allocate name/value from end too. */
+        if (nxt_slow_path(need > c->response_pool_end || c->response_pool_end - need < c->req_pool_used))
+            return NXT_UNIT_ERROR;
+        c->response_pool_end -= need;
+        dst = c->req_pool + c->response_pool_end;
+    } else {
+        if (nxt_slow_path(c->req_pool_used + need + 32 > REQ_POOL_SIZE)) return NXT_UNIT_ERROR;
+        dst = c->req_pool + c->req_pool_used;
+        c->req_pool_used += need;
+    }
     f = &c->response->fields[c->response->fields_count];
-    dst = c->req_pool + c->req_pool_used;
     f->hash = (uint16_t) field_hash(name, (size_t) name_length);
     f->skip = 0;
     f->hopbyhop = 0;
@@ -939,11 +1100,9 @@ int nxt_unit_response_add_field(nxt_unit_request_info_t *req,
     f->name.offset = (uint32_t) ((uintptr_t) dst - (uintptr_t) &f->name);
     memcpy(dst, name, (size_t) name_length);
     dst[name_length] = '\0';
-    c->req_pool_used += (size_t) name_length + 1;
-    f->value.offset = (uint32_t) ((uintptr_t) (c->req_pool + c->req_pool_used) - (uintptr_t) &f->value);
-    memcpy(c->req_pool + c->req_pool_used, value, (size_t) value_length);
-    *(c->req_pool + c->req_pool_used + (size_t) value_length) = '\0';
-    c->req_pool_used += (size_t) value_length + 1;
+    f->value.offset = (uint32_t) ((uintptr_t) (dst + (size_t) name_length + 1) - (uintptr_t) &f->value);
+    memcpy(dst + (size_t) name_length + 1, value, (size_t) value_length);
+    dst[(size_t) name_length + 1 + (size_t) value_length] = '\0';
     c->response->fields_count++;
     return NXT_UNIT_OK;
 }
@@ -965,6 +1124,11 @@ int nxt_unit_response_send(nxt_unit_request_info_t *req) {
     c->handler_done = 1;
     pthread_cond_signal(&c->dispatch_cond);
     pthread_mutex_unlock(&c->dispatch_mutex);
+    /* Wake main loop so it can run conn_handler_done_cleanup (like Unit: no blocking). */
+    if (c->emb->handler_pipe[1] >= 0) {
+        char b = 1;
+        (void) write(c->emb->handler_pipe[1], &b, 1);
+    }
 #endif
     return r;
 }
@@ -1150,6 +1314,10 @@ void nxt_unit_request_done(nxt_unit_request_info_t *req, int rc) {
         c->handler_done = 1;
         pthread_cond_signal(&c->dispatch_cond);
         pthread_mutex_unlock(&c->dispatch_mutex);
+        if (c->emb->handler_pipe[1] >= 0) {
+            char b = 1;
+            (void) write(c->emb->handler_pipe[1], &b, 1);
+        }
 #endif
     }
 }
@@ -1291,6 +1459,7 @@ static conn_t *conn_new(int fd, embed_ctx_t *emb) {
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     pthread_mutex_init(&c->dispatch_mutex, NULL);
     pthread_cond_init(&c->dispatch_cond, NULL);
+    c->handler_started = 0;
 #endif
     return c;
 }
@@ -1563,20 +1732,50 @@ static int conn_parse_request(conn_t *c) {
     return 0;
 }
 
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+/* Called from main loop when worker has set handler_done (after pipe wake). */
+static void conn_handler_done_cleanup(conn_t *c) {
+    size_t consumed;
+    if (c->request != NULL && c->request->content_length > 0) {
+        consumed = c->headers_end + (size_t) c->request->content_length;
+        if (consumed > c->recv_len) consumed = c->recv_len;
+        if (consumed < c->recv_parsed) consumed = c->recv_parsed;
+    } else {
+        consumed = c->recv_parsed;
+    }
+    if (consumed > 0 && consumed < c->recv_len) {
+        memmove(c->recv_buf, c->recv_buf + consumed, c->recv_len - consumed);
+        c->recv_len -= consumed;
+    } else if (consumed >= c->recv_len) {
+        c->recv_len = 0;
+    }
+    c->recv_parsed = 0;
+    c->headers_end = 0;
+    c->req_pool_used = 0;
+    c->response_pool_end = 0;
+    c->request_ready = 0;
+    c->response_sent = 1;
+    c->handler_started = 0;
+    c->handler_done = 0;
+    if (!c->is_websocket) {
+        c->req_info = NULL;
+        c->request = NULL;
+        c->response = NULL;
+    }
+}
+#endif
+
 static int conn_dispatch_request(conn_t *c) {
     conn_t *prev = current_dispatch_conn;
     current_dispatch_conn = c;
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     c->handler_done = 0;
+    c->handler_started = 1;
 #endif
     if (c->emb->init->callbacks.request_handler != NULL)
         c->emb->init->callbacks.request_handler(c->req_info);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    /* If handler runs on another thread (e.g. BlockingHandler), wait until it calls response_send or request_done. */
-    pthread_mutex_lock(&c->dispatch_mutex);
-    while (!c->handler_done)
-        pthread_cond_wait(&c->dispatch_cond, &c->dispatch_mutex);
-    pthread_mutex_unlock(&c->dispatch_mutex);
+    /* Like NGINX Unit: do not wait. Worker will call response_send/request_done and write to handler_pipe. */
 #endif
     current_dispatch_conn = prev;
     return 0;
@@ -1632,6 +1831,10 @@ static int conn_send_response(conn_t *c) {
     }
     c->send_len = len;
 send:
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    /* Don't block worker on write(); main loop drains send_buf when pipe wakes. */
+    c->response_sent = 1;
+#else
     n = (int) write(c->fd, c->send_buf, c->send_len);
     if (n > 0) {
         memmove(c->send_buf, c->send_buf + (size_t) n, c->send_len - (size_t) n);
@@ -1639,5 +1842,6 @@ send:
     }
     if (c->send_len == 0)
         c->response_sent = 1;
+#endif
     return NXT_UNIT_OK;
 }
