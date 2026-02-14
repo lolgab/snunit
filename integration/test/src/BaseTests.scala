@@ -79,7 +79,8 @@ object BaseTests extends TestSuite {
       test("close") {
         helloWorldExample.running {
           /* Reproduce wrk-style termination: connect, send GET /async, close socket without reading.
-           * Server sees client disconnect (FIN/RST) while async handler may still be running. */
+           * Server sees client disconnect (FIN/RST) while async handler may still be running.
+           * Use many concurrent connections (like wrk -d 1) so the server gets a burst of closes. */
           val host = baseUrl.host.get
           val port = baseUrl.port.get
           val requestBytes =
@@ -87,10 +88,10 @@ object BaseTests extends TestSuite {
               java.nio.charset.StandardCharsets.US_ASCII
             )
 
-          (1 to 2).foreach { _ =>
+          def connectSendAndClose(): Unit = {
             val socket = new java.net.Socket()
             try {
-              socket.connect(new java.net.InetSocketAddress(host, port), 1000)
+              socket.connect(new java.net.InetSocketAddress(host, port), 5000)
               socket.setSoTimeout(1000)
               socket.getOutputStream.write(requestBytes)
               socket.getOutputStream.flush()
@@ -103,8 +104,31 @@ object BaseTests extends TestSuite {
                 catch { case _: Exception => }
           }
 
-          // Server should still be alive: a normal request must succeed.
-          val result = request.get(uri"$baseUrl/async").readTimeout(1.second).text()
+          // Many concurrent connections that all close without reading (like wrk exiting after -d 1).
+          val n = 15
+          val threads = (1 to n).map(_ =>
+            new Thread(() => connectSendAndClose(), "close-test-client")
+          )
+          threads.foreach(_.start())
+          threads.foreach(_.join())
+
+          // Give async handlers time to complete and server to drain handler_pipe.
+          Thread.sleep(500)
+
+          // Server must still be alive: a normal request must succeed.
+          val result = request.get(uri"$baseUrl/async").readTimeout(5.seconds).text()
+          assert(result == "Hello world!\n")
+        }
+      }
+      test("closeAfterWrk") {
+        /* Reproduce exact user scenario: run real wrk -d 1, then server must still answer.
+         * This test fails when the server gets stuck after wrk exits (closes all connections).
+         * Requires: port 8080 free (kill any stuck server first), wrk installed. */
+        helloWorldExample.running {
+          /* Run wrk; ignore exit code (e.g. connection refused if server slow to start). */
+          os.proc("wrk", "-d", "1", "-t", "2", "-c", "10", s"http://localhost:8080/async").call(check = false)
+          Thread.sleep(3000) /* let async handlers complete and server drain handler_pipe */
+          val result = request.get(uri"$baseUrl/async").readTimeout(10.seconds).text()
           assert(result == "Hello world!\n")
         }
       }
