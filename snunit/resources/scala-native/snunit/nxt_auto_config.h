@@ -21,4 +21,24 @@
 
 #define NXT_DEBUG 0
 
+/* Endianness for nxt_websocket_header.h (from Unit). */
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define NXT_HAVE_BIG_ENDIAN 1
+#define NXT_HAVE_LITTLE_ENDIAN 0
+#else
+#define NXT_HAVE_BIG_ENDIAN 0
+#define NXT_HAVE_LITTLE_ENDIAN 1
+#endif
+
+/* Branch prediction hints (from unit src/nxt_clang.h). */
+#if defined(__GNUC__) || defined(__clang__)
+#define nxt_expect(c, x)   __builtin_expect((long) (x), (c))
+#define nxt_fast_path(x)   nxt_expect(1, x)
+#define nxt_slow_path(x)   nxt_expect(0, x)
+#else
+#define nxt_expect(c, x)   (x)
+#define nxt_fast_path(x)   (x)
+#define nxt_slow_path(x)   (x)
+#endif
+
 #endif

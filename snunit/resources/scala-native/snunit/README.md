@@ -9,6 +9,14 @@ This directory contains a **minimal in-process** implementation of the NGINX Uni
   - `nxt_unit_typedefs.h`, `nxt_unit_sptr.h`, `nxt_unit_field.h`, `nxt_unit_request.h`, `nxt_unit_response.h`, `nxt_unit.h`
 - **nxt_auto_config.h**, **nxt_version.h** – Minimal stubs for the embed build (no Unit `configure`).
 
+## Vendoring from NGINX Unit
+
+To refresh the Unit API headers from a local Unit tree (e.g. `/Users/lorenzo/scala/unit`), copy from `unit/src/` into this directory:
+
+- `nxt_unit.h`, `nxt_unit_typedefs.h`, `nxt_unit_request.h`, `nxt_unit_response.h`, `nxt_unit_field.h`, `nxt_unit_sptr.h`, `nxt_unit_websocket.h`, `nxt_websocket_header.h`
+
+Do **not** overwrite `nxt_auto_config.h` or `nxt_version.h` (snunit keeps minimal stubs). The embed uses `nxt_unit_init(init, host, port)` (3 args); Unit’s public API uses 1 arg and reads from `NXT_UNIT_INIT` env, so `nxt_unit.h` is adjusted for the embed. `NXT_UNIT_HASH_HOST` in `nxt_unit_field.h` is added for the embed’s Host-header parsing.
+
 ## Build
 
 Scala Native compiles all `.c` (and `.cpp`) files under `src/main/resources/scala-native` (or `resources/scala-native` for the snunit library) and links them into the final binary. No extra build step is needed.

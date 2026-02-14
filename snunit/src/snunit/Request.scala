@@ -34,7 +34,7 @@ extension (req: Request) {
 
   @inline def headersLength: Int = req.request.fields_count
   private inline def checkIndex(index: Int): Unit = {
-    if (index < 0 && index >= req.request.fields_count)
+    if (index < 0 || index >= req.request.fields_count)
       throw new IndexOutOfBoundsException(s"Index $index out of bounds for length ${req.request.fields_count}")
   }
   def headerName(index: Int): String = {
