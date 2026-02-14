@@ -20,15 +20,21 @@ private def runMillCommand(command: String) = os
   .call(
     cwd = os.Path(sys.env("MILL_WORKSPACE_ROOT"))
   )
+class Example(projectName: String, crossSuffix: String = "") {
+  private val Vector(s"\"$_:$_:$_:$nativeBinary\"") =
+    runMillCommand(s"integration.tests.$projectName$crossSuffix.nativeLink").out.lines(): @unchecked
+  private val workspace = os.Path(sys.env("MILL_WORKSPACE_ROOT"))
+
+  def running[T](f: => T): T = {
+    val process2 = os.proc(nativeBinary).spawn(cwd = workspace)
+    Thread.sleep(1000)
+    try { f }
+    finally { process2.close() }
+  }
+}
 
 def withDeployedExample[T](projectName: String, crossSuffix: String = "")(f: => T): T = {
-  val Vector(s"\"$_:$_:$_:$nativeBinary\"") =
-    runMillCommand(s"integration.tests.$projectName$crossSuffix.nativeLink").out.lines(): @unchecked
-  val workspace = os.Path(sys.env("MILL_WORKSPACE_ROOT"))
-  val process2 = os.proc(nativeBinary).spawn(cwd = workspace)
-  Thread.sleep(1000)
-  try { f }
-  finally { process2.close() }
+  Example(projectName, crossSuffix).running(f)
 }
 def withDeployedExampleHttp4s(projectName: String)(f: => Unit) = {
   BuildInfo.http4sVersions.split(':').foreach { versions =>

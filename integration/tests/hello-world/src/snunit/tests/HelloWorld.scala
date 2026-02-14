@@ -18,6 +18,16 @@ object MyHandler extends RequestHandler {
           content = "Request headers",
           headers = req.headers
         )
+
+      case Method.GET -> "/async" =>
+        concurrent.ExecutionContext.global.execute(() => {
+          req.send(
+            statusCode = StatusCode.OK,
+            content = "Hello world!\n",
+            headers = Headers("Content-Type" -> "text/plain")
+          )
+        })
+
       case Method.GET -> path =>
         val content =
           if (path.startsWith("/path")) req.path

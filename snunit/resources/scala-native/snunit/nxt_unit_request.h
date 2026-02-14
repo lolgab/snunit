@@ -18,7 +18,9 @@
 #ifndef _NXT_UNIT_REQUEST_H_INCLUDED_
 #define _NXT_UNIT_REQUEST_H_INCLUDED_
 
+
 #include <inttypes.h>
+
 #include "nxt_unit_sptr.h"
 #include "nxt_unit_field.h"
 
@@ -38,11 +40,14 @@ struct nxt_unit_request_s {
     uint32_t              path_length;
     uint32_t              query_length;
     uint32_t              fields_count;
+
     uint32_t              content_length_field;
     uint32_t              content_type_field;
     uint32_t              cookie_field;
     uint32_t              authorization_field;
+
     uint64_t              content_length;
+
     nxt_unit_sptr_t       method;
     nxt_unit_sptr_t       version;
     nxt_unit_sptr_t       remote;
@@ -53,7 +58,9 @@ struct nxt_unit_request_s {
     nxt_unit_sptr_t       path;
     nxt_unit_sptr_t       query;
     nxt_unit_sptr_t       preread_content;
+
     nxt_unit_field_t      fields[];
 };
 
-#endif
+
+#endif /* _NXT_UNIT_REQUEST_H_INCLUDED_ */
