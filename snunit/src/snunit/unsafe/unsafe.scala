@@ -114,13 +114,14 @@ opaque type nxt_websocket_header_t_* = Ptr[nxt_websocket_header_t]
 
 export externs.*
 
+@link("unit")
 @extern
 object externs {
   /*
    * Initialize Unit application library with necessary callbacks and
    * ready/reply port parameters, send 'READY' response to master.
    */
-  def nxt_unit_init(init: nxt_unit_init_t_*, host: CString, port: CInt): nxt_unit_ctx_t_* = extern
+  def nxt_unit_init(init: nxt_unit_init_t_*): nxt_unit_ctx_t_* = extern
 
   /*
    * Main function useful in case when application does not have it's own

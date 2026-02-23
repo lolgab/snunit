@@ -22,13 +22,8 @@ private def runMillCommand(command: String) = os
   )
 
 def withDeployedExample[T](projectName: String, crossSuffix: String = "")(f: => T): T = {
-  val Vector(s"\"$_:$_:$_:$nativeBinary\"") =
-    runMillCommand(s"integration.tests.$projectName$crossSuffix.nativeLink").out.lines(): @unchecked
-  val workspace = os.Path(sys.env("MILL_WORKSPACE_ROOT"))
-  val process2 = os.proc(nativeBinary).spawn(cwd = workspace)
-  Thread.sleep(1000)
-  try { f }
-  finally { process2.close() }
+  runMillCommand(s"integration.tests.$projectName$crossSuffix.deployTestApp")
+  f
 }
 def withDeployedExampleHttp4s(projectName: String)(f: => Unit) = {
   BuildInfo.http4sVersions.split(':').foreach { versions =>
@@ -37,27 +32,23 @@ def withDeployedExampleHttp4s(projectName: String)(f: => Unit) = {
 }
 def withDeployedExampleMultiplatform(projectName: String)(f: => Unit) = {
   val projectPrefix = s"integration.tests.$projectName"
-
-  // Run test against JVM version
-  val Vector(s"\"$_:$_:$_:$path\"") = runMillCommand(s"$projectPrefix.jvm.launcher").out.lines(): @unchecked
-  val process1 = os.proc(path).spawn()
+  runMillCommand(s"$projectPrefix.native.deployTestApp")
+  val result = runMillCommand(s"$projectPrefix.jvm.launcher").out.lines().head
+  val s""""$_:$_:$_:$path"""" = result: @unchecked
+  val process = os.proc(path).spawn()
   Thread.sleep(1000)
   try { f }
-  finally { process1.close() }
-
-  val Vector(s"\"$_:$_:$_:$nativeBinary\"") =
-    runMillCommand(s"$projectPrefix.native.nativeLink").out.lines(): @unchecked
-  val process2 = os.proc(nativeBinary).spawn()
-  Thread.sleep(1000)
-  try { f }
-  finally { process2.close() }
-
+  finally { process.close() }
 }
 
 private val futureBackend = HttpClientFutureBackend()
 
-val baseUrl = uri"http://localhost:8080"
-val websocketBaseUrl = uri"ws://localhost:8080"
+val baseUrl = uri"http://localhost:${BuildInfo.port}"
+val websocketBaseUrl = uri"ws://localhost:${BuildInfo.port}"
+
+def runOnAllPlatforms(f: Uri => Unit) = {
+  Seq(uri"http://localhost:8080", baseUrl).foreach(f)
+}
 
 def request = quickRequest
 
