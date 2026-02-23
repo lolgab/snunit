@@ -96,9 +96,7 @@ private[tapir] trait SNUnitGenericServerInterpreter {
   private val deleteFile: TapirFile => Wrapper[Unit] = _ => monadError.unit(())
 
   implicit val bodyListener: BodyListener[Wrapper, Array[Byte]] = new BodyListener[Wrapper, Array[Byte]] {
-    def onComplete(body: Array[Byte])(cb: Try[Unit] => Wrapper[Unit]): Wrapper[Array[Byte]] = {
-      cb(Success(())).map(_ => body)
-    }
+    def onComplete(body: Array[Byte])(cb: Try[Unit] => Wrapper[Unit]): Wrapper[Array[Byte]] = ???
   }
 
   private class SNUnitServerRequest(req: snunit.Request) extends ServerRequest {
@@ -147,7 +145,7 @@ private[tapir] trait SNUnitGenericServerInterpreter {
                   wrapSideEffect(
                     req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, snunit.Headers.empty)
                   )
-                case RequestResult.Response(response, _) =>
+                case RequestResult.Response(response) =>
                   val body = response.body.getOrElse(Array.emptyByteArray)
                   val headers = snunit.Headers(response.headers, _.name, _.value)
                   wrapSideEffect(

@@ -12,7 +12,7 @@ object foo {
     buffer.get() ==> 'l'
     buffer.get() ==> 'l'
     buffer.get() ==> 'o'
-    assertThrows[java.nio.BufferUnderflowException] { buffer.get() }
+    intercept[java.nio.BufferUnderflowException] { buffer.get() }
   }
 }
 
@@ -63,7 +63,7 @@ object BytesConversionTests extends TestSuite {
         buffer.get() ==> 'l'
         buffer.get() ==> 'l'
         buffer.get() ==> 'o'
-        assertThrows[java.nio.BufferUnderflowException] { buffer.get() }
+        intercept[java.nio.BufferUnderflowException] { buffer.get() }
       }
       test("foo") {
         foo.bar()

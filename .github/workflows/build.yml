@@ -6,15 +6,24 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
-      - uses: coursier/cache-action@v7
+      - uses: actions/checkout@v3
+      - uses: coursier/cache-action@v6
+      - name: out folder cache
+        uses: actions/cache@v3
+        with:
+          path: ./out
+          key: out-folder-cache
       - name: Install Dependencies
         run: |
+          curl -sL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
+          echo "deb https://packages.nginx.org/unit/ubuntu/ noble unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
+          echo "deb-src https://packages.nginx.org/unit/ubuntu/ noble unit" | sudo tee -a /etc/apt/sources.list.d/unit.list
           sudo apt-get update
-          sudo apt-get install -y libidn2-dev
+          unit_version="1.34.*"
+          sudo apt-get install -y libuv1-dev libidn2-dev unit=$unit_version unit-dev=$unit_version
       - name: Download dependencies
         run: |
-          ./mill __.prepareOffline + __.resolvedMvnDeps
+          ./mill __.prepareOffline
       - name: Check formatting
         run: |
           ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
@@ -28,12 +37,26 @@ jobs:
       - name: Run Unit Tests
         run: ./mill snunit.test
       - name: Run Integration Tests
-        run: ./mill integration.test
+        run: |
+          sudo systemctl stop unit.service
+          ./mill integration.test
+      - name: Start NGINX Unit daemon
+        run: sudo systemctl start unit.service
+      # TODO: Enable again
+      # - name: Run Mill Plugin Tests
+      #   run: ./mill -i snunit-mill-plugin.__.test
 
+      # - name: Build and Test Sbt plugin
+      #   run: |
+      #     (
+      #       cd sbt-plugin
+      #       sudo systemctl start unit.service
+      #       sbt scalafmtCheckAll scalafmtSbtCheck scripted
+      #     )
   check-binary-compatibility:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Check Binary Compatibility
@@ -44,29 +67,35 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     env:
-      SONATYPE_PGP_PRIVATE_KEY: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY }}
-      SONATYPE_PGP_PRIVATE_KEY_PASSWORD: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY_PASSWORD }}
+      PGP_PASSPHRASE: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY_PASSWORD }}
+      PGP_SECRET: ${{ secrets.SONATYPE_PGP_PRIVATE_KEY }}
       SONATYPE_USER: ${{ secrets.SONATYPE_USER }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       LANG: "en_US.UTF-8"
       LC_MESSAGES: "en_US.UTF-8"
       LC_ALL: "en_US.UTF-8"
     steps:
-      - uses: actions/checkout@v5
-      - uses: coursier/cache-action@v7
-      - name: Publish to Maven Central
-        run: |
-          if [[ $(git tag --points-at HEAD) != '' ]]; then
-            echo $SONATYPE_PGP_PRIVATE_KEY | base64 --decode > gpg_key
-            gpg --import --no-tty --batch --yes gpg_key
-            rm gpg_key
-            ./mill mill.scalalib.SonatypeCentralPublishModule/publishAll \
-              --username "$SONATYPE_USER" \
-              --password "$SONATYPE_PASSWORD" \
-              --gpgArgs "--passphrase=$SONATYPE_PGP_PRIVATE_KEY_PASSWORD,--no-tty,--pinentry-mode,loopback,--batch,--yes,-a,-b" \
-              --publishArtifacts __.publishArtifacts \
-              --readTimeout  36000 \
-              --awaitTimeout 36000 \
-              --connectTimeout 36000 \
-              --shouldRelease true
-          fi
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: coursier/cache-action@v6
+      - name: Compilation cache
+        uses: actions/cache@v2
+        with:
+          path: ./out
+          key: out
+      - name: Publish plugin shared locally
+        run: ./mill snunit-plugins-shared.__.publishLocal
+      - run: ./mill io.kipp.mill.ci.release.ReleaseModule/publishAll
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      # TODO: Support again Sbt plugin once Mill plugin is stable
+      # - name: Publish Sbt Plugin
+      #   run: |
+      #     if [[ $(git tag --points-at HEAD) != '' ]]; then
+      #       cd sbt-plugin
+      #       sbt publishSigned sonatypeBundleRelease
+      #     fi

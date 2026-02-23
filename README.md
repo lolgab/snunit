@@ -19,7 +19,71 @@ def run =
 
 SNUnit is a Scala Native library to write HTTP server applications on top of
 [NGINX Unit](https://unit.nginx.org/). It allows you to write both synchronous
-and asynchronous web servers with great performance.
+and asynchronous web servers with automatic restart on crashes, automatic
+load balancing of multiple processes, great performance and all the nice
+[NGINX Unit features](http://unit.nginx.org/#key-features).
+
+## Running your app
+
+Once built your SNUnit binary, you need to deploy it to the `unitd` server.
+
+You need to run `unitd` in a terminal with:
+
+```bash
+unitd --no-daemon --log /dev/stdout --control unix:control.sock
+```
+
+This will run `unitd` with a UNIX socket file named control.sock in your current directory.
+
+Then, you need to create a json file with your configuration:
+
+```json
+{
+  "listeners": {
+    "*:8081": {
+      "pass": "applications/myapp"
+    }
+  },
+  "applications": {
+    "myapp": {
+      "type": "external",
+      "executable": "snunit/binary/path"
+    }
+  }
+}
+```
+
+Where `executable` is the binary path which can be absolute or relative
+to the `unitd` working directory.
+
+This configuration passes all requests sent to the port `8081` to the application `myapp`.
+
+To know more about configuring NGINX Unit, refer to [its documentation](http://unit.nginx.org/configuration).
+
+To deploy the setting you can use curl:
+
+```bash
+curl -X PUT --unix-socket control.sock -d @config.json localhost/config
+```
+
+If everything went right, you should see this response:
+
+```json
+{
+  "success": "Reconfiguration done."
+}
+```
+
+In case of problems, you will get a 4xx response like this:
+
+```json
+{
+  "error": "Invalid configuration.",
+  "detail": "Required parameter \"executable\" is missing."
+}
+```
+
+Further information can be found in `unitd` logs in the running terminal.
 
 ## Sync and async support
 
