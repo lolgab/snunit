@@ -537,7 +537,7 @@ extension (ptr: nxt_unit_init_t_*) {
 
 extension (ptr: nxt_websocket_header_t_*) {
   // Assuming little endianess
-  // Check NGINX Unit codebase to support big endian platforms as well
+  // Check FreeUnit codebase to support big endian platforms as well
   @targetName("websocket_header_t_opcode")
   @inline def opcodeInternal: Byte =
     (ptr._1 & ((1 << 4) - 1)).toByte

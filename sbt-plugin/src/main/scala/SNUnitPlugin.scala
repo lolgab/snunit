@@ -16,7 +16,9 @@ object SNUnitPlugin extends AutoPlugin {
     val snunitCurlCommand = settingKey[Seq[String]]("curl command to use")
     val snunitVersion: String = snunit.plugin.internal.BuildInfo.snunitVersion
 
-    val deployToNGINXUnit = taskKey[Unit]("Deploy app to NGINX Unit")
+    val deployToFreeUnit = taskKey[Unit]("Deploy app to FreeUnit")
+    @deprecated("Use deployToFreeUnit", "SNUnit next release")
+    val deployToNGINXUnit = deployToFreeUnit
   }
 
   import autoImport._
@@ -34,10 +36,11 @@ object SNUnitPlugin extends AutoPlugin {
     },
     snunitCurlCommand := Seq("curl"),
     snunitPort := 8080,
-    deployToNGINXUnit := {
+    deployToFreeUnit := {
       val port = snunitPort.value
       val executable = (Compile / nativeLink).value
       shared.value.deployToNGINXUnit(executable.toString, port)
-    }
+    },
+    deployToNGINXUnit := deployToFreeUnit.value
   )
 }

@@ -73,7 +73,7 @@ object Common {
 trait Publish extends CiReleaseModule with Mima {
   def pomSettings =
     PomSettings(
-      description = "Scala Native server using NGINX Unit",
+      description = "Scala Native server using FreeUnit",
       organization = "com.github.lolgab",
       url = "https://github.com/lolgab/snunit",
       licenses = Seq(License.`Apache-2.0`),

@@ -38,9 +38,9 @@ object SNUnitMillPluginTests extends TestSuite {
           }
         }
         if (ended.get()) {
-          sys.error("NGINX Unit failed to run")
+          sys.error("FreeUnit failed to run")
         }
-        eval(build.snunitKillNGINXUnit())
+        eval(build.snunitKillFreeUnit())
       }
     }
   }
