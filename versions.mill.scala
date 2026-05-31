@@ -20,4 +20,5 @@ object Versions {
   val pprint = "0.9.0"
   val castor = "0.3.0"
   val scalaJavaTime = "2.6.0"
+  val freeUnit = "1.35.5"
 }

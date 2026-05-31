@@ -1,4 +1,4 @@
-# SNUnit: Scala Native HTTP server based on NGINX Unit
+# SNUnit: Scala Native HTTP server based on FreeUnit
 
 ```scala
 import snunit.*
@@ -18,10 +18,12 @@ def run =
 ```
 
 SNUnit is a Scala Native library to write HTTP server applications on top of
-[NGINX Unit](https://unit.nginx.org/). It allows you to write both synchronous
+[FreeUnit](https://freeunit.org/) (community LTS fork of NGINX Unit). It allows you to write both synchronous
 and asynchronous web servers with automatic restart on crashes, automatic
 load balancing of multiple processes, great performance and all the nice
-[NGINX Unit features](http://unit.nginx.org/#key-features).
+[FreeUnit features](https://freeunit.org/).
+
+FreeUnit is a drop-in replacement for the archived [NGINX Unit](https://unit.nginx.org/) — same `unitd` binary name, control API, and config schema. Install FreeUnit's `unitd` package instead of the archived NGINX Unit one, or use the Docker image `ghcr.io/freeunitorg/freeunit:latest-minimal`.
 
 ## Running your app
 
@@ -58,7 +60,7 @@ to the `unitd` working directory.
 
 This configuration passes all requests sent to the port `8081` to the application `myapp`.
 
-To know more about configuring NGINX Unit, refer to [its documentation](http://unit.nginx.org/configuration).
+To know more about configuring FreeUnit, refer to [its documentation](https://github.com/freeunitorg/freeunit#documentation).
 
 To deploy the setting you can use curl:
 
