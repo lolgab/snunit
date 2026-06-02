@@ -8,7 +8,7 @@ object Versions {
   val undertow = "2.3.18.Final"
   val scala212 = "2.12.19"
   val scala3 = "3.3.4"
-  val tapir = "1.11.1"
+  val tapir = "1.13.19"
   val cask = "0.10.2"
   val catsEffect = "3.7.0"
   val http4s023 = "0.23.34"
