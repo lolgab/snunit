@@ -127,15 +127,16 @@ object `snunit-tapir` extends Common.Native with Publish {
   def moduleDeps = Seq(snunit)
   def ivyDeps = super.ivyDeps() ++ Agg(ivy"com.softwaremill.sttp.tapir::tapir-server::${Versions.tapir}")
 }
-object `snunit-tapir-cats-effect` extends Common.Native with Publish {
-  def moduleDeps = Seq(
-    `snunit-tapir`,
-    `snunit-async-cats-effect`
-  )
-  def ivyDeps = super.ivyDeps() ++ Agg(
-    ivy"com.softwaremill.sttp.tapir::tapir-cats-effect::${Versions.tapir}"
-  )
-}
+// TODO: re-enable when tapir-cats-effect publishes Native 0.5 artifacts
+// object `snunit-tapir-cats-effect` extends Common.Native with Publish {
+//   def moduleDeps = Seq(
+//     `snunit-tapir`,
+//     `snunit-async-cats-effect`
+//   )
+//   def ivyDeps = super.ivyDeps() ++ Agg(
+//     ivy"com.softwaremill.sttp.tapir::tapir-cats-effect::${Versions.tapir}"
+//   )
+// }
 
 object `snunit-http4s` extends Cross[SNUnitHttp4s](http4sVersions)
 trait SNUnitHttp4s extends Common.Native with Cross.Module[String] with Publish {
@@ -215,9 +216,9 @@ object integration extends ScalaModule {
     object `tapir-helloworld` extends Common.Native {
       override def moduleDeps = Seq(`snunit-tapir`)
     }
-    object `tapir-app` extends Common.Native {
-      override def moduleDeps = Seq(`snunit-tapir-cats-effect`)
-    }
+    // object `tapir-app` extends Common.Native {
+    //   override def moduleDeps = Seq(`snunit-tapir-cats-effect`)
+    // }
     object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](http4sVersions)
     trait Http4sHelloWorldModule extends Common.Native with Cross.Module[String] {
       def http4sVersion = crossValue
@@ -237,11 +238,11 @@ object integration extends ScalaModule {
         ivy"org.http4s::http4s-dsl::$http4sVersion"
       )
     }
-    object `tapir-helloworld-cats-effect` extends Common.Native {
-      def moduleDeps = Seq(
-        `snunit-tapir-cats-effect`
-      )
-    }
+    // object `tapir-helloworld-cats-effect` extends Common.Native {
+    //   def moduleDeps = Seq(
+    //     `snunit-tapir-cats-effect`
+    //   )
+    // }
   }
   def scalaVersion = Versions.scala3
   object test extends ScalaTests with TestModule.Utest with BuildInfo {

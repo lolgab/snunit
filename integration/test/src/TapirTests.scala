@@ -9,16 +9,16 @@ object TapirTests extends TestSuite {
         tapirHelloWorldTest(baseUrl)
       }
     }
-    test("tapir-helloworld-cats-effect") {
-      withDeployedExample("tapir-helloworld-cats-effect") {
-        tapirHelloWorldTest(baseUrl)
-      }
-    }
-    test("tapir-app") {
-      withDeployedExample("tapir-app") {
-        tapirHelloWorldTest(baseUrl)
-      }
-    }
+    // test("tapir-helloworld-cats-effect") {
+    //   withDeployedExample("tapir-helloworld-cats-effect") {
+    //     tapirHelloWorldTest(baseUrl)
+    //   }
+    // }
+    // test("tapir-app") {
+    //   withDeployedExample("tapir-app") {
+    //     tapirHelloWorldTest(baseUrl)
+    //   }
+    // }
   }
   def tapirHelloWorldTest(baseUrl: Uri) = {
     locally {
