@@ -61,7 +61,7 @@ object Http4sTests extends TestSuite {
           .text()
           .replaceAll("\\s+", "")
         assert(limitsResult == """{"success":"Reconfigurationdone."}""")
-        Thread.sleep(1000)
+        waitForAppReady()
         for (i <- 0.to(10)) {
           val result = request.get(baseUrl).text()
           val expectedResult = "Hello Http4s App!"

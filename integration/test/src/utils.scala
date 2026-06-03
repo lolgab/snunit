@@ -1,6 +1,7 @@
 package snunit.test
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.util.chaining._
 import scala.util.control.NonFatal
 import scala.util.Try
@@ -21,8 +22,28 @@ private def runMillCommand(command: String) = os
     cwd = os.Path(sys.env("MILL_WORKSPACE_ROOT"))
   )
 
+def waitForAppReady(url: Uri = baseUrl, timeoutMs: Int = 60_000): Unit = {
+  val deadline = System.currentTimeMillis() + timeoutMs
+  var lastError = "unknown"
+  while (System.currentTimeMillis() < deadline) {
+    Try(simpleHttpClient.send(request.get(url).readTimeout(2.seconds))).toEither match {
+      case Right(response) if response.code.code != 503 =>
+        return
+      case Right(_) =>
+        lastError = "503 Service Unavailable"
+      case Left(e) =>
+        lastError = e.getMessage
+    }
+    Thread.sleep(100)
+  }
+  throw new RuntimeException(
+    s"App at $url did not become ready within ${timeoutMs}ms (last error: $lastError)"
+  )
+}
+
 def withDeployedExample[T](projectName: String, crossSuffix: String = "")(f: => T): T = {
   runMillCommand(s"integration.tests.$projectName$crossSuffix.deployTestApp")
+  waitForAppReady()
   f
 }
 def withDeployedExampleHttp4s(projectName: String)(f: => Unit) = {
