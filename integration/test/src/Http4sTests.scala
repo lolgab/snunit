@@ -61,6 +61,20 @@ object Http4sTests extends TestSuite {
           .text()
           .replaceAll("\\s+", "")
         assert(limitsResult == """{"success":"Reconfigurationdone."}""")
+        val restartResult = os
+          .proc(
+            if (sys.env.contains("CI")) Seq("sudo") else Seq.empty[String],
+            "curl",
+            "-s",
+            "--unix-socket",
+            BuildInfo.unitControl,
+            "localhost/control/applications/app/restart"
+          )
+          .call()
+          .out
+          .text()
+          .replaceAll("\\s+", "")
+        assert(restartResult == """{"success":"Ok"}""")
         waitForAppReady()
         for (i <- 0.to(10)) {
           val result = request.get(baseUrl).text()
