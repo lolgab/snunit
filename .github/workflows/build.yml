@@ -17,7 +17,20 @@ jobs:
         run: bash .github/scripts/install-freeunit.sh
       - name: Download dependencies
         run: |
-          ./mill -j1 __.prepareOffline
+          attempt=1
+          while true; do
+            echo "prepareOffline attempt ${attempt} (1 minute timeout)"
+            if timeout 60s ./mill -j1 __.prepareOffline; then
+              exit 0
+            fi
+            code=$?
+            if [ "${code}" -eq 124 ]; then
+              echo "prepareOffline timed out after 1 minute, retrying..."
+              attempt=$((attempt + 1))
+              continue
+            fi
+            exit "${code}"
+          done
       - name: Check formatting
         run: |
           ./mill -j1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
