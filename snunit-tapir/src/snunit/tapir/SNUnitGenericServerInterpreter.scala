@@ -145,7 +145,7 @@ private[tapir] trait SNUnitGenericServerInterpreter {
                   wrapSideEffect(
                     req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, snunit.Headers.empty)
                   )
-                case RequestResult.Response(response) =>
+                case RequestResult.Response(response, _) =>
                   val body = response.body.getOrElse(Array.emptyByteArray)
                   val headers = snunit.Headers(response.headers, _.name, _.value)
                   wrapSideEffect(

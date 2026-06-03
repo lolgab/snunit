@@ -1,20 +1,94 @@
+//| mvnDeps:
+//| - com.goyeau::mill-scalafix::0.6.0
+//| - com.github.lolgab::mill-crossplatform::0.3.0
+//| - com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION
+//| - com.github.lolgab::mill-mima::0.2.1
 package build
-
-import $ivy.`com.goyeau::mill-scalafix::0.3.1`
-import $ivy.`io.chris-kipp::mill-ci-release::0.1.9`
-import $ivy.`com.github.lolgab::mill-crossplatform::0.2.3`
-import $ivy.`com.lihaoyi::mill-contrib-buildinfo:`
-import $ivy.`com.github.lolgab::mill-mima::0.1.1`
 
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
 import mill.scalalib.publish._
-import mill.util.Jvm
 import com.goyeau.mill.scalafix.ScalafixModule
-import io.kipp.mill.ci.release.CiReleaseModule
 import mill.contrib.buildinfo.BuildInfo
 import com.github.lolgab.mill.mima._
 import com.github.lolgab.mill.crossplatform._
-import versions.Versions
+import java.util.concurrent.atomic.AtomicBoolean
+
+object Versions {
+  val scalaNative = "0.5.7"
+  val upickle = "4.0.2"
+  val undertow = "2.3.18.Final"
+  val scala212 = "2.12.19"
+  val scala3 = "3.3.4"
+  val tapir = "1.13.19"
+  val cask = "0.10.2"
+  val catsEffect = "3.7.0"
+  val http4s023 = "0.23.34"
+  val http4s1 = "1.0.0-M47"
+  val mill011 = "0.11.13"
+  val utest = "0.8.4"
+  val osLib = "0.11.3"
+  val sttp = "3.10.1"
+  val pprint = "0.9.0"
+  val castor = "0.3.0"
+  val scalaJavaTime = "2.6.0"
+  val freeUnit = "1.35.5"
+}
+
+object unitd {
+  private val dest = os.home / ".cache" / "snunit"
+  val control = dest / "control.sock"
+  private val pid = dest / "unit.pid"
+  private var optProc: Option[os.SubProcess] = None
+
+  private def closeUnitd(): Unit = {
+    optProc.foreach { proc =>
+      proc.close()
+      Thread.sleep(100)
+      optProc = None
+    }
+    if (os.exists(pid)) {
+      os.proc("kill", os.read(pid).trim).call(check = false)
+    }
+  }
+
+  def runBackground(config: ujson.Obj): Unit = {
+    closeUnitd()
+    val statedir = dest / "statedir"
+    os.makeDir.all(statedir)
+    os.write.over(statedir / "conf.json", config)
+    os.remove(control)
+    val started = new AtomicBoolean(false)
+    optProc = Some(
+      os.proc(
+        "unitd",
+        "--no-daemon",
+        "--log",
+        dest / "log.txt",
+        "--statedir",
+        statedir,
+        "--control",
+        s"unix:$control",
+        "--pid",
+        pid
+      ).spawn(
+        stdout = os.Inherit,
+        stderr = os.ProcessOutput.Readlines(line => {
+          line match {
+            case s"$_ unit $_ started" =>
+              Thread.sleep(100)
+              started.set(true)
+            case _ =>
+          }
+          System.err.println(line)
+        })
+      )
+    )
+    while (!started.get()) {
+      println("Waiting for unit to start...")
+      Thread.sleep(100)
+    }
+  }
+}
 
 val scalaVersions = Seq(Versions.scala3)
 
@@ -25,10 +99,10 @@ val http4sAndScalaVersions = for {
   http4sV <- http4sVersions
 } yield (scalaV, http4sV)
 
-val osLib = ivy"com.lihaoyi::os-lib:${Versions.osLib}"
-val upickle = ivy"com.lihaoyi::upickle::${Versions.upickle}"
-val undertow = ivy"io.undertow:undertow-core:${Versions.undertow}"
-val utest = ivy"com.lihaoyi::utest::${Versions.utest}"
+val osLib = mvn"com.lihaoyi::os-lib:${Versions.osLib}"
+val upickle = mvn"com.lihaoyi::upickle::${Versions.upickle}"
+val undertow = mvn"io.undertow:undertow-core:${Versions.undertow}"
+val utest = mvn"com.lihaoyi::utest::${Versions.utest}"
 
 val testServerPort = 8081
 
@@ -43,7 +117,7 @@ object Common {
     def scalaVersion = Versions.scala3
   }
   trait Native extends Jvm with ScalaNativeModule {
-    def scalaNativeVersion = versions.Versions.scalaNative
+    def scalaNativeVersion = Versions.scalaNative
 
     def baseTestConfig(binary: os.Path) = {
       val appName = "app"
@@ -64,13 +138,14 @@ object Common {
 
     def deployTestApp() = Task.Command {
       val binary = nativeLink()
-      unitd.runBackground(baseTestConfig(binary))
+      unitd.runBackground(baseTestConfig(binary.path))
     }
 
   }
 }
 
-trait Publish extends CiReleaseModule with Mima {
+trait Publish extends PublishModule with Mima {
+  def publishVersion = Task.Input { "0.0.0-SNAPSHOT" }
   def pomSettings =
     PomSettings(
       description = "Scala Native server using FreeUnit",
@@ -88,36 +163,25 @@ trait Publish extends CiReleaseModule with Mima {
 }
 object snunit extends Common.Native with Publish {
   object test extends ScalaNativeTests with TestModule.Utest {
-    def ivyDeps = super.ivyDeps() ++ Agg(utest)
+  def mvnDeps = super.mvnDeps() ++ Seq(utest)
   }
 }
 
 object `snunit-async-cats-effect` extends Common.Native with Publish {
   def moduleDeps = Seq(snunit)
 
-  def ivyDeps =
+  def mvnDeps =
     Task {
-      super.ivyDeps() ++ Agg(
-        ivy"org.typelevel::cats-effect::${Versions.catsEffect}"
+      super.mvnDeps() ++ Seq(
+        mvn"org.typelevel::cats-effect::${Versions.catsEffect}"
       )
     }
 }
 
 object `snunit-undertow` extends Common.Native with Publish {
   def moduleDeps = Seq(snunit)
-  def ivyDeps = super.ivyDeps() ++ Agg(undertow)
-  // Remove class and tasty files
-  override def jar = Task {
-    Jvm.createJar(
-      localClasspath().map(_.path).filter(os.exists),
-      manifest(),
-      (_, file) =>
-        file.ext match {
-          case "class" | "tasty" => false
-          case _                 => true
-        }
-    )
-  }
+  def mvnDeps = super.mvnDeps() ++ Seq(undertow)
+  // Keep default jar behavior for Mill compatibility.
   // Sometimes it gives problems compiling since our internal API is different
   // than the java API in the class files.
   def zincIncrementalCompilation = false
@@ -125,7 +189,7 @@ object `snunit-undertow` extends Common.Native with Publish {
 
 object `snunit-tapir` extends Common.Native with Publish {
   def moduleDeps = Seq(snunit)
-  def ivyDeps = super.ivyDeps() ++ Agg(ivy"com.softwaremill.sttp.tapir::tapir-server::${Versions.tapir}")
+  def mvnDeps = super.mvnDeps() ++ Seq(mvn"com.softwaremill.sttp.tapir::tapir-server::${Versions.tapir}")
 }
 // TODO: re-enable when tapir-cats-effect publishes Native 0.5 artifacts
 // object `snunit-tapir-cats-effect` extends Common.Native with Publish {
@@ -133,7 +197,7 @@ object `snunit-tapir` extends Common.Native with Publish {
 //     `snunit-tapir`,
 //     `snunit-async-cats-effect`
 //   )
-//   def ivyDeps = super.ivyDeps() ++ Agg(
+//   def ivyDeps = super.ivyDeps() ++ Seq(
 //     ivy"com.softwaremill.sttp.tapir::tapir-cats-effect::${Versions.tapir}"
 //   )
 // }
@@ -150,18 +214,20 @@ trait SNUnitHttp4s extends Common.Native with Cross.Module[String] with Publish 
     case s"1.$_"    => "1"
   }
   def artifactName = s"snunit-http4s$http4sBinaryVersion"
-  def ivyDeps = super.ivyDeps() ++ Agg(
-    ivy"org.http4s::http4s-server::$http4sVersion"
+  def mvnDeps = super.mvnDeps() ++ Seq(
+    mvn"org.http4s::http4s-server::$http4sVersion"
   )
-  def sources = T.sources {
-    super.sources() ++ Agg(PathRef(millSourcePath / s"http4s-$http4sBinaryVersion" / "src"))
+  def http4sSourcesDir = Task.Source(moduleDir / s"http4s-$http4sBinaryVersion" / "src")
+  override def generatedSources = Task {
+    super.generatedSources() ++ Seq(PathRef(http4sSourcesDir().path))
   }
 }
 
+def caskPatch = Task.Source(moduleDir / "cask.patch")
 def caskSources = Task {
   val dest = Task.dest
   os.proc("git", "clone", "--branch", Versions.cask, "--depth", "1", "https://github.com/com-lihaoyi/cask", dest).call()
-  os.proc("git", "apply", T.workspace / "cask.patch").call(cwd = dest / "cask")
+  os.proc("git", "apply", caskPatch().path).call(cwd = dest / "cask")
   PathRef(dest)
 }
 def castorSources = Task {
@@ -177,10 +243,10 @@ object `snunit-cask` extends Common.Native with Publish {
     Seq(cask / "src", cask / "util" / "src", cask / "src-3", castor / "src", castor / "src-js-native").map(PathRef(_))
   }
   def moduleDeps = Seq(`snunit-undertow`)
-  def ivyDeps = super.ivyDeps() ++ Agg(
+  def mvnDeps = super.mvnDeps() ++ Seq(
     upickle,
-    ivy"io.github.cquiroz::scala-java-time::${Versions.scalaJavaTime}",
-    ivy"com.lihaoyi::pprint::${Versions.pprint}"
+    mvn"io.github.cquiroz::scala-java-time::${Versions.scalaJavaTime}",
+    mvn"com.lihaoyi::pprint::${Versions.pprint}"
   )
 }
 
@@ -200,13 +266,13 @@ object integration extends ScalaModule {
         def moduleDeps = Seq(`snunit-undertow`)
       }
       object jvm extends CrossPlatformScalaModule with Common.Jvm {
-        def ivyDeps = super.ivyDeps() ++ Agg(undertow)
+        def mvnDeps = super.mvnDeps() ++ Seq(undertow)
       }
     }
     object `cask-helloworld` extends CrossPlatform {
       object jvm extends CrossPlatformScalaModule with Common.Jvm {
-        def ivyDeps = super.ivyDeps() ++ Agg(
-          ivy"com.lihaoyi::cask:${Versions.cask}"
+        def mvnDeps = super.mvnDeps() ++ Seq(
+          mvn"com.lihaoyi::cask:${Versions.cask}"
         )
       }
       object native extends CrossPlatformScalaModule with Common.Native {
@@ -225,8 +291,8 @@ object integration extends ScalaModule {
       def moduleDeps = Seq(
         `snunit-http4s`(http4sVersion)
       )
-      def ivyDeps = super.ivyDeps() ++ Agg(
-        ivy"org.http4s::http4s-dsl::$http4sVersion"
+      def mvnDeps = super.mvnDeps() ++ Seq(
+        mvn"org.http4s::http4s-dsl::$http4sVersion"
       )
     }
     object `http4s-app` extends Common.Native {
@@ -234,8 +300,8 @@ object integration extends ScalaModule {
       def moduleDeps = Seq(
         `snunit-http4s`(http4sVersion)
       )
-      def ivyDeps = super.ivyDeps() ++ Agg(
-        ivy"org.http4s::http4s-dsl::$http4sVersion"
+      def mvnDeps = super.mvnDeps() ++ Seq(
+        mvn"org.http4s::http4s-dsl::$http4sVersion"
       )
     }
     // object `tapir-helloworld-cats-effect` extends Common.Native {
@@ -246,6 +312,9 @@ object integration extends ScalaModule {
   }
   def scalaVersion = Versions.scala3
   object test extends ScalaTests with TestModule.Utest with BuildInfo {
+    override def resources = Task {
+      super[ScalaTests].resources() ++ super[BuildInfo].resources()
+    }
     def buildInfoMembers = Seq(
       BuildInfo.Value("port", testServerPort.toString),
       BuildInfo.Value("scalaVersions", scalaVersions.mkString(":")),
@@ -253,11 +322,11 @@ object integration extends ScalaModule {
       BuildInfo.Value("unitControl", unitd.control.toString)
     )
     def buildInfoPackageName = "snunit.test"
-    def ivyDeps =
-      Agg(
+    def mvnDeps =
+      Seq(
         utest,
         osLib,
-        ivy"com.softwaremill.sttp.client3::core:${Versions.sttp}"
+        mvn"com.softwaremill.sttp.client3::core:${Versions.sttp}"
       )
   }
 }
@@ -270,12 +339,12 @@ object integration extends ScalaModule {
 //   def buildInfoPackageName = "snunit.plugin.internal"
 //   def artifactName = s"mill-snunit_mill${Versions.mill011.split('.').take(2).mkString(".")}"
 //   def scalaVersion = mill.main.BuildInfo.scalaVersion
-//   def compileIvyDeps = super.compileIvyDeps() ++ Agg(
+//   def compileIvyDeps = super.compileIvyDeps() ++ Seq(
 //     ivy"com.lihaoyi::mill-scalanativelib:${mill.main.BuildInfo.millVersion}"
 //   )
 
 //   object test extends ScalaTests with TestModule.Utest with BuildInfo {
-//     def ivyDeps = Agg(
+//     def ivyDeps = Seq(
 //       ivy"com.lihaoyi::mill-testkit:${mill.main.BuildInfo.millVersion}",
 //       ivy"com.lihaoyi::mill-scalanativelib:${mill.main.BuildInfo.millVersion}"
 //     )
@@ -286,7 +355,7 @@ object integration extends ScalaModule {
 //     )
 //     def buildInfoPackageName = "snunit.plugin"
 //     object millExecutable extends JavaModule {
-//       def ivyDeps = Agg(
+//       def ivyDeps = Seq(
 //         ivy"com.lihaoyi:mill-dist:${mill.main.BuildInfo.millVersion}"
 //       )
 //       def mainClass = Some("mill.runner.client.MillClientMain")

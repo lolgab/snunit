@@ -5,7 +5,7 @@ import utest._
 object TapirTests extends TestSuite {
   val tests = Tests {
     test("tapir-helloworld") {
-      withDeployedExample("tapir-helloworld") {
+      withDeployedExample("tapir-helloworld", readyUrl = Some(uri"$baseUrl/hello?name=Lorenzo")) {
         tapirHelloWorldTest(baseUrl)
       }
     }
