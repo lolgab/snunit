@@ -5,17 +5,17 @@ import utest._
 object TapirTests extends TestSuite {
   val tests = Tests {
     test("tapir-helloworld") {
-      withDeployedExample("tapir-helloworld") {
+      withDeployedExample("tapir-helloworld", readyUrl = uri"$baseUrl/hello?name=Lorenzo") {
         tapirHelloWorldTest(baseUrl)
       }
     }
     test("tapir-helloworld-cats-effect") {
-      withDeployedExample("tapir-helloworld-cats-effect") {
+      withDeployedExample("tapir-helloworld-cats-effect", readyUrl = uri"$baseUrl/hello?name=Lorenzo") {
         tapirHelloWorldTest(baseUrl)
       }
     }
     test("tapir-app") {
-      withDeployedExample("tapir-app") {
+      withDeployedExample("tapir-app", readyUrl = uri"$baseUrl/hello?name=Lorenzo") {
         tapirHelloWorldTest(baseUrl)
       }
     }

@@ -31,9 +31,9 @@ def waitUntilReady(url: Uri = baseUrl): Unit = {
   }
 }
 
-def withDeployedExample[T](projectName: String, crossSuffix: String = "")(f: => T): T = {
+def withDeployedExample[T](projectName: String, crossSuffix: String = "", readyUrl: Uri = baseUrl)(f: => T): T = {
   runMillCommand(s"integration.tests.$projectName$crossSuffix.deployTestApp")
-  waitUntilReady()
+  waitUntilReady(readyUrl)
   f
 }
 def withDeployedExampleHttp4s(projectName: String)(f: => Unit) = {
