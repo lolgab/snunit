@@ -17,6 +17,8 @@ import scala.scalanative.runtime.toRawPtr
 import scala.scalanative.unsafe.*
 import scala.util.control.NonFatal
 import scala.concurrent.Future
+import scala.concurrent.duration.*
+import cats.syntax.all.*
 
 private[snunit] object CEAsyncServerBuilder {
   private val initArray: Array[Byte] = new Array[Byte](sizeof[nxt_unit_init_t].toInt)
@@ -112,8 +114,7 @@ private[snunit] object CEAsyncServerBuilder {
             handle
               .pollReadRec[Unit, Unit](()) { _ =>
                 IO {
-                  // process messages until we are blocked
-                  while (nxt_unit_process_port_msg(ctx, port) == NXT_UNIT_OK) {}
+                  PortData.processAll()
 
                   if (stopped && PortData.isLastFDStopped)
                     Right(())
@@ -122,6 +123,7 @@ private[snunit] object CEAsyncServerBuilder {
                     Left(())
                 }
               }
+              .race((IO.sleep(20.millis) *> IO(PortData.processAll())).foreverM)
               .race(shutdownDeferred.get)
           )
       )
@@ -136,6 +138,15 @@ private[snunit] object CEAsyncServerBuilder {
     private[this] val references = new java.util.IdentityHashMap[PortData, Unit]
 
     private[this] val stopped = new java.util.IdentityHashMap[PortData, Unit]
+
+    // libunit doesn't read from the shared port until the context is ready, which depends on messages from the
+    // other ports. Since the fds are edge-triggered, a notification can be consumed while the port can't be read yet,
+    // so all the ports are drained together, also periodically.
+    def processAll(): Unit = synchronized {
+      references.keySet.toArray.foreach { case pd: PortData =>
+        if (!pd.stopped) while (nxt_unit_process_port_msg(pd.ctx, pd.port) == NXT_UNIT_OK) {}
+      }
+    }
 
     def isLastFDStopped: Boolean = synchronized(references == stopped)
 
