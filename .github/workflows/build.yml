@@ -32,6 +32,9 @@ jobs:
         run: ./mill snunit.test
       - name: Run Integration Tests
         run: ./mill integration.test
+      - name: Show unitd log
+        if: failure()
+        run: sudo cat ~/.cache/snunit/log.txt /root/.cache/snunit/log.txt || true
       # TODO: Enable again
       # - name: Run Mill Plugin Tests
       #   run: ./mill -i snunit-mill-plugin.__.test
