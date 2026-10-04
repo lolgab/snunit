@@ -7,12 +7,13 @@ final class HeaderValues private[undertow] (key: String, value: String)
     with java.util.Deque[String]
     with java.util.List[String] {
   def getHeaderName(): String = key
-  def addFirst(x$1: String): Unit = ???
-  def addLast(x$1: String): Unit = ???
+  override def reversed(): HeaderValues = ???
+  override def addFirst(x$1: String): Unit = ???
+  override def addLast(x$1: String): Unit = ???
   def descendingIterator(): java.util.Iterator[String] = ???
   def element(): String = ???
-  def getFirst(): String = ???
-  def getLast(): String = ???
+  override def getFirst(): String = ???
+  override def getLast(): String = ???
   def offer(x$1: String): Boolean = ???
   def offerFirst(x$1: String): Boolean = ???
   def offerLast(x$1: String): Boolean = ???
@@ -25,9 +26,9 @@ final class HeaderValues private[undertow] (key: String, value: String)
   def pop(): String = ???
   def push(x$1: String): Unit = ???
   def remove(): String = ???
-  def removeFirst(): String = ???
+  override def removeFirst(): String = ???
   def removeFirstOccurrence(x$1: Object): Boolean = ???
-  def removeLast(): String = ???
+  override def removeLast(): String = ???
   def removeLastOccurrence(x$1: Object): Boolean = ???
 
   // Members declared in java.util.List

@@ -76,7 +76,7 @@ jobs:
           key: out
       - name: Publish plugin shared locally
         run: ./mill snunit-plugins-shared.__.publishLocal
-      - run: ./mill io.kipp.mill.ci.release.ReleaseModule/publishAll
+      - run: ./mill mill.javalib.SonatypeCentralPublishModule/publishAll
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
