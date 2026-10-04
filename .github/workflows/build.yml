@@ -32,17 +32,39 @@ jobs:
         run: ./mill snunit.test
       - name: Run Integration Tests
         run: ./mill integration.test
-      # TODO: Enable again
-      # - name: Run Mill Plugin Tests
-      #   run: ./mill -i snunit-mill-plugin.__.test
+  cli:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-14]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install scalino
+        run: curl -fsSL https://raw.githubusercontent.com/lolgab/scalino/main/install.sh | bash
+      - name: Install FreeUnit build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang libpcre2-dev libssl-dev
+      - name: Install FreeUnit build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install pcre2 openssl@3
+      - name: Build FreeUnit
+        run: |
+          OUT_DIR=$PWD/dist bash .github/scripts/build-freeunit.sh
+          mkdir freeunit-bin
+          tar xzf dist/freeunit-*.tar.gz -C dist
+          cp dist/freeunit-*/unitd dist/freeunit-*/libunit.a freeunit-bin/
+      - name: Publish snunit locally
+        run: ./mill snunit.publishLocal
+      - name: Build snunit CLI
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
+          scalino package snunit-cli/snunit.scala -o snunit
+      - name: Smoke test
+        run: bash .github/scripts/cli-smoke-test.sh
+        env:
+          SNUNIT_FREEUNIT_DIR: ${{ github.workspace }}/freeunit-bin
 
-      # - name: Build and Test Sbt plugin
-      #   run: |
-      #     (
-      #       cd sbt-plugin
-      #       sudo systemctl start unit.service
-      #       sbt scalafmtCheckAll scalafmtSbtCheck scripted
-      #     )
   check-binary-compatibility:
     runs-on: ubuntu-24.04
     steps:
@@ -74,18 +96,9 @@ jobs:
         with:
           path: ./out
           key: out
-      - name: Publish plugin shared locally
-        run: ./mill snunit-plugins-shared.__.publishLocal
       - run: ./mill mill.javalib.SonatypeCentralPublishModule/publishAll
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      # TODO: Support again Sbt plugin once Mill plugin is stable
-      # - name: Publish Sbt Plugin
-      #   run: |
-      #     if [[ $(git tag --points-at HEAD) != '' ]]; then
-      #       cd sbt-plugin
-      #       sbt publishSigned sonatypeBundleRelease
-      #     fi

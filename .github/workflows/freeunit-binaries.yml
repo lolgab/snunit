@@ -1,0 +1,56 @@
+name: freeunit-binaries
+
+# Builds prebuilt `unitd` + `libunit.a` per platform so SNUnit users don't have
+# to compile FreeUnit from sources.
+on:
+  workflow_dispatch:
+    inputs:
+      freeunit_version:
+        description: FreeUnit version to build
+        required: true
+        default: "1.36.1"
+  push:
+    tags:
+      - "freeunit-*"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+          - runner: ubuntu-22.04-arm
+          - runner: macos-14
+    runs-on: ${{ matrix.runner }}
+    env:
+      FREEUNIT_VERSION: ${{ inputs.freeunit_version || '1.36.1' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libssl-dev
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install pcre2 openssl@3
+      - name: Build FreeUnit
+        run: bash .github/scripts/build-freeunit.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: freeunit-${{ matrix.runner }}
+          path: dist/*.tar.gz
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/freeunit-')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.tar.gz

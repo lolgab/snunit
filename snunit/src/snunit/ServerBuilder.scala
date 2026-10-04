@@ -22,6 +22,7 @@ private[snunit] object ServerBuilder {
   }
 
   private[snunit] def setBaseHandlers(init: nxt_unit_init_t_*): Unit = {
+    snunit.launcher.Launcher.runIfNeeded()
     init.callbacks.request_handler = request_handler
     init.callbacks.websocket_handler = websocket_handler
   }
