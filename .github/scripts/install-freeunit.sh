@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-FREEUNIT_VERSION="${FREEUNIT_VERSION:-1.35.5}"
+FREEUNIT_VERSION="${FREEUNIT_VERSION:-1.36.1}"
 PREFIX="${FREEUNIT_PREFIX:-/usr/local}"
 
 sudo apt-get update

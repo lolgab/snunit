@@ -1,8 +1,8 @@
 //| mvnDeps:
-//| - com.goyeau::mill-scalafix::0.6.0
+//| - com.goyeau::mill-scalafix::0.6.2
 //| - com.github.lolgab::mill-crossplatform::0.3.0
 //| - com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION
-//| - com.github.lolgab::mill-mima::0.2.1
+//| - com.github.lolgab::mill-mima::0.2.2
 package build
 
 import mill._, mill.scalalib._, mill.scalanativelib._, mill.scalanativelib.api._
@@ -14,24 +14,24 @@ import com.github.lolgab.mill.crossplatform._
 import java.util.concurrent.atomic.AtomicBoolean
 
 object Versions {
-  val scalaNative = "0.5.7"
-  val upickle = "4.0.2"
+  val scalaNative = "0.5.12"
+  val upickle = "4.4.3"
   val undertow = "2.3.18.Final"
   val scala212 = "2.12.19"
-  val scala3 = "3.3.4"
-  val tapir = "1.13.19"
+  val scala3 = "3.9.0"
+  val tapir = "1.13.32"
   val cask = "0.10.2"
-  val catsEffect = "3.7.0"
-  val http4s023 = "0.23.34"
+  val catsEffect = "3.7.1"
+  val http4s023 = "0.23.38"
   val http4s1 = "1.0.0-M47"
   val mill011 = "0.11.13"
-  val utest = "0.8.4"
-  val osLib = "0.11.3"
-  val sttp = "3.10.1"
-  val pprint = "0.9.0"
+  val utest = "0.9.5"
+  val osLib = "0.11.8"
+  val sttp = "3.11.0"
+  val pprint = "0.9.6"
   val castor = "0.3.0"
-  val scalaJavaTime = "2.6.0"
-  val freeUnit = "1.35.5"
+  val scalaJavaTime = "2.7.0"
+  val freeUnit = "1.36.1"
 }
 
 object unitd {
@@ -163,7 +163,7 @@ trait Publish extends PublishModule with Mima {
 }
 object snunit extends Common.Native with Publish {
   object test extends ScalaNativeTests with TestModule.Utest {
-  def mvnDeps = super.mvnDeps() ++ Seq(utest)
+    def mvnDeps = super.mvnDeps() ++ Seq(utest)
   }
 }
 
@@ -243,6 +243,8 @@ object `snunit-cask` extends Common.Native with Publish {
     Seq(cask / "src", cask / "util" / "src", cask / "src-3", castor / "src", castor / "src-js-native").map(PathRef(_))
   }
   def moduleDeps = Seq(`snunit-undertow`)
+  // Cask sources aren't compatible with the latest Scala 3 defaults
+  def scalacOptions = super.scalacOptions() ++ Seq("-source:3.3")
   def mvnDeps = super.mvnDeps() ++ Seq(
     upickle,
     mvn"io.github.cquiroz::scala-java-time::${Versions.scalaJavaTime}",

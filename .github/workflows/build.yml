@@ -17,37 +17,24 @@ jobs:
         run: bash .github/scripts/install-freeunit.sh
       - name: Download dependencies
         run: |
-          attempt=1
-          while true; do
-            echo "prepareOffline attempt ${attempt} (1 minute timeout)"
-            if timeout 60s ./mill -j1 __.prepareOffline; then
-              exit 0
-            fi
-            code=$?
-            if [ "${code}" -eq 124 ]; then
-              echo "prepareOffline timed out after 1 minute, retrying..."
-              attempt=$((attempt + 1))
-              continue
-            fi
-            exit "${code}"
-          done
+          ./mill __.prepareOffline
       - name: Check formatting
         run: |
-          ./mill -j1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
-          ./mill -j1 --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+          ./mill mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
+          ./mill --meta-level 1 mill.scalalib.scalafmt.ScalafmtModule/checkFormatAll __.sources
       # - name: Check scalafix
-      #   run: ./mill -j1 __.fix --check
+      #   run: ./mill __.fix --check
       - name: Compile
-        run: ./mill -j1 __.compile
+        run: ./mill __.compile
       - name: Publish libraries locally
-        run: ./mill -j1 __.publishLocal
+        run: ./mill __.publishLocal
       - name: Run Unit Tests
-        run: ./mill -j1 snunit.test
+        run: ./mill snunit.test
       - name: Run Integration Tests
-        run: ./mill -j1 integration.test
+        run: ./mill integration.test
       # TODO: Enable again
       # - name: Run Mill Plugin Tests
-      #   run: ./mill -j1 -i snunit-mill-plugin.__.test
+      #   run: ./mill -i snunit-mill-plugin.__.test
 
       # - name: Build and Test Sbt plugin
       #   run: |
@@ -63,7 +50,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Check Binary Compatibility
-        run: ./mill -j1 __.mimaReportBinaryIssues
+        run: ./mill __.mimaReportBinaryIssues
 
   publish-sonatype:
     if: github.repository == 'lolgab/snunit' && contains(github.ref, 'refs/tags/')
@@ -88,8 +75,8 @@ jobs:
           path: ./out
           key: out
       - name: Publish plugin shared locally
-        run: ./mill -j1 snunit-plugins-shared.__.publishLocal
-      - run: ./mill -j1 mill.javalib.SonatypeCentralPublishModule/publishAll
+        run: ./mill snunit-plugins-shared.__.publishLocal
+      - run: ./mill mill.javalib.SonatypeCentralPublishModule/publishAll
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
