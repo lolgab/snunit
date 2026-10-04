@@ -314,6 +314,8 @@ object integration extends ScalaModule {
   }
   def scalaVersion = Versions.scala3
   object test extends ScalaTests with TestModule.Utest with BuildInfo {
+    // All tests share the same unitd instance and port
+    def testParallelism = false
     override def resources = Task {
       super[ScalaTests].resources() ++ super[BuildInfo].resources()
     }
