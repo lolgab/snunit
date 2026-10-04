@@ -96,7 +96,8 @@ private[tapir] trait SNUnitGenericServerInterpreter {
   private val deleteFile: TapirFile => Wrapper[Unit] = _ => monadError.unit(())
 
   implicit val bodyListener: BodyListener[Wrapper, Array[Byte]] = new BodyListener[Wrapper, Array[Byte]] {
-    def onComplete(body: Array[Byte])(cb: Try[Unit] => Wrapper[Unit]): Wrapper[Array[Byte]] = ???
+    def onComplete(body: Array[Byte])(cb: Try[Unit] => Wrapper[Unit]): Wrapper[Array[Byte]] =
+      cb(Success(())).map(_ => body)
   }
 
   private class SNUnitServerRequest(req: snunit.Request) extends ServerRequest {
