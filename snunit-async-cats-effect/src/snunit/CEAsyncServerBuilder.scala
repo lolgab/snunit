@@ -128,7 +128,7 @@ private[snunit] object CEAsyncServerBuilder {
 
     def stop(): Unit = {
       stopped = true
-      PortData.stopped.put(this, ())
+      PortData.markStopped(this)
     }
   }
 
@@ -137,11 +137,13 @@ private[snunit] object CEAsyncServerBuilder {
 
     private[this] val stopped = new java.util.IdentityHashMap[PortData, Unit]
 
-    def isLastFDStopped: Boolean = references == stopped
+    def isLastFDStopped: Boolean = synchronized(references == stopped)
+
+    def markStopped(portData: PortData): Unit = synchronized(stopped.put(portData, ()))
 
     def register(ctx: nxt_unit_ctx_t_*, port: nxt_unit_port_t_*): Unit =
       val portData = new PortData(ctx, port)
-      references.put(portData, ())
+      synchronized(references.put(portData, ()))
       port.data = fromRawPtr(Intrinsics.castObjectToRawPtr(portData))
 
     def fromPort(port: nxt_unit_port_t_*): PortData = {
