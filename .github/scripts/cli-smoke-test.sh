@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds a hello world with the snunit CLI and checks that the resulting single
-# binary serves requests. Expects ./snunit and SNUNIT_FREEUNIT_DIR.
+# binary serves requests. Expects ./bin/snunit and SNUNIT_FREEUNIT_DIR.
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -20,7 +20,7 @@ def run =
     .listen()
 SCALA
 
-./snunit package "$workdir/Hello.scala" -o "$workdir/app"
+./bin/snunit package "$workdir/Hello.scala" -o "$workdir/app"
 
 SNUNIT_PORT=18080 "$workdir/app" > "$workdir/log" 2>&1 &
 pid=$!

@@ -59,7 +59,8 @@ jobs:
       - name: Build snunit CLI
         run: |
           export PATH=$HOME/.local/bin:$PATH
-          scalino package snunit-cli/snunit.scala -o snunit
+          mkdir -p bin
+          scalino package snunit-cli/snunit.scala -o bin/snunit
       - name: Smoke test
         run: bash .github/scripts/cli-smoke-test.sh
         env:
