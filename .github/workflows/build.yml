@@ -41,7 +41,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install scalino
-        run: curl -fsSL https://raw.githubusercontent.com/lolgab/scalino/main/install.sh | bash
+        run: curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
+        env:
+          SCALINO_VERSION: v0.0.17
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Install FreeUnit build dependencies (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y clang libpcre2-dev libssl-dev
