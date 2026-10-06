@@ -13,7 +13,7 @@ import scala.scalanative.unsafe.*
 //
 // Build it with: scalino package snunit-cli/snunit.scala -o snunit
 
-private val FreeUnitVersion = "1.36.1"
+private val FreeUnitVersion = "1.37.0"
 private val SNUnitVersion = sys.env.getOrElse("SNUNIT_VERSION", "0.0.0-SNAPSHOT")
 private val ReleaseBase = "https://github.com/lolgab/snunit/releases/download"
 private val FooterMagic = "SNUNITD1".getBytes("US-ASCII")

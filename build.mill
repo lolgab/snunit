@@ -30,7 +30,7 @@ object Versions {
   val pprint = "0.9.6"
   val castor = "0.3.0"
   val scalaJavaTime = "2.7.0"
-  val freeUnit = "1.36.1"
+  val freeUnit = "1.37.0"
 }
 
 object unitd {
