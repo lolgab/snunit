@@ -8,7 +8,7 @@ on:
       freeunit_version:
         description: FreeUnit version to build
         required: true
-        default: "1.36.1"
+        default: "1.37.0"
   push:
     tags:
       - "freeunit-*"
@@ -24,7 +24,7 @@ jobs:
           - runner: macos-14
     runs-on: ${{ matrix.runner }}
     env:
-      FREEUNIT_VERSION: ${{ inputs.freeunit_version || '1.36.1' }}
+      FREEUNIT_VERSION: ${{ inputs.freeunit_version || '1.37.0' }}
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies (Linux)

@@ -5,7 +5,7 @@
 # Prerequisites (installed by the workflow): a C toolchain, make, pcre2, openssl.
 set -euo pipefail
 
-FREEUNIT_VERSION="${FREEUNIT_VERSION:-1.36.1}"
+FREEUNIT_VERSION="${FREEUNIT_VERSION:-1.37.0}"
 OUT_DIR="${OUT_DIR:-$PWD/dist}"
 
 case "$(uname -s)" in
