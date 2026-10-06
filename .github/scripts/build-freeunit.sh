@@ -9,10 +9,11 @@ OUT_DIR="${OUT_DIR:-$PWD/dist}"
 
 case "$(uname -s)" in
   Linux) os=linux; default_version=1.37.0 ;;
-  # FreeUnit 1.37.0 fails every request on Apple Silicon: libunit and the router
-  # now require the shm segment size to equal PORT_MMAP_SIZE exactly, but macOS
-  # rounds the segment up to the 16 KB page size ("incoming_mmap: unexpected
-  # segment size"). Stay on 1.36.1 on macOS until this is fixed upstream.
+  # FreeUnit 1.37.0 fails every request on Apple Silicon: libunit now requires
+  # the shm segment the router sends to be exactly PORT_MMAP_SIZE
+  # (freeunitorg/freeunit#445), but macOS rounds the segment up to the 16 KB
+  # page size ("incoming_mmap: unexpected segment size"). Stay on 1.36.1 on
+  # macOS until this is fixed upstream.
   # Keep in sync with snunit-cli/snunit.scala.
   Darwin) os=macos; default_version=1.36.1 ;;
   *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;

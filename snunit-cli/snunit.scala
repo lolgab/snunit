@@ -76,9 +76,9 @@ private def cacheDir: Path = {
 }
 
 
-// FreeUnit 1.37.0 fails every request on Apple Silicon (libunit and the router require the shm segment
-// size to equal PORT_MMAP_SIZE, but macOS rounds it up to the 16 KB page size), so macOS stays on 1.36.1
-// until that is fixed upstream. Keep in sync with .github/scripts/build-freeunit.sh.
+// FreeUnit 1.37.0 fails every request on Apple Silicon (libunit now requires the shm segment from the router
+// to be exactly PORT_MMAP_SIZE, freeunitorg/freeunit#445, but macOS rounds it up to the 16 KB page size), so
+// macOS stays on 1.36.1 until that is fixed upstream. Keep in sync with .github/scripts/build-freeunit.sh.
 private def freeUnitVersion: String = if (isMac) "1.36.1" else "1.37.0"
 
 /** Directory with the `unitd` and `libunit.a` for this host, downloaded on first use. */
