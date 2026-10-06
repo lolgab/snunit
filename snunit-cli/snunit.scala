@@ -101,11 +101,14 @@ private def scalinoCheck(): Unit =
 /** Extra scalino flags that turn a Scala program into an SNUnit executable. */
 private def buildFlags(dir: Path): Seq[String] = {
   val unitd = dir.resolve("unitd").toAbsolutePath
-  val libunit = dir.resolve("libunit.a").toAbsolutePath
+  val libDir = dir.toAbsolutePath
+  val libunit = libDir.resolve("libunit.a")
   Seq("--dep", s"com.github.lolgab::snunit::$SNUnitVersion") ++
     (if (SNUnitVersion.endsWith("SNAPSHOT")) Seq("--repository", "ivy2Local") else Nil) ++
     // snunit reads String internals through raw pointers, which breaks with compact object headers.
-    Seq("--native-compact-headers=false", "--native-linking", libunit.toString) ++
+    // snunit declares @link("unit"), so -lunit must resolve: -L finds it on machines with no system libunit,
+    // and the explicit archive makes the pinned one win over a system-wide install (e.g. /usr/local/lib).
+    Seq("--native-compact-headers=false", "--native-linking", s"-L$libDir", "--native-linking", libunit.toString) ++
     // On macOS the unitd bytes become a section of the executable, keeping the code signature valid.
     (if (isMac) Seq("--native-linking", s"-Wl,-sectcreate,__DATA,__unitd,$unitd") else Nil)
 }
