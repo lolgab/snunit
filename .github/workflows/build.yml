@@ -34,6 +34,7 @@ jobs:
         run: ./mill integration.test
   cli:
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:

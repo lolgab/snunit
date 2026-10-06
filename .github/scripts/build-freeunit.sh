@@ -5,14 +5,19 @@
 # Prerequisites (installed by the workflow): a C toolchain, make, pcre2, openssl.
 set -euo pipefail
 
-FREEUNIT_VERSION="${FREEUNIT_VERSION:-1.37.0}"
 OUT_DIR="${OUT_DIR:-$PWD/dist}"
 
 case "$(uname -s)" in
-  Linux) os=linux ;;
-  Darwin) os=macos ;;
+  Linux) os=linux; default_version=1.37.0 ;;
+  # FreeUnit 1.37.0 fails every request on Apple Silicon: libunit and the router
+  # now require the shm segment size to equal PORT_MMAP_SIZE exactly, but macOS
+  # rounds the segment up to the 16 KB page size ("incoming_mmap: unexpected
+  # segment size"). Stay on 1.36.1 on macOS until this is fixed upstream.
+  # Keep in sync with snunit-cli/snunit.scala.
+  Darwin) os=macos; default_version=1.36.1 ;;
   *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
 esac
+FREEUNIT_VERSION="${FREEUNIT_VERSION:-$default_version}"
 case "$(uname -m)" in
   x86_64 | amd64) arch=x86_64 ;;
   arm64 | aarch64) arch=aarch64 ;;

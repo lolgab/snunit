@@ -26,7 +26,7 @@ SNUNIT_PORT=18080 "$workdir/app" > "$workdir/log" 2>&1 &
 pid=$!
 
 for _ in $(seq 1 20); do
-  if body="$(curl -fs localhost:18080/)"; then
+  if body="$(curl -fs --max-time 2 localhost:18080/)"; then
     [[ "$body" == "Hello world!" ]] && echo "OK" && exit 0
   fi
   sleep 0.5

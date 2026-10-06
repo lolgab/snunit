@@ -6,9 +6,8 @@ on:
   workflow_dispatch:
     inputs:
       freeunit_version:
-        description: FreeUnit version to build
-        required: true
-        default: "1.37.0"
+        description: "FreeUnit version to build on every platform. Empty uses the per-platform version pinned in build-freeunit.sh"
+        required: false
   push:
     tags:
       - "freeunit-*"
@@ -24,7 +23,7 @@ jobs:
           - runner: macos-14
     runs-on: ${{ matrix.runner }}
     env:
-      FREEUNIT_VERSION: ${{ inputs.freeunit_version || '1.37.0' }}
+      FREEUNIT_VERSION: ${{ inputs.freeunit_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies (Linux)
