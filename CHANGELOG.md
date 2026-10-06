@@ -1,5 +1,11 @@
 # Changelog
 
+## Next
+
+- Add the `snunit` command line tool (`snunit run`, `snunit package`) that builds a single executable embedding FreeUnit
+- Applications start `unitd` themselves when run directly (configurable with `SNUNIT_PORT` and `SNUNIT_PROCESSES`)
+- Remove the Sbt and Mill plugins in favor of the CLI
+
 ## 0.1.1
 
 - Implement plugins for Sbt and Mill to run apps locally

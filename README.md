@@ -23,69 +23,63 @@ and asynchronous web servers with automatic restart on crashes, automatic
 load balancing of multiple processes, great performance and all the nice
 [FreeUnit features](https://freeunit.org/).
 
-FreeUnit is a drop-in replacement for the archived [NGINX Unit](https://unit.nginx.org/) — same `unitd` binary name, control API, and config schema. Install FreeUnit's `unitd` package instead of the archived NGINX Unit one, or use the Docker image `ghcr.io/freeunitorg/freeunit:latest-minimal`.
+An SNUnit application is a **single executable**: it embeds `unitd`, starts it
+with a generated configuration and runs itself as the application. There is
+nothing to install besides the `snunit` command line tool.
 
-## Running your app
+## Getting started
 
-Once built your SNUnit binary, you need to deploy it to the `unitd` server.
-
-You need to run `unitd` in a terminal with:
-
-```bash
-unitd --no-daemon --log /dev/stdout --control unix:control.sock
-```
-
-This will run `unitd` with a UNIX socket file named control.sock in your current directory.
-
-Then, you need to create a json file with your configuration:
-
-```json
-{
-  "listeners": {
-    "*:8081": {
-      "pass": "applications/myapp"
-    }
-  },
-  "applications": {
-    "myapp": {
-      "type": "external",
-      "executable": "snunit/binary/path"
-    }
-  }
-}
-```
-
-Where `executable` is the binary path which can be absolute or relative
-to the `unitd` working directory.
-
-This configuration passes all requests sent to the port `8081` to the application `myapp`.
-
-To know more about configuring FreeUnit, refer to [its documentation](https://github.com/freeunitorg/freeunit#documentation).
-
-To deploy the setting you can use curl:
+Install [scalino](https://github.com/lolgab/scalino), then build `snunit` with it
+(there are no binary releases of `snunit` yet):
 
 ```bash
-curl -X PUT --unix-socket control.sock -d @config.json localhost/config
+scalino package snunit-cli/snunit.scala -o ~/.local/bin/snunit
 ```
 
-If everything went right, you should see this response:
+Then write the
+`Hello.scala` above (no build file needed, `snunit` adds the SNUnit dependency) and run:
 
-```json
-{
-  "success": "Reconfiguration done."
-}
+```bash
+snunit run Hello.scala
 ```
 
-In case of problems, you will get a 4xx response like this:
+This builds the app and serves it on <http://localhost:8080>. Use `-w` to rebuild and
+restart on every change:
 
-```json
-{
-  "error": "Invalid configuration.",
-  "detail": "Required parameter \"executable\" is missing."
-}
+```bash
+snunit run -w Hello.scala
 ```
 
-Further information can be found in `unitd` logs in the running terminal.
+To build the single executable to deploy somewhere else:
+
+```bash
+snunit package Hello.scala -o hello
+./hello
+```
+
+`snunit` forwards every other argument to `scalino`, so `//> using` directives and
+the usual flags work (for example `//> using dep` to add a library).
+Program arguments go after `--`: `snunit run Hello.scala -- --my-flag`.
+
+`snunit` downloads the prebuilt FreeUnit for your platform (Linux x86_64/aarch64,
+macOS arm64) the first time and caches it in `~/.cache/snunit`.
+
+### Configuration
+
+The running executable reads its configuration from environment variables:
+
+| Variable | Default | |
+|---|---|---|
+| `SNUNIT_PORT` | `8080` | Port to listen on |
+| `SNUNIT_PROCESSES` | FreeUnit default (1) | Number of application processes |
+
+### How it works
+
+When the executable is started directly it extracts the embedded `unitd` (from memory
+with `memfd_create` on Linux, from a cache directory on macOS), writes a `conf.json` in a temporary
+state directory, starts `unitd` and forwards signals to it. FreeUnit then starts
+the same executable as an `external` application. When started by FreeUnit,
+the executable just serves requests.
 
 ## Sync and async support
 
