@@ -1,0 +1,112 @@
+name: cli
+
+# Releases the `snunit` command line tool, independently of the snunit library
+# (which is published to Sonatype from `x.y.z` tags in build.yml).
+#
+# Push a `cli-vX.Y.Z` tag to publish the binaries as a GitHub release.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "CLI version, used in the archive names"
+        required: false
+        default: "0.0.0-dev"
+  push:
+    tags:
+      - "cli-v*"
+
+env:
+  SCALINO_VERSION: v0.0.18
+
+jobs:
+  build:
+    # One macOS machine cross-compiles every target: scalino links all of them in a single run.
+    runs-on: macos-14
+    env:
+      VERSION: ${{ inputs.version || '0.0.0-dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version from tag
+        if: startsWith(github.ref, 'refs/tags/cli-v')
+        run: echo "VERSION=${GITHUB_REF_NAME#cli-v}" >> "$GITHUB_ENV"
+      - name: Check the default snunit library version is published
+        run: |
+          version="$(sed -n 's/^private val DefaultSNUnitVersion = "\(.*\)"/\1/p' snunit-cli/snunit.scala)"
+          echo "DefaultSNUnitVersion=$version"
+          curl -fsI "https://repo1.maven.org/maven2/com/github/lolgab/snunit_native0.5_3/$version/snunit_native0.5_3-$version.pom"
+      - name: Check the CLI's FreeUnit commit matches .github/freeunit-ref
+        run: grep -q "\"$(tr -d '[:space:]' < .github/freeunit-ref)\"" snunit-cli/snunit.scala
+      - name: Install scalino
+        run: curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Build snunit for every platform
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
+          scalino package snunit-cli/snunit.scala -o dist \
+            --format tar \
+            --pkg-name snunit \
+            --pkg-version "$VERSION" \
+            --native-mode release-fast \
+            --native-target-triple aarch64-apple-darwin,x86_64-apple-darwin,aarch64-unknown-linux-musl,x86_64-unknown-linux-musl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: snunit-cli
+          path: dist/*
+
+  smoke-test:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            triple: x86_64-unknown-linux-musl
+          - runner: ubuntu-24.04-arm
+            triple: aarch64-unknown-linux-musl
+          - runner: macos-14
+            triple: aarch64-apple-darwin
+          - runner: macos-15-intel
+            triple: x86_64-apple-darwin
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: snunit-cli
+          path: dist
+      - name: Install scalino
+        run: curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Install clang and the FreeUnit runtime libraries (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang libpcre2-dev libssl-dev
+      - name: Install the FreeUnit runtime libraries (macOS)
+        if: runner.os == 'macOS'
+        run: brew install pcre2 openssl@3
+      - name: Unpack the released binary
+        run: |
+          mkdir -p bin
+          tar xzf dist/snunit-*-${{ matrix.triple }}.tar.gz -C dist
+          cp "$(find dist -type f -name snunit)" bin/snunit
+          chmod +x bin/snunit
+      # No SNUNIT_FREEUNIT_DIR: this also tests the prebuilt FreeUnit download.
+      - name: Smoke test
+        run: bash .github/scripts/cli-smoke-test.sh
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/cli-v')
+    needs: smoke-test
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: snunit-cli
+          path: dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*

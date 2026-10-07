@@ -70,6 +70,7 @@ jobs:
       - name: Smoke test
         run: bash .github/scripts/cli-smoke-test.sh
         env:
+          SNUNIT_VERSION: 0.0.0-SNAPSHOT
           SNUNIT_FREEUNIT_DIR: ${{ github.workspace }}/freeunit-bin
 
   check-binary-compatibility:
@@ -82,8 +83,9 @@ jobs:
         run: ./mill __.mimaReportBinaryIssues
 
   publish-sonatype:
-    # `freeunit-*` tags only publish the prebuilt FreeUnit binaries (freeunit-binaries.yml).
-    if: github.repository == 'lolgab/snunit' && startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/freeunit-')
+    # `freeunit-*` tags only publish the prebuilt FreeUnit binaries (freeunit-binaries.yml)
+    # and `cli-v*` tags only publish the snunit CLI (cli.yml).
+    if: github.repository == 'lolgab/snunit' && startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/freeunit-') && !startsWith(github.ref, 'refs/tags/cli-v')
     needs: build
     runs-on: ubuntu-24.04
     env:
