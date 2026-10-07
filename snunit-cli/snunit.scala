@@ -13,7 +13,10 @@ import scala.scalanative.unsafe.*
 //
 // Build it with: scalino package snunit-cli/snunit.scala -o snunit
 
-private val FreeUnitVersion = "1.36.1"
+// FreeUnit commit that `unitd` and `libunit.a` are built from. Keep in sync with .github/freeunit-ref
+// (checked in CI). The prebuilt archives are published in the snunit release tagged `freeunit-<ref8>`.
+private val FreeUnitRef = "872bf04170756e919211799ec5574000d628d521"
+private val FreeUnitRef8 = FreeUnitRef.take(8)
 private val SNUnitVersion = sys.env.getOrElse("SNUNIT_VERSION", "0.0.0-SNAPSHOT")
 private val ReleaseBase = "https://github.com/lolgab/snunit/releases/download"
 private val FooterMagic = "SNUNITD1".getBytes("US-ASCII")
@@ -74,13 +77,14 @@ private def cacheDir: Path = {
   base.resolve("snunit")
 }
 
+
 /** Directory with the `unitd` and `libunit.a` for this host, downloaded on first use. */
 private def freeUnitDir(): Path =
   sys.env.get("SNUNIT_FREEUNIT_DIR").map(Paths.get(_)).getOrElse {
-    val name = s"freeunit-$FreeUnitVersion-$platform"
+    val name = s"freeunit-$FreeUnitRef8-$platform"
     val dir = cacheDir.resolve(name)
     if (!Files.exists(dir.resolve("unitd"))) {
-      val url = s"$ReleaseBase/freeunit-$FreeUnitVersion/$name.tar.gz"
+      val url = s"$ReleaseBase/freeunit-$FreeUnitRef8/$name.tar.gz"
       System.err.println(s"snunit: downloading $url")
       Files.createDirectories(cacheDir)
       val tarball = Files.createTempFile(cacheDir, "freeunit", ".tar.gz")

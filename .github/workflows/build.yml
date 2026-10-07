@@ -34,12 +34,15 @@ jobs:
         run: ./mill integration.test
   cli:
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-14]
     steps:
       - uses: actions/checkout@v4
+      - name: Check the CLI's FreeUnit commit matches .github/freeunit-ref
+        run: grep -q "\"$(tr -d '[:space:]' < .github/freeunit-ref)\"" snunit-cli/snunit.scala
       - name: Install scalino
         run: curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
         env:

@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 # Builds FreeUnit's `unitd` and `libunit.a` and packages them in
-# freeunit-<version>-<os>-<arch>.tar.gz inside $OUT_DIR (default: ./dist).
+# freeunit-<ref>-<os>-<arch>.tar.gz inside $OUT_DIR (default: ./dist), where <ref>
+# is the first 8 characters of the git ref (commit or tag).
+#
+# The FreeUnit commit is pinned in .github/freeunit-ref (override with $FREEUNIT_REF).
+# Keep it in sync with snunit-cli/snunit.scala (checked in CI).
 #
 # Prerequisites (installed by the workflow): a C toolchain, make, pcre2, openssl.
 set -euo pipefail
 
-FREEUNIT_VERSION="${FREEUNIT_VERSION:-1.36.1}"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FREEUNIT_REF="${FREEUNIT_REF:-$(tr -d '[:space:]' < "$here/../freeunit-ref")}"
 OUT_DIR="${OUT_DIR:-$PWD/dist}"
 
 case "$(uname -s)" in
@@ -22,7 +27,7 @@ esac
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-curl -sfL "https://github.com/freeunitorg/freeunit/archive/refs/tags/${FREEUNIT_VERSION}.tar.gz" \
+curl -sfL "https://github.com/freeunitorg/freeunit/archive/${FREEUNIT_REF}.tar.gz" \
   | tar xz -C "$tmpdir" --strip-components=1
 
 configure_args=(--openssl --otel)
@@ -37,7 +42,7 @@ fi
   make -j"$(getconf _NPROCESSORS_ONLN)" build/sbin/unitd build/lib/libunit.a
 )
 
-name="freeunit-${FREEUNIT_VERSION}-${os}-${arch}"
+name="freeunit-${FREEUNIT_REF:0:8}-${os}-${arch}"
 mkdir -p "$OUT_DIR/$name"
 cp "$tmpdir/build/sbin/unitd" "$tmpdir/build/lib/libunit.a" "$OUT_DIR/$name/"
 tar czf "$OUT_DIR/$name.tar.gz" -C "$OUT_DIR" "$name"

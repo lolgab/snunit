@@ -4,3 +4,4 @@
 /.metals
 target
 .bsp
+.scalino-build/
