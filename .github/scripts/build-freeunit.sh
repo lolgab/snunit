@@ -1,24 +1,23 @@
 #!/usr/bin/env bash
 # Builds FreeUnit's `unitd` and `libunit.a` and packages them in
-# freeunit-<version>-<os>-<arch>.tar.gz inside $OUT_DIR (default: ./dist).
+# freeunit-<ref>-<os>-<arch>.tar.gz inside $OUT_DIR (default: ./dist), where <ref>
+# is the first 8 characters of the git ref (commit or tag).
+#
+# The FreeUnit commit is pinned in .github/freeunit-ref (override with $FREEUNIT_REF).
+# Keep it in sync with snunit-cli/snunit.scala (checked in CI).
 #
 # Prerequisites (installed by the workflow): a C toolchain, make, pcre2, openssl.
 set -euo pipefail
 
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FREEUNIT_REF="${FREEUNIT_REF:-$(tr -d '[:space:]' < "$here/../freeunit-ref")}"
 OUT_DIR="${OUT_DIR:-$PWD/dist}"
 
 case "$(uname -s)" in
-  Linux) os=linux; default_version=1.37.0 ;;
-  # FreeUnit 1.37.0 fails every request on Apple Silicon: libunit now requires
-  # the shm segment the router sends to be exactly PORT_MMAP_SIZE
-  # (freeunitorg/freeunit#445), but macOS rounds the segment up to the 16 KB
-  # page size ("incoming_mmap: unexpected segment size"). Stay on 1.36.1 on
-  # macOS until this is fixed upstream.
-  # Keep in sync with snunit-cli/snunit.scala.
-  Darwin) os=macos; default_version=1.36.1 ;;
+  Linux) os=linux ;;
+  Darwin) os=macos ;;
   *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
 esac
-FREEUNIT_VERSION="${FREEUNIT_VERSION:-$default_version}"
 case "$(uname -m)" in
   x86_64 | amd64) arch=x86_64 ;;
   arm64 | aarch64) arch=aarch64 ;;
@@ -28,7 +27,7 @@ esac
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-curl -sfL "https://github.com/freeunitorg/freeunit/archive/refs/tags/${FREEUNIT_VERSION}.tar.gz" \
+curl -sfL "https://github.com/freeunitorg/freeunit/archive/${FREEUNIT_REF}.tar.gz" \
   | tar xz -C "$tmpdir" --strip-components=1
 
 configure_args=(--openssl --otel)
@@ -43,7 +42,7 @@ fi
   make -j"$(getconf _NPROCESSORS_ONLN)" build/sbin/unitd build/lib/libunit.a
 )
 
-name="freeunit-${FREEUNIT_VERSION}-${os}-${arch}"
+name="freeunit-${FREEUNIT_REF:0:8}-${os}-${arch}"
 mkdir -p "$OUT_DIR/$name"
 cp "$tmpdir/build/sbin/unitd" "$tmpdir/build/lib/libunit.a" "$OUT_DIR/$name/"
 tar czf "$OUT_DIR/$name.tar.gz" -C "$OUT_DIR" "$name"

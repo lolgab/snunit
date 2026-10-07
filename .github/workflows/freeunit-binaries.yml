@@ -5,8 +5,8 @@ name: freeunit-binaries
 on:
   workflow_dispatch:
     inputs:
-      freeunit_version:
-        description: "FreeUnit version to build on every platform. Empty uses the per-platform version pinned in build-freeunit.sh"
+      freeunit_ref:
+        description: "FreeUnit commit or tag to build. Empty uses the commit pinned in .github/freeunit-ref"
         required: false
   push:
     tags:
@@ -23,7 +23,7 @@ jobs:
           - runner: macos-14
     runs-on: ${{ matrix.runner }}
     env:
-      FREEUNIT_VERSION: ${{ inputs.freeunit_version }}
+      FREEUNIT_REF: ${{ inputs.freeunit_ref }}
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies (Linux)

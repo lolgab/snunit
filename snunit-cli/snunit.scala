@@ -13,8 +13,10 @@ import scala.scalanative.unsafe.*
 //
 // Build it with: scalino package snunit-cli/snunit.scala -o snunit
 
-// Release tag of the snunit release holding the prebuilt FreeUnit archives of all platforms.
-private val FreeUnitReleaseTag = "freeunit-1.37.0"
+// FreeUnit commit that `unitd` and `libunit.a` are built from. Keep in sync with .github/freeunit-ref
+// (checked in CI). The prebuilt archives are published in the snunit release tagged `freeunit-<ref8>`.
+private val FreeUnitRef = "872bf04170756e919211799ec5574000d628d521"
+private val FreeUnitRef8 = FreeUnitRef.take(8)
 private val SNUnitVersion = sys.env.getOrElse("SNUNIT_VERSION", "0.0.0-SNAPSHOT")
 private val ReleaseBase = "https://github.com/lolgab/snunit/releases/download"
 private val FooterMagic = "SNUNITD1".getBytes("US-ASCII")
@@ -76,18 +78,13 @@ private def cacheDir: Path = {
 }
 
 
-// FreeUnit 1.37.0 fails every request on Apple Silicon (libunit now requires the shm segment from the router
-// to be exactly PORT_MMAP_SIZE, freeunitorg/freeunit#445, but macOS rounds it up to the 16 KB page size), so
-// macOS stays on 1.36.1 until that is fixed upstream. Keep in sync with .github/scripts/build-freeunit.sh.
-private def freeUnitVersion: String = if (isMac) "1.36.1" else "1.37.0"
-
 /** Directory with the `unitd` and `libunit.a` for this host, downloaded on first use. */
 private def freeUnitDir(): Path =
   sys.env.get("SNUNIT_FREEUNIT_DIR").map(Paths.get(_)).getOrElse {
-    val name = s"freeunit-$freeUnitVersion-$platform"
+    val name = s"freeunit-$FreeUnitRef8-$platform"
     val dir = cacheDir.resolve(name)
     if (!Files.exists(dir.resolve("unitd"))) {
-      val url = s"$ReleaseBase/$FreeUnitReleaseTag/$name.tar.gz"
+      val url = s"$ReleaseBase/freeunit-$FreeUnitRef8/$name.tar.gz"
       System.err.println(s"snunit: downloading $url")
       Files.createDirectories(cacheDir)
       val tarball = Files.createTempFile(cacheDir, "freeunit", ".tar.gz")

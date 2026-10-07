@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-FREEUNIT_VERSION="${FREEUNIT_VERSION:-1.37.0}"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FREEUNIT_REF="${FREEUNIT_REF:-$(tr -d '[:space:]' < "$here/../freeunit-ref")}"
 PREFIX="${FREEUNIT_PREFIX:-/usr/local}"
 
 sudo apt-get update
@@ -10,7 +11,7 @@ sudo apt-get install -y libuv1-dev libidn2-dev libpcre2-dev libssl-dev
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-curl -sL "https://github.com/freeunitorg/freeunit/archive/refs/tags/${FREEUNIT_VERSION}.tar.gz" \
+curl -sL "https://github.com/freeunitorg/freeunit/archive/${FREEUNIT_REF}.tar.gz" \
   | tar xz -C "$tmpdir" --strip-components=1
 
 (
