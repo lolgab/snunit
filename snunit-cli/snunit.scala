@@ -17,7 +17,11 @@ import scala.scalanative.unsafe.*
 // (checked in CI). The prebuilt archives are published in the snunit release tagged `freeunit-<ref8>`.
 private val FreeUnitRef = "872bf04170756e919211799ec5574000d628d521"
 private val FreeUnitRef8 = FreeUnitRef.take(8)
-private val SNUnitVersion = sys.env.getOrElse("SNUNIT_VERSION", "0.0.0-SNAPSHOT")
+// snunit library version that applications depend on by default. The CLI is released independently of the
+// library: bump this when you want new CLI releases to use a newer library (checked against Maven Central
+// by the release workflow). Override with SNUNIT_VERSION.
+private val DefaultSNUnitVersion = "0.11.0"
+private val SNUnitVersion = sys.env.getOrElse("SNUNIT_VERSION", DefaultSNUnitVersion)
 private val ReleaseBase = "https://github.com/lolgab/snunit/releases/download"
 private val FooterMagic = "SNUNITD1".getBytes("US-ASCII")
 
@@ -28,6 +32,11 @@ private val usage =
     |  snunit run <scalino args>... [-- <program args>...]   build and run (run is the default command)
     |  snunit package <scalino args>... [-o <output>]        build a single executable embedding unitd
     |  snunit compile <scalino args>...
+    |  snunit bundle <binary> [-o <output>] [--platform <os-arch>]
+    |                                                        embed unitd in an SNUnit executable built by
+    |                                                        any build tool (Linux only, see below)
+    |  snunit link-flags [--platform <os-arch>]              print the linker options (one per line) that
+    |                                                        link libunit and, on macOS, embed unitd
     |  snunit <anything else>                                forwarded to scalino unchanged
     |
     |The application can be configured with the SNUNIT_PORT (default 8080) and SNUNIT_PROCESSES
@@ -37,7 +46,11 @@ private val usage =
     |  SNUNIT_VERSION        snunit library version to depend on
     |  SNUNIT_FREEUNIT_DIR   directory containing `unitd` and `libunit.a`, instead of downloading them
     |
-    |Requires scalino: https://github.com/lolgab/scalino""".stripMargin
+    |<os-arch> is linux-x86_64, linux-aarch64, macos-x86_64 or macos-aarch64 (default: this machine).
+    |
+    |`run`, `package` and `compile` need scalino: https://github.com/lolgab/scalino
+    |`bundle` and `link-flags` don't. On macOS unitd can only be embedded while linking, so pass the
+    |`link-flags` output to your build tool's linker options instead of using `bundle`.""".stripMargin
 
 private def die(message: String): Nothing = {
   System.err.println(s"snunit: $message")
@@ -78,10 +91,13 @@ private def cacheDir: Path = {
 }
 
 
-/** Directory with the `unitd` and `libunit.a` for this host, downloaded on first use. */
-private def freeUnitDir(): Path =
+private val platforms = Set("linux-x86_64", "linux-aarch64", "macos-x86_64", "macos-aarch64")
+
+/** Directory with the `unitd` and `libunit.a` for `target`, downloaded on first use. */
+private def freeUnitDir(target: String = platform): Path =
   sys.env.get("SNUNIT_FREEUNIT_DIR").map(Paths.get(_)).getOrElse {
-    val name = s"freeunit-$FreeUnitRef8-$platform"
+    if (!platforms(target)) die(s"unknown platform: $target (expected one of ${platforms.toSeq.sorted.mkString(", ")})")
+    val name = s"freeunit-$FreeUnitRef8-$target"
     val dir = cacheDir.resolve(name)
     if (!Files.exists(dir.resolve("unitd"))) {
       val url = s"$ReleaseBase/freeunit-$FreeUnitRef8/$name.tar.gz"
@@ -102,20 +118,25 @@ private def scalinoCheck(): Unit =
   if (spawn(Seq("scalino", "version")) != 0)
     die("scalino not found. Install it from https://github.com/lolgab/scalino")
 
-/** Extra scalino flags that turn a Scala program into an SNUnit executable. */
-private def buildFlags(dir: Path): Seq[String] = {
+/** Linker options that link `libunit` and, on macOS, embed `unitd`. Usable from any build tool. */
+private def linkOptions(dir: Path, macos: Boolean): Seq[String] = {
   val unitd = dir.resolve("unitd").toAbsolutePath
   val libDir = dir.toAbsolutePath
   val libunit = libDir.resolve("libunit.a")
+  // snunit declares @link("unit"), so -lunit must resolve: -L finds it on machines with no system libunit,
+  // and the explicit archive makes the pinned one win over a system-wide install (e.g. /usr/local/lib).
+  Seq(s"-L$libDir", libunit.toString) ++
+    // On macOS the unitd bytes become a section of the executable, keeping the code signature valid.
+    (if (macos) Seq(s"-Wl,-sectcreate,__DATA,__unitd,$unitd") else Nil)
+}
+
+/** Extra scalino flags that turn a Scala program into an SNUnit executable. */
+private def buildFlags(dir: Path): Seq[String] =
   Seq("--dep", s"com.github.lolgab::snunit::$SNUnitVersion") ++
     (if (SNUnitVersion.endsWith("SNAPSHOT")) Seq("--repository", "ivy2Local") else Nil) ++
     // snunit reads String internals through raw pointers, which breaks with compact object headers.
-    // snunit declares @link("unit"), so -lunit must resolve: -L finds it on machines with no system libunit,
-    // and the explicit archive makes the pinned one win over a system-wide install (e.g. /usr/local/lib).
-    Seq("--native-compact-headers=false", "--native-linking", s"-L$libDir", "--native-linking", libunit.toString) ++
-    // On macOS the unitd bytes become a section of the executable, keeping the code signature valid.
-    (if (isMac) Seq("--native-linking", s"-Wl,-sectcreate,__DATA,__unitd,$unitd") else Nil)
-}
+    Seq("--native-compact-headers=false") ++
+    linkOptions(dir, isMac).flatMap(Seq("--native-linking", _))
 
 /** Removes a previously appended payload, if any, so appending is idempotent. */
 private def stripPayload(file: RandomAccessFile): Unit = {
@@ -157,6 +178,28 @@ private def extractOutput(args: Seq[String]): (Seq[String], Option[String]) = {
   else (args.take(index) ++ args.drop(index + 2), Some(args(index + 1)))
 }
 
+/** Takes `<name> <value>` out of `args`. */
+private def extractOption(args: Seq[String], name: String): (Seq[String], Option[String]) = {
+  val index = args.indexOf(name)
+  if (index < 0 || index == args.length - 1) (args, None)
+  else (args.take(index) ++ args.drop(index + 2), Some(args(index + 1)))
+}
+
+/** Copies an already linked SNUnit executable to `output` with the `unitd` of `target` appended (Linux only). */
+private def bundle(input: Path, output: Path, target: String): Unit = {
+  if (!Files.isRegularFile(input)) die(s"not a file: $input")
+  if (target.startsWith("macos"))
+    die(
+      "on macOS unitd must be embedded while linking, a finished executable can't be changed without " +
+        "invalidating its code signature. Pass the output of `snunit link-flags` to your build tool's linker options"
+    )
+  val dir = freeUnitDir(target)
+  if (input.normalize != output.normalize)
+    Files.copy(input, output, StandardCopyOption.REPLACE_EXISTING)
+  appendPayload(output, dir.resolve("unitd"))
+  System.err.println(s"snunit: bundled unitd ($target) into $output")
+}
+
 /** Builds the executable at `output`. Returns the scalino exit code. */
 private def build(command: String, args: Seq[String], output: Path): Int = {
   scalinoCheck()
@@ -174,6 +217,18 @@ private def build(command: String, args: Seq[String], output: Path): Int = {
   case "compile" :: rest =>
     scalinoCheck()
     sys.exit(spawn(Seq("scalino", "compile") ++ rest ++ buildFlags(freeUnitDir())))
+  case "bundle" :: rest =>
+    val (withoutOutput, output) = extractOutput(rest)
+    val (positional, target) = extractOption(withoutOutput, "--platform")
+    positional match {
+      case Seq(input) =>
+        bundle(Paths.get(input).toAbsolutePath, Paths.get(output.getOrElse(input)).toAbsolutePath, target.getOrElse(platform))
+      case _ => die("usage: snunit bundle <binary> [-o <output>] [--platform <os-arch>]")
+    }
+  case "link-flags" :: rest =>
+    val (_, target) = extractOption(rest, "--platform")
+    val chosen = target.getOrElse(platform)
+    linkOptions(freeUnitDir(chosen), chosen.startsWith("macos")).foreach(println)
   case ("run" :: rest) => run(rest)
   case first :: _ if first.startsWith("-") || first.endsWith(".scala") || Files.exists(Paths.get(first)) =>
     run(args.toList)

@@ -29,12 +29,17 @@ nothing to install besides the `snunit` command line tool.
 
 ## Getting started
 
-Install [scalino](https://github.com/lolgab/scalino), then build `snunit` with it
-(there are no binary releases of `snunit` yet):
+Install [scalino](https://github.com/lolgab/scalino), then the `snunit` command line tool
+(Linux and macOS, x86_64 and aarch64):
 
 ```bash
-scalino package snunit-cli/snunit.scala -o ~/.local/bin/snunit
+curl -fsSL https://raw.githubusercontent.com/lolgab/snunit/main/install.sh | bash
 ```
+
+Or download the archive for your platform from the
+[releases](https://github.com/lolgab/snunit/releases) tagged `cli-v*`. The CLI is released
+independently of the library: `snunit` depends on a pinned library version, which you can
+change with `SNUNIT_VERSION`.
 
 Then write the
 `Hello.scala` above (no build file needed, `snunit` adds the SNUnit dependency) and run:
@@ -56,6 +61,22 @@ To build the single executable to deploy somewhere else:
 snunit package Hello.scala -o hello
 ./hello
 ```
+
+### Using another build tool
+
+Already building with sbt, Mill or scala-cli? `snunit` can add `unitd` to an executable you
+built yourself, without scalino:
+
+```bash
+# Linux: appends unitd to the executable (add --platform linux-aarch64 etc. to bundle for another target)
+snunit bundle target/scala-3.3.0/app -o app-bundled
+```
+
+The executable still needs `libunit.a` at link time, and compact object headers disabled.
+`snunit link-flags` downloads FreeUnit and prints the linker options to use, one per line.
+On macOS `unitd` can only be embedded while linking, so there you pass these options to your
+build tool instead of running `snunit bundle`: they include
+`-Wl,-sectcreate,__DATA,__unitd,<path to unitd>`.
 
 `snunit` forwards every other argument to `scalino`, so `//> using` directives and
 the usual flags work (for example `//> using dep` to add a library).
