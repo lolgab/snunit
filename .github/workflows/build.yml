@@ -68,9 +68,10 @@ jobs:
           mkdir -p bin
           scalino package snunit-cli/snunit.scala -o bin/snunit
       - name: Smoke test
-        run: bash .github/scripts/cli-smoke-test.sh
+        run: |
+          export SNUNIT_VERSION="$(./mill --disable-ticker show snunit.publishVersion | tr -d '"')"
+          bash .github/scripts/cli-smoke-test.sh
         env:
-          SNUNIT_VERSION: 0.0.0-SNAPSHOT
           SNUNIT_FREEUNIT_DIR: ${{ github.workspace }}/freeunit-bin
 
   check-binary-compatibility:
@@ -104,7 +105,6 @@ jobs:
           key: out
       - run: ./mill mill.javalib.SonatypeCentralPublishModule/publishAll
         env:
-          PUBLISH_VERSION: ${{ github.ref_name }}
           MILL_PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           MILL_PGP_SECRET_BASE64: ${{ secrets.PGP_SECRET }}
           MILL_SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
