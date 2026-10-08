@@ -133,7 +133,7 @@ private def linkOptions(dir: Path, macos: Boolean): Seq[String] = {
 /** Extra scalino flags that turn a Scala program into an SNUnit executable. */
 private def buildFlags(dir: Path): Seq[String] =
   Seq("--dep", s"com.github.lolgab::snunit::$SNUnitVersion") ++
-    (if (SNUnitVersion.endsWith("SNAPSHOT")) Seq("--repository", "ivy2Local") else Nil) ++
+    (if (sys.env.contains("SNUNIT_VERSION")) Seq("--repository", "ivy2Local") else Nil) ++
     // snunit reads String internals through raw pointers, which breaks with compact object headers.
     Seq("--native-compact-headers=false") ++
     linkOptions(dir, isMac).flatMap(Seq("--native-linking", _))
