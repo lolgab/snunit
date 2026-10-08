@@ -143,7 +143,8 @@ object Common {
 }
 
 trait Publish extends PublishModule with Mima {
-  def publishVersion = Task.Input { "0.0.0-SNAPSHOT" }
+  // The release workflow sets PUBLISH_VERSION to the tag being released.
+  def publishVersion = Task.Input { Task.env.getOrElse("PUBLISH_VERSION", "0.0.0-SNAPSHOT") }
   def pomSettings =
     PomSettings(
       description = "Scala Native server using FreeUnit",

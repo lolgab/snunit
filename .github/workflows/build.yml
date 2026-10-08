@@ -104,6 +104,7 @@ jobs:
           key: out
       - run: ./mill mill.javalib.SonatypeCentralPublishModule/publishAll
         env:
+          PUBLISH_VERSION: ${{ github.ref_name }}
           MILL_PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           MILL_PGP_SECRET_BASE64: ${{ secrets.PGP_SECRET }}
           MILL_SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
