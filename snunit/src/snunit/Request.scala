@@ -34,7 +34,7 @@ extension (req: Request) {
 
   @inline def headersLength: Int = req.request.fields_count
   private inline def checkIndex(index: Int): Unit = {
-    if (index < 0 && index >= req.request.fields_count)
+    if (index < 0 || index >= req.request.fields_count)
       throw new IndexOutOfBoundsException(s"Index $index out of bounds for length ${req.request.fields_count}")
   }
   def headerName(index: Int): String = {
@@ -62,6 +62,21 @@ extension (req: Request) {
       nxt_unit_request_read(req, array.at(0), contentLength.toCSize)
       array
     } else Array.emptyByteArray
+  }
+
+  /** Size in bytes of the request body. */
+  inline def contentSize: Long = req.request.content_length
+
+  /** Reads up to `length` bytes of the body into `dst`, continuing from where the previous read stopped. Returns the
+    * number of bytes read, 0 when the whole body has been read, a negative number on error. Doesn't check the bounds.
+    */
+  inline def readContentUnsafe(dst: Ptr[Byte], length: Int): Int =
+    nxt_unit_request_read(req, dst, length.toCSize).toInt
+
+  /** Like [[readContentUnsafe]] on a part of an array. */
+  def readContent(dst: Array[Byte], off: Int, length: Int): Int = {
+    if (off < 0 || length < 0 || length > dst.length - off) throw new IndexOutOfBoundsException
+    if (length == 0) 0 else readContentUnsafe(dst.at(off), length)
   }
 
   def target: String = fromCStringAndSize(snunit.unsafe.target(req.request), req.request.target_length)

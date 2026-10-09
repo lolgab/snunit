@@ -10,15 +10,21 @@ import org.http4s.Status
 
 class SNUnitServerBuilder[F[_]: Async: LiftIO](
     private val httpApp: SNUnitWebSocketBuilder[F] => HttpApp[F],
-    private val errorHandler: Throwable => F[Response[F]]
+    private val errorHandler: Throwable => F[Response[F]],
+    private val config: snunit.config.UnitConfig
 ) {
   private def copy(
       httpApp: SNUnitWebSocketBuilder[F] => HttpApp[F] = this.httpApp,
-      errorHandler: Throwable => F[Response[F]] = this.errorHandler
+      errorHandler: Throwable => F[Response[F]] = this.errorHandler,
+      config: snunit.config.UnitConfig = this.config
   ) = new SNUnitServerBuilder[F](
     httpApp = httpApp,
-    errorHandler = errorHandler
+    errorHandler = errorHandler,
+    config = config
   )
+
+  /** Configures FreeUnit and the standalone executable. See [[snunit.config.UnitConfig]]. */
+  def withConfig(config: snunit.config.UnitConfig): SNUnitServerBuilder[F] = copy(config = config)
   def withErrorHandler(errorHandler: Throwable => F[Response[F]]): SNUnitServerBuilder[F] =
     copy(errorHandler = errorHandler)
   def withHttpApp(httpApp: HttpApp[F]): SNUnitServerBuilder[F] = copy(httpApp = _ => httpApp)
@@ -28,7 +34,7 @@ class SNUnitServerBuilder[F[_]: Async: LiftIO](
     */
   def withHttpWebSocketApp(httpApp: SNUnitWebSocketBuilder[F] => HttpApp[F]): SNUnitServerBuilder[F] =
     copy(httpApp = httpApp)
-  def run: F[Unit] = Impl.buildServer[F](httpApp, errorHandler)
+  def run: F[Unit] = Impl.buildServer[F](httpApp, errorHandler, config)
 
 }
 object SNUnitServerBuilder {
@@ -39,7 +45,8 @@ object SNUnitServerBuilder {
     }
     new SNUnitServerBuilder[F](
       httpApp = _ => HttpApp.notFound[F],
-      errorHandler = errorHandler
+      errorHandler = errorHandler,
+      config = snunit.config.UnitConfig()
     )
   }
 }

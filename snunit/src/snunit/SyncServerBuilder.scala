@@ -9,6 +9,12 @@ object SyncServerBuilder {
   private val init: nxt_unit_init_t_* = {
     initArray.at(0).asInstanceOf[nxt_unit_init_t_*]
   }
+
+  /** Configures FreeUnit and the standalone executable. See [[snunit.config.UnitConfig]]. */
+  def setConfig(config: snunit.config.UnitConfig): this.type = {
+    ServerBuilder.setConfig(config)
+    this
+  }
   def setRequestHandler(requestHandler: RequestHandler): this.type = {
     ServerBuilder.setRequestHandler(requestHandler)
     this

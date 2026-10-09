@@ -87,12 +87,62 @@ macOS arm64) the first time and caches it in `~/.cache/snunit`.
 
 ### Configuration
 
-The running executable reads its configuration from environment variables:
+The running executable is configured in code with a `snunit.config.UnitConfig`. It covers
+the [FreeUnit configuration](https://freeunit.org/): listeners (with TLS), routes (static files,
+proxying, redirects...), upstreams, HTTP settings (timeouts, `max_body_size`...), application processes
+and limits, isolation, access log and telemetry. Whatever you don't set keeps the FreeUnit default.
 
-| Variable | Default | |
-|---|---|---|
-| `SNUNIT_PORT` | `8080` | Port to listen on |
-| `SNUNIT_PROCESSES` | FreeUnit default (1) | Number of application processes |
+```scala
+import snunit.*
+import snunit.config.*
+import scala.concurrent.duration.*
+
+@main
+def run =
+  SyncServerBuilder
+    .setConfig(
+      UnitConfig(
+        listeners = Seq(Listener.port(9000)),
+        application = Application(
+          processes = Some(Processes.Dynamic(max = 8, spare = 2)),
+          limits = Some(Limits(timeout = Some(30.seconds)))
+        ),
+        http = HttpSettings(maxBodySize = Some(1024 * 1024)),
+        shutdownTimeout = 20.seconds
+      )
+    )
+    .setRequestHandler(req => req.send(StatusCode.OK, "Hello world!\n", Headers.empty))
+    .build()
+    .listen()
+```
+
+`UnitConfig` is a plain case class: read the port from the environment or from a file the way you prefer,
+for example `UnitConfig().withPort(sys.env("PORT").toInt)`.
+
+With the other servers pass it to `SNUnitServerBuilder.withConfig(config)`, or override
+`def unitConfig` in `Http4sApp` and `TapirApp`.
+
+HTTPS needs certificate bundles (certificate chain and private key in PEM format),
+which you give by name in `certificates` and reference from `Listener.tls`:
+
+```scala
+UnitConfig(
+  listeners = Seq(Listener(address = "*:8443", tls = Some(Tls(Seq("main"))))),
+  certificates = Map("main" -> scala.io.Source.fromFile("bundle.pem").mkString)
+)
+```
+
+The configuration only applies when the executable is started directly. It is ignored when the
+executable runs under a FreeUnit you configured yourself.
+
+### Shutdown
+
+On `SIGTERM`, `SIGINT` or `SIGHUP` the executable stops accepting connections and waits for the running requests
+to finish, then exits. After `shutdownTimeout` (30 seconds by default) the remaining requests are interrupted. A second signal
+stops without waiting, a third one kills the server. Open websocket connections count as running requests.
+
+If the executable is killed with `SIGKILL`, or in any other way it can't handle, a small watchdog process
+stops FreeUnit and removes the temporary files.
 
 ### How it works
 

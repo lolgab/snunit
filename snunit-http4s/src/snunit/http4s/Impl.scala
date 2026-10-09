@@ -16,7 +16,8 @@ import java.util.concurrent.CancellationException
 private[http4s] object Impl {
   def buildServer[F[_]: Async: LiftIO](
       httpApp: SNUnitWebSocketBuilder[F] => HttpApp[F],
-      errorHandler: Throwable => F[http4s.Response[F]]
+      errorHandler: Throwable => F[http4s.Response[F]],
+      config: snunit.config.UnitConfig
   ): F[Unit] = {
     for
       webSocketBuilder <- SNUnitWebSocketSupport.newBuilder[F]
@@ -27,6 +28,7 @@ private[http4s] object Impl {
         .use { dispatcher =>
           val app = httpApp(webSocketBuilder)
           snunit.CEAsyncServerBuilder
+            .setConfig(config)
             .setDispatcher(dispatcher)
             .setWebsocketHandler(WebsocketConnections)
             .setFileDescriptorPoller(pollers.head.asInstanceOf)

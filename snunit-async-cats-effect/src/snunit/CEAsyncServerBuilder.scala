@@ -42,6 +42,11 @@ private[snunit] object CEAsyncServerBuilder {
     this.shutdownDeferred = deferred
     this
 
+  def setConfig(config: snunit.config.UnitConfig): this.type = {
+    ServerBuilder.setConfig(config)
+    this
+  }
+
   def setRequestHandler(requestHandler: RequestHandler): this.type = {
     ServerBuilder.setRequestHandler(requestHandler)
     this
