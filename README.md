@@ -117,6 +117,13 @@ cats effect event loop, based on epoll/kqueue.
 This allows you to complete requests asyncronously using whatever mechanism you prefer.
 A process can accept multiple requests concurrently, allowing great parallelism.
 
+## endpoints4s support
+
+The `snunit-endpoints4s` artifact offers a synchronous [endpoints4s](https://github.com/endpoints4s/endpoints4s)
+server interpreter: mix `snunit.endpoints4s.Endpoints` with your endpoint definitions and
+pass `toHandler(endpoint.implementedBy(...))` to `SyncServerBuilder.setRequestHandler`.
+You can find an example [in tests](./integration/tests/endpoints4s-helloworld/src/Main.scala).
+
 ## Tapir support
 
 SNUnit offers interpreters for [Tapir](https://tapir.softwaremill.com) server endpoints.
