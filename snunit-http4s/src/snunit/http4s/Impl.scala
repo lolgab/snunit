@@ -6,6 +6,7 @@ import cats.effect.syntax.all.*
 import cats.syntax.all.*
 import org.http4s
 import org.http4s.HttpApp
+import org.http4s.server.websocket.SNUnitWebSocketSupport
 import org.typelevel.ci.CIString
 import org.typelevel.vault.Vault
 import snunit.*
@@ -14,23 +15,26 @@ import java.util.concurrent.CancellationException
 
 private[http4s] object Impl {
   def buildServer[F[_]: Async: LiftIO](
-      httpApp: HttpApp[F],
+      httpApp: SNUnitWebSocketBuilder[F] => HttpApp[F],
       errorHandler: Throwable => F[http4s.Response[F]]
   ): F[Unit] = {
     for
+      webSocketBuilder <- SNUnitWebSocketSupport.newBuilder[F]
       shutdownDeferred <- Deferred[IO, IO[Unit]].to[F]
       pollers <- IO.pollers.to[F]
       shutdown <- Dispatcher
         .parallel[F](await = true)
         .use { dispatcher =>
+          val app = httpApp(webSocketBuilder)
           snunit.CEAsyncServerBuilder
             .setDispatcher(dispatcher)
+            .setWebsocketHandler(WebsocketConnections)
             .setFileDescriptorPoller(pollers.head.asInstanceOf)
             .setShutdownDeferred(shutdownDeferred)
             .setRequestHandler(new snunit.RequestHandler {
               def handleRequest(req: snunit.Request): Unit = {
                 dispatcher.unsafeRunAndForget(
-                  httpApp
+                  app
                     .run {
                       val method = req.method match {
                         case snunit.Method.GET     => http4s.Method.GET
@@ -87,10 +91,19 @@ private[http4s] object Impl {
                         .putHeaders(http4s.headers.`Content-Length`.zero)
                     )
                     .flatMap { response =>
-                      val headers = Headers(response.headers.headers, _.name.toString, _.value)
-                      VersionSpecific.writeResponse(req, response, response.status.code, headers)
+                      SNUnitWebSocketSupport.extract(webSocketBuilder, response) match {
+                        case Some((pipe, onClose)) if req.isWebsocketHandshake =>
+                          WebSockets
+                            .prepare(dispatcher, req, pipe, onClose)
+                            .flatMap(start => Async[F].delay(req.upgrade()) *> start)
+                        case _ => writeResponse(req, response)
+                      }
                     }
                 )
+              }
+              private def writeResponse(req: snunit.Request, response: http4s.Response[F]): F[Unit] = {
+                val headers = Headers(response.headers.headers, _.name.toString, _.value)
+                VersionSpecific.writeResponse(req, response, response.status.code, headers)
               }
             })
             .build

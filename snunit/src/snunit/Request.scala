@@ -160,6 +160,17 @@ extension (req: Request) {
     override def write(b: Array[Byte], off: Int, len: Int): Unit = req.sendBatch(b, off, len)
   }
 
+  /** Unique identifier of the request while it is alive. Useful to associate state to websocket connections. */
+  inline def id: Long = scala.scalanative.runtime.Intrinsics
+    .castRawPtrToLong(scala.scalanative.runtime.toRawPtr(req.asInstanceOf[Ptr[Byte]]))
+
+  def sendWebsocketFrame(opcode: Byte, last: Byte, content: Array[Byte]): Unit = {
+    val res =
+      if (content.length == 0) nxt_unit_websocket_send(req, opcode, last, null, 0.toCSize)
+      else nxt_unit_websocket_send(req, opcode, last, content.at(0), content.length.toCSize)
+    if (res != NXT_UNIT_OK) throw new Exception("Failed to send websocket frame")
+  }
+
   inline def isWebsocketHandshake: Boolean = nxt_unit_request_is_websocket_handshake(req) != 0
   def upgrade(): Unit = {
     locally {

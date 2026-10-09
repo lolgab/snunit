@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Support WebSockets in Tapir: `webSocketBody` endpoints with `fs2.Pipe`s in `snunit-tapir-cats-effect` and with the fs2-free `SNUnitStreams` in `snunit-tapir`
+- Support WebSockets in http4s with `SNUnitServerBuilder.withHttpWebSocketApp`
+- Support http4s 1.x again
+- Add `WebsocketConnections`, `Request.id` and `Request.sendWebsocketFrame` to the core module
+
 ## 0.11.0
 
 - Add the `snunit` command line tool (`snunit run`, `snunit package`) that builds a single executable embedding FreeUnit
