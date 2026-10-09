@@ -10,12 +10,20 @@ import sttp.tapir._
 import sttp.tapir.server._
 
 class SNUnitServerBuilder[F[_]: Async: LiftIO] private (
-    serverEndpoints: List[ServerEndpoint[Fs2Streams[F] & WebSockets, F]]
+    serverEndpoints: List[ServerEndpoint[Fs2Streams[F] & WebSockets, F]],
+    config: snunit.config.UnitConfig
 ) {
 
-  private def copy(serverEndpoints: List[ServerEndpoint[Fs2Streams[F] & WebSockets, F]]) = new SNUnitServerBuilder(
-    serverEndpoints = serverEndpoints
+  private def copy(
+      serverEndpoints: List[ServerEndpoint[Fs2Streams[F] & WebSockets, F]] = this.serverEndpoints,
+      config: snunit.config.UnitConfig = this.config
+  ) = new SNUnitServerBuilder(
+    serverEndpoints = serverEndpoints,
+    config = config
   )
+
+  /** Configures FreeUnit and the standalone executable. See [[snunit.config.UnitConfig]]. */
+  def withConfig(config: snunit.config.UnitConfig): SNUnitServerBuilder[F] = copy(config = config)
 
   def withServerEndpoints(
       serverEndpoints: List[ServerEndpoint[Fs2Streams[F] & WebSockets, F]]
@@ -30,6 +38,7 @@ class SNUnitServerBuilder[F[_]: Async: LiftIO] private (
       for
         handler <- new SNUnitCatsServerInterpreter[F](dispatcher).toHandler(serverEndpoints)
         _ <- snunit.CEAsyncServerBuilder
+          .setConfig(config)
           .setDispatcher(dispatcher)
           .setFileDescriptorPoller(pollers.head.asInstanceOf)
           .setShutdownDeferred(shutdownDeferred)
@@ -47,7 +56,8 @@ class SNUnitServerBuilder[F[_]: Async: LiftIO] private (
 object SNUnitServerBuilder {
   def default[F[_]: Async: LiftIO]: SNUnitServerBuilder[F] = {
     new SNUnitServerBuilder[F](
-      serverEndpoints = endpoint.out(statusCode(StatusCode.NotFound)).serverLogicSuccess(_ => Async[F].pure(())) :: Nil
+      serverEndpoints = endpoint.out(statusCode(StatusCode.NotFound)).serverLogicSuccess(_ => Async[F].pure(())) :: Nil,
+      config = snunit.config.UnitConfig()
     )
   }
 }

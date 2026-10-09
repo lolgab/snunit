@@ -39,8 +39,8 @@ private val usage =
     |                                                        link libunit and, on macOS, embed unitd
     |  snunit <anything else>                                forwarded to scalino unchanged
     |
-    |The application can be configured with the SNUNIT_PORT (default 8080) and SNUNIT_PROCESSES
-    |environment variables.
+    |The application listens on port 8080 by default. Everything else (port, processes, TLS, timeouts...)
+    |is configured in the code with snunit.config.UnitConfig.
     |
     |Environment:
     |  SNUNIT_VERSION        snunit library version to depend on

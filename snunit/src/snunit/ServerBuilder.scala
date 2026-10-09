@@ -13,6 +13,12 @@ private[snunit] object ServerBuilder {
 
   private var websocketHandler: WebsocketHandler = null
 
+  private var config: snunit.config.UnitConfig = snunit.config.UnitConfig()
+
+  private[snunit] def setConfig(config: snunit.config.UnitConfig): Unit = {
+    this.config = config
+  }
+
   private[snunit] def setRequestHandler(requestHandler: RequestHandler): Unit = {
     this.requestHandler = requestHandler
   }
@@ -22,7 +28,7 @@ private[snunit] object ServerBuilder {
   }
 
   private[snunit] def setBaseHandlers(init: nxt_unit_init_t_*): Unit = {
-    snunit.launcher.Launcher.runIfNeeded()
+    snunit.launcher.Launcher.runIfNeeded(config)
     init.callbacks.request_handler = request_handler
     init.callbacks.websocket_handler = websocket_handler
   }

@@ -9,9 +9,13 @@ import snunit.http4s.SNUnitServerBuilder
 trait Http4sApp extends IOApp.Simple {
   def routes: Resource[IO, HttpApp[IO]]
 
+  /** Configures FreeUnit and the standalone executable. */
+  def unitConfig: snunit.config.UnitConfig = snunit.config.UnitConfig()
+
   override def run = routes.use { r =>
     SNUnitServerBuilder
       .default[IO]
+      .withConfig(unitConfig)
       .withHttpApp(r)
       .run
   }
