@@ -21,6 +21,7 @@ object Versions {
   val scala212 = "2.12.19"
   val scala3 = "3.9.0"
   val tapir = "1.13.32"
+  val endpoints4s = "1.14.0"
   val cask = "0.10.2"
   val catsEffect = "3.7.1"
   val http4s023 = "0.23.38"
@@ -33,10 +34,47 @@ object Versions {
   val scalaJavaTime = "2.7.0"
 }
 
+def freeUnitLinkingOptions = Task.Input {
+  unitd.freeUnitDir.toSeq.flatMap(d => Seq(s"-L$d", (d / "libunit.a").toString))
+}
+
 object unitd {
   private val dest = os.home / ".cache" / "snunit"
   val control = dest / "control.sock"
   private val pid = dest / "unit.pid"
+
+  /** Directory with the `unitd` and `libunit.a` of the prebuilt FreeUnit that the snunit CLI also downloads (the commit
+    * pinned in `.github/freeunit-ref`, cached in `~/.cache/snunit`), unless `unitd` is already on the PATH.
+    * `SNUNIT_FREEUNIT_DIR` overrides both.
+    */
+  lazy val freeUnitDir: Option[os.Path] =
+    sys.env.get("SNUNIT_FREEUNIT_DIR").map(os.Path(_, mill.api.BuildCtx.workspaceRoot)).orElse {
+      if (os.proc("which", "unitd").call(check = false).exitCode == 0) None
+      else {
+        val ref8 = os.read(mill.api.BuildCtx.workspaceRoot / ".github" / "freeunit-ref").trim.take(8)
+        val osName = if (System.getProperty("os.name").toLowerCase.contains("mac")) "macos" else "linux"
+        val arch = os.proc("uname", "-m").call().out.trim() match {
+          case "arm64" | "aarch64" => "aarch64"
+          case _                   => "x86_64"
+        }
+        val name = s"freeunit-$ref8-$osName-$arch"
+        val dir = dest / name
+        if (!os.exists(dir / "unitd")) {
+          val url = s"https://github.com/lolgab/snunit/releases/download/freeunit-$ref8/$name.tar.gz"
+          System.err.println(s"Downloading $url")
+          os.makeDir.all(dest)
+          val tarball = dest / s"$name.tar.gz.tmp"
+          try {
+            os.proc("curl", "-fL", "--progress-bar", "-o", tarball, url).call(stdout = os.Inherit, stderr = os.Inherit)
+            os.proc("tar", "xzf", tarball, "-C", dest).call()
+          } finally os.remove(tarball, checkExists = false)
+        }
+        Some(dir)
+      }
+    }
+
+  def executable: String = freeUnitDir.fold("unitd")(d => (d / "unitd").toString)
+
   private var optProc: Option[os.SubProcess] = None
 
   private def closeUnitd(): Unit = {
@@ -59,7 +97,7 @@ object unitd {
     val started = new AtomicBoolean(false)
     optProc = Some(
       os.proc(
-        "unitd",
+        executable,
         "--no-daemon",
         "--log",
         dest / "log.txt",
@@ -117,6 +155,11 @@ object Common {
   }
   trait Native extends Jvm with ScalaNativeModule {
     def scalaNativeVersion = Versions.scalaNative
+
+    // Link the libunit matching the unitd used by the tests, so that their versions agree.
+    def nativeLinkingOptions = Task {
+      super.nativeLinkingOptions() ++ freeUnitLinkingOptions()
+    }
 
     def baseTestConfig(binary: os.Path) = {
       val appName = "app"
@@ -197,6 +240,14 @@ object `snunit-tapir-cats-effect` extends Common.Native with Publish {
   )
   def mvnDeps = super.mvnDeps() ++ Seq(
     mvn"com.softwaremill.sttp.tapir::tapir-cats-effect::${Versions.tapir}"
+  )
+}
+
+object `snunit-endpoints4s` extends Common.Native with Publish {
+  def moduleDeps = Seq(snunit)
+  def mvnDeps = super.mvnDeps() ++ Seq(
+    mvn"org.endpoints4s::algebra::${Versions.endpoints4s}",
+    mvn"com.lihaoyi::ujson::${Versions.upickle}"
   )
 }
 
@@ -281,6 +332,9 @@ object integration extends ScalaModule {
     }
     object `tapir-helloworld` extends Common.Native {
       override def moduleDeps = Seq(`snunit-tapir`)
+    }
+    object `endpoints4s-helloworld` extends Common.Native {
+      override def moduleDeps = Seq(`snunit-endpoints4s`)
     }
     object `tapir-app` extends Common.Native {
       override def moduleDeps = Seq(`snunit-tapir-cats-effect`)
