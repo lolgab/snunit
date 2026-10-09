@@ -29,6 +29,8 @@ object Versions {
   val utest = "0.9.5"
   val osLib = "0.11.8"
   val sttp = "3.11.0"
+  val sttpShared = "1.5.2"
+  val fs2 = "3.14.0"
   val pprint = "0.9.6"
   val castor = "0.3.0"
   val scalaJavaTime = "2.7.0"
@@ -129,7 +131,7 @@ object unitd {
 
 val scalaVersions = Seq(Versions.scala3)
 
-val http4sVersions = Seq(Versions.http4s023)
+val http4sVersions = Seq(Versions.http4s023, Versions.http4s1)
 
 val http4sAndScalaVersions = for {
   scalaV <- scalaVersions
@@ -239,7 +241,9 @@ object `snunit-tapir-cats-effect` extends Common.Native with Publish {
     `snunit-async-cats-effect`
   )
   def mvnDeps = super.mvnDeps() ++ Seq(
-    mvn"com.softwaremill.sttp.tapir::tapir-cats-effect::${Versions.tapir}"
+    mvn"com.softwaremill.sttp.tapir::tapir-cats-effect::${Versions.tapir}",
+    mvn"com.softwaremill.sttp.shared::fs2::${Versions.sttpShared}",
+    mvn"co.fs2::fs2-core::${Versions.fs2}"
   )
 }
 
@@ -336,11 +340,27 @@ object integration extends ScalaModule {
     object `endpoints4s-helloworld` extends Common.Native {
       override def moduleDeps = Seq(`snunit-endpoints4s`)
     }
+    object `tapir-websocket-sync` extends Common.Native {
+      override def moduleDeps = Seq(`snunit-tapir`)
+    }
+    object `tapir-websocket` extends Common.Native {
+      override def moduleDeps = Seq(`snunit-tapir-cats-effect`)
+    }
     object `tapir-app` extends Common.Native {
       override def moduleDeps = Seq(`snunit-tapir-cats-effect`)
     }
     object `http4s-helloworld` extends Cross[Http4sHelloWorldModule](http4sVersions)
     trait Http4sHelloWorldModule extends Common.Native with Cross.Module[String] {
+      def http4sVersion = crossValue
+      def moduleDeps = Seq(
+        `snunit-http4s`(http4sVersion)
+      )
+      def mvnDeps = super.mvnDeps() ++ Seq(
+        mvn"org.http4s::http4s-dsl::$http4sVersion"
+      )
+    }
+    object `http4s-websocket` extends Cross[Http4sWebsocketModule](http4sVersions)
+    trait Http4sWebsocketModule extends Common.Native with Cross.Module[String] {
       def http4sVersion = crossValue
       def moduleDeps = Seq(
         `snunit-http4s`(http4sVersion)

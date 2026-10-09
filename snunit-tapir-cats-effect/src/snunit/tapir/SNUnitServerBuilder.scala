@@ -3,17 +3,23 @@ package snunit.tapir
 import cats.effect._
 import cats.effect.std.Dispatcher
 import cats.implicits._
+import sttp.capabilities.WebSockets
+import sttp.capabilities.fs2.Fs2Streams
 import sttp.model._
 import sttp.tapir._
 import sttp.tapir.server._
 
-class SNUnitServerBuilder[F[_]: Async: LiftIO] private (serverEndpoints: List[ServerEndpoint[Any, F]]) {
+class SNUnitServerBuilder[F[_]: Async: LiftIO] private (
+    serverEndpoints: List[ServerEndpoint[Fs2Streams[F] & WebSockets, F]]
+) {
 
-  private def copy(serverEndpoints: List[ServerEndpoint[Any, F]]) = new SNUnitServerBuilder(
+  private def copy(serverEndpoints: List[ServerEndpoint[Fs2Streams[F] & WebSockets, F]]) = new SNUnitServerBuilder(
     serverEndpoints = serverEndpoints
   )
 
-  def withServerEndpoints(serverEndpoints: List[ServerEndpoint[Any, F]]): SNUnitServerBuilder[F] = {
+  def withServerEndpoints(
+      serverEndpoints: List[ServerEndpoint[Fs2Streams[F] & WebSockets, F]]
+  ): SNUnitServerBuilder[F] = {
     copy(serverEndpoints = serverEndpoints)
   }
 
@@ -28,6 +34,7 @@ class SNUnitServerBuilder[F[_]: Async: LiftIO] private (serverEndpoints: List[Se
           .setFileDescriptorPoller(pollers.head.asInstanceOf)
           .setShutdownDeferred(shutdownDeferred)
           .setRequestHandler(handler)
+          .setWebsocketHandler(SNUnitWebSockets)
           .build
           .to[F]
         shutdown <- shutdownDeferred.get.to[F]

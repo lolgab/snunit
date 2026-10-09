@@ -76,8 +76,8 @@ private def platform: String = {
   val os = if (isMac) "macos" else "linux"
   val arch = capture(Seq("uname", "-m")) match {
     case "arm64" | "aarch64" => "aarch64"
-    case "x86_64" | "amd64" => "x86_64"
-    case other => die(s"unsupported architecture: $other")
+    case "x86_64" | "amd64"  => "x86_64"
+    case other               => die(s"unsupported architecture: $other")
   }
   s"$os-$arch"
 }
@@ -89,7 +89,6 @@ private def cacheDir: Path = {
     .getOrElse(Paths.get(System.getProperty("user.home"), ".cache"))
   base.resolve("snunit")
 }
-
 
 private val platforms = Set("linux-x86_64", "linux-aarch64", "macos-x86_64", "macos-aarch64")
 
@@ -222,7 +221,11 @@ private def build(command: String, args: Seq[String], output: Path): Int = {
     val (positional, target) = extractOption(withoutOutput, "--platform")
     positional match {
       case Seq(input) =>
-        bundle(Paths.get(input).toAbsolutePath, Paths.get(output.getOrElse(input)).toAbsolutePath, target.getOrElse(platform))
+        bundle(
+          Paths.get(input).toAbsolutePath,
+          Paths.get(output.getOrElse(input)).toAbsolutePath,
+          target.getOrElse(platform)
+        )
       case _ => die("usage: snunit bundle <binary> [-o <output>] [--platform <os-arch>]")
     }
   case "link-flags" :: rest =>

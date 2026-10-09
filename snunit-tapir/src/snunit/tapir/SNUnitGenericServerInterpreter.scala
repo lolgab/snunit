@@ -22,6 +22,23 @@ import scala.util._
 private[tapir] trait SNUnitGenericServerInterpreter {
   private[tapir] type Wrapper[_]
   private[tapir] type HandlerWrapper
+  private[tapir] type Caps
+  private[tapir] type S <: sttp.capabilities.Streams[S]
+  private[tapir] val streamsInstance: S
+
+  private[tapir] sealed trait Body
+  private[tapir] final class BytesBody(val bytes: Array[Byte]) extends Body
+
+  /** A websocket response. `prepare` is invoked before the connection is upgraded, so that the frames sent by the
+    * client right after the upgrade are not lost. The returned action is run once the connection is upgraded.
+    */
+  private[tapir] final class WebSocketBody(val prepare: snunit.Request => Wrapper[Wrapper[Unit]]) extends Body
+
+  /** Converts the pipe of a websocket endpoint (of type `streams.Pipe[REQ, RESP]`) into a body */
+  private[tapir] def webSocketBody[REQ, RESP](
+      pipe: Any,
+      o: WebSocketBodyOutput[?, REQ, RESP, ?, S]
+  ): WebSocketBody = throw new UnsupportedOperationException("WebSockets are not supported by this interpreter")
 
   private[tapir] implicit def monadError: MonadError[Wrapper]
   private[tapir] trait WrapperDispatcher {
@@ -31,8 +48,8 @@ private[tapir] trait SNUnitGenericServerInterpreter {
   @inline private[tapir] def createHandleWrapper(f: => snunit.RequestHandler): HandlerWrapper
   @inline private[tapir] def wrapSideEffect[T](f: => T): Wrapper[T]
 
-  private val requestBody: RequestBody[Wrapper, NoStreams] = new RequestBody[Wrapper, NoStreams] {
-    val streams = NoStreams
+  private val requestBody: RequestBody[Wrapper, S] = new RequestBody[Wrapper, S] {
+    val streams: S = streamsInstance
     def toStream(serverRequest: ServerRequest, maxBytes: Option[Long]): streams.BinaryStream =
       throw new UnsupportedOperationException
     override def toRaw[RAW](
@@ -56,9 +73,9 @@ private[tapir] trait SNUnitGenericServerInterpreter {
     }
   }
 
-  private val toResponseBody: ToResponseBody[Array[Byte], NoStreams] = new ToResponseBody[Array[Byte], NoStreams] {
-    val streams = NoStreams
-    def fromRawValue[R](v: R, headers: HasHeaders, format: CodecFormat, bodyType: RawBodyType[R]): Array[Byte] = {
+  private val toResponseBody: ToResponseBody[Body, S] = new ToResponseBody[Body, S] {
+    val streams: S = streamsInstance
+    def fromRawValue[R](v: R, headers: HasHeaders, format: CodecFormat, bodyType: RawBodyType[R]): Body = {
       val body: Array[Byte] = bodyType match {
         case RawBodyType.StringBody(charset) =>
           v.toString.getBytes(charset)
@@ -77,26 +94,26 @@ private[tapir] trait SNUnitGenericServerInterpreter {
         case RawBodyType.FileBody         => Files.readAllBytes(v.file.toPath)
         case _: RawBodyType.MultipartBody => ???
       }
-      body
+      new BytesBody(body)
     }
     def fromStreamValue(
         v: streams.BinaryStream,
         headers: HasHeaders,
         format: CodecFormat,
         charset: Option[Charset]
-    ): Array[Byte] = throw new UnsupportedOperationException
+    ): Body = throw new UnsupportedOperationException
     def fromWebSocketPipe[REQ, RESP](
         pipe: streams.Pipe[REQ, RESP],
-        o: WebSocketBodyOutput[streams.Pipe[REQ, RESP], REQ, RESP, _, NoStreams]
-    ): Array[Byte] = throw new UnsupportedOperationException
+        o: WebSocketBodyOutput[streams.Pipe[REQ, RESP], REQ, RESP, _, S]
+    ): Body = webSocketBody[REQ, RESP](pipe, o)
   }
 
   private val interceptors: List[Interceptor[Wrapper]] = Nil
 
   private val deleteFile: TapirFile => Wrapper[Unit] = _ => monadError.unit(())
 
-  implicit val bodyListener: BodyListener[Wrapper, Array[Byte]] = new BodyListener[Wrapper, Array[Byte]] {
-    def onComplete(body: Array[Byte])(cb: Try[Unit] => Wrapper[Unit]): Wrapper[Array[Byte]] =
+  implicit val bodyListener: BodyListener[Wrapper, Body] = new BodyListener[Wrapper, Body] {
+    def onComplete(body: Body)(cb: Try[Unit] => Wrapper[Unit]): Wrapper[Body] =
       cb(Success(())).map(_ => body)
   }
 
@@ -127,8 +144,8 @@ private[tapir] trait SNUnitGenericServerInterpreter {
     def withUnderlying(underlying: Any): sttp.tapir.model.ServerRequest = ???
   }
 
-  def toHandler(endpoints: List[ServerEndpoint[Any, Wrapper]]): HandlerWrapper = {
-    val interpreter = new ServerInterpreter[Any, Wrapper, Array[Byte], NoStreams](
+  def toHandler(endpoints: List[ServerEndpoint[Caps, Wrapper]]): HandlerWrapper = {
+    val interpreter = new ServerInterpreter[Caps, Wrapper, Body, S](
       FilterServerEndpoints(endpoints),
       requestBody,
       toResponseBody,
@@ -147,11 +164,24 @@ private[tapir] trait SNUnitGenericServerInterpreter {
                     req.send(snunit.StatusCode.NotFound, Array.emptyByteArray, snunit.Headers.empty)
                   )
                 case RequestResult.Response(response, _) =>
-                  val body = response.body.getOrElse(Array.emptyByteArray)
-                  val headers = snunit.Headers(response.headers, _.name, _.value)
-                  wrapSideEffect(
-                    req.send(snunit.StatusCode(response.code.code), body, headers)
-                  )
+                  response.body match {
+                    case Some(ws: WebSocketBody) =>
+                      if (req.isWebsocketHandshake)
+                        ws.prepare(req).flatMap(start => wrapSideEffect(req.upgrade()).flatMap(_ => start))
+                      else
+                        wrapSideEffect(
+                          req.send(snunit.StatusCode.BadRequest, Array.emptyByteArray, snunit.Headers.empty)
+                        )
+                    case body =>
+                      val bytes = body match {
+                        case Some(b: BytesBody) => b.bytes
+                        case _                  => Array.emptyByteArray
+                      }
+                      val headers = snunit.Headers(response.headers, _.name, _.value)
+                      wrapSideEffect(
+                        req.send(snunit.StatusCode(response.code.code), bytes, headers)
+                      )
+                  }
               }
               .handleError { case ex: Exception =>
                 wrapSideEffect {

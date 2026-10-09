@@ -160,6 +160,51 @@ object Main extends snunit.TapirApp {
 }
 ```
 
+### WebSockets
+
+Tapir `webSocketBody` endpoints are supported by both interpreters.
+
+With `snunit-tapir-cats-effect` the pipe is an `fs2.Pipe`:
+
+```scala
+import cats.effect.*
+import snunit.tapir.*
+import sttp.capabilities.fs2.Fs2Streams
+import sttp.tapir.*
+
+val echo = endpoint.get
+  .in("echo")
+  .out(webSocketBody[String, CodecFormat.TextPlain, String, CodecFormat.TextPlain](Fs2Streams[IO]))
+  .serverLogicSuccess[IO](_ => IO.pure(identity))
+
+SNUnitServerBuilder.default[IO].withServerEndpoints(echo :: Nil).run
+```
+
+The synchronous interpreter doesn't depend on fs2: it uses `snunit.tapir.SNUnitStreams`, where a pipe
+is a function `A => Iterable[B]` called for each incoming message, returning the messages to send back.
+Pipes run on the server event loop so they must not block, and the server can't send messages that aren't
+a reply to an incoming one. Remember to also call `setWebsocketHandler(websocketHandler)` on the `SyncServerBuilder`:
+
+```scala
+import snunit.tapir.SNUnitIdServerInterpreter.*
+import snunit.tapir.SNUnitStreams
+import sttp.tapir.*
+
+val echo = endpoint.get
+  .in("echo")
+  .out(webSocketBody[String, CodecFormat.TextPlain, String, CodecFormat.TextPlain](SNUnitStreams))
+  .serverLogicSuccess[Id](_ => (message: String) => List(message))
+
+snunit.SyncServerBuilder
+  .setRequestHandler(toHandler(echo :: Nil))
+  .setWebsocketHandler(websocketHandler)
+  .build()
+  .listen()
+```
+
+Examples [in tests](./integration/tests/tapir-websocket/src/Main.scala) and
+[in tests (sync)](./integration/tests/tapir-websocket-sync/src/Main.scala).
+
 ## Http4s support
 
 SNUnit offers a server implementation for [http4s](https://http4s.org).
@@ -220,3 +265,23 @@ object Http4sHelloWorld extends IOApp.Simple {
       .run
 }
 ```
+
+### WebSockets
+
+Use `withHttpWebSocketApp` to get the websocket builder (`WebSocketBuilder2` in http4s 0.23, `WebSocketBuilder` in 1.x,
+available as `snunit.http4s.SNUnitWebSocketBuilder`) and create websocket routes as with any other http4s server:
+
+```scala
+SNUnitServerBuilder
+  .default[IO]
+  .withHttpWebSocketApp { webSocketBuilder =>
+    HttpRoutes
+      .of[IO] { case GET -> Root / "echo" =>
+        webSocketBuilder.build(identity)
+      }
+      .orNotFound
+  }
+  .run
+```
+
+You can find an example [in tests](./integration/tests/http4s-websocket/src/Main.scala).

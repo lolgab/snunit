@@ -6,6 +6,18 @@ object SNUnitIdServerInterpreter extends SNUnitGenericServerInterpreter {
   type Id[T] = T
   private[tapir] type Wrapper[T] = Id[T]
   private[tapir] type HandlerWrapper = snunit.RequestHandler
+  private[tapir] type Caps = SNUnitStreams & sttp.capabilities.WebSockets
+  private[tapir] type S = SNUnitStreams
+  private[tapir] val streamsInstance: S = SNUnitStreams
+  override private[tapir] def webSocketBody[REQ, RESP](
+      pipe: Any,
+      o: sttp.tapir.WebSocketBodyOutput[?, REQ, RESP, ?, S]
+  ): WebSocketBody = new WebSocketBody(req =>
+    SNUnitWebSockets.runSync[REQ, RESP](req, pipe.asInstanceOf[REQ => Iterable[RESP]], o)
+  )
+
+  /** Needs to be set with `setWebsocketHandler` when the endpoints include websockets */
+  val websocketHandler: snunit.WebsocketHandler = SNUnitWebSockets
   private[tapir] val dispatcher = new WrapperDispatcher {
     inline def dispatch(f: => Id[Unit]): Unit = f
   }
