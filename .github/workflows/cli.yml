@@ -20,8 +20,8 @@ env:
 
 jobs:
   build:
-    # One macOS machine cross-compiles every target: scalino links all of them in a single run.
-    runs-on: macos-14
+    # One Linux machine cross-compiles every target: scalino links all of them in a single run.
+    runs-on: ubuntu-24.04
     env:
       VERSION: ${{ inputs.version || '0.0.0-dev' }}
     steps:
