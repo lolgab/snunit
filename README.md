@@ -120,7 +120,14 @@ def run =
 for example `UnitConfig().withPort(sys.env("PORT").toInt)`.
 
 With the other servers pass it to `SNUnitServerBuilder.withConfig(config)`, or override
-`def unitConfig` in `Http4sApp` and `TapirApp`.
+`def unitConfig: ResourceIO[UnitConfig]` in `Http4sApp` and `TapirApp`, which lets you load it
+effectfully, for example with `cats.effect.std.Env`:
+
+```scala
+override def unitConfig = Resource.eval(
+  Env[IO].get("PORT").map(port => UnitConfig().withPort(port.fold(8080)(_.toInt)))
+)
+```
 
 HTTPS needs certificate bundles (certificate chain and private key in PEM format),
 which you give by name in `certificates` and reference from `Listener.tls`:

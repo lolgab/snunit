@@ -2,25 +2,497 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>SNUnit | Scala Native FreeUnit</title>
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <title>SNUnit | Scala Native HTTP server on FreeUnit</title>
   <meta name="description" content="SNUnit is a Scala Native library to build HTTP applications that run on FreeUnit using the libraries you already know and love.">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
-  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/dark.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+  <style>
+    :root {
+      --bg: #0e1116;
+      --bg-alt: #151a22;
+      --card: #1a2029;
+      --border: #2a323e;
+      --text: #d9dee7;
+      --muted: #8b95a5;
+      --accent: #ff6b4a;
+      --accent-2: #ffb347;
+      --code-bg: #12161d;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #ffffff;
+        --bg-alt: #f6f7f9;
+        --card: #ffffff;
+        --border: #dde1e8;
+        --text: #1d2430;
+        --muted: #5d6877;
+        --accent: #e8472a;
+        --accent-2: #d97706;
+        --code-bg: #12161d;
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+    nav {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in srgb, var(--bg) 85%, transparent);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+    nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    nav .brand { font-weight: 700; font-size: 1.15rem; color: var(--text); }
+    nav .brand span { color: var(--accent); }
+    nav ul { display: flex; gap: 22px; list-style: none; margin: 0; padding: 0; }
+    nav ul a { color: var(--muted); font-size: .95rem; }
+    nav ul a:hover { color: var(--text); text-decoration: none; }
+    @media (max-width: 640px) { nav ul li.hide-sm { display: none; } }
+
+    .hero { padding: 72px 0 56px; text-align: center; }
+    .hero h1 {
+      font-size: clamp(2.2rem, 6vw, 3.6rem);
+      line-height: 1.1; margin: 0 0 18px; letter-spacing: -0.02em;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .hero p.lead { max-width: 680px; margin: 0 auto 28px; color: var(--muted); font-size: 1.15rem; }
+    .buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 36px; }
+    .btn {
+      display: inline-block; padding: 10px 20px; border-radius: 8px; font-weight: 600;
+      border: 1px solid var(--border); color: var(--text);
+    }
+    .btn:hover { text-decoration: none; border-color: var(--muted); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.primary:hover { filter: brightness(1.1); }
+
+    .install {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      max-width: 720px; margin: 0 auto; text-align: left;
+      background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 16px; color: #e6e6e6;
+    }
+    .install code { overflow-x: auto; white-space: nowrap; font-size: .9rem; }
+    .install code::before { content: "$ "; color: var(--muted); }
+    button.copy {
+      flex: none; background: transparent; color: #aab; border: 1px solid #3a4352;
+      border-radius: 6px; padding: 4px 10px; font-size: .8rem; cursor: pointer;
+    }
+    button.copy:hover { color: #fff; border-color: #6a7488; }
+
+    section { padding: 64px 0; }
+    section.alt { background: var(--bg-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    h2 { font-size: 1.9rem; margin: 0 0 10px; letter-spacing: -0.01em; }
+    .sub { color: var(--muted); margin: 0 0 36px; max-width: 700px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px;
+    }
+    .card h3 { margin: 0 0 8px; font-size: 1.05rem; }
+    .card h3 .ico { margin-right: 8px; }
+    .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+    .card code { background: var(--bg-alt); padding: 1px 5px; border-radius: 4px; font-size: .85em; color: var(--text); }
+
+    pre[class*="language-"] {
+      margin: 0; border-radius: 10px; font-size: .88rem; line-height: 1.55;
+      border: 1px solid var(--border); background: var(--code-bg);
+    }
+    code[class*="language-"] { font-size: inherit; }
+
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: center; }
+    @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+    .split h2 { margin-bottom: 14px; }
+    .split p { color: var(--muted); }
+    .split ul { color: var(--muted); padding-left: 20px; }
+    .split li { margin: 6px 0; }
+    .split li strong { color: var(--text); }
+    .split > * { min-width: 0; }
+
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .tabs button {
+      background: var(--card); color: var(--muted); border: 1px solid var(--border);
+      border-radius: 8px; padding: 7px 14px; font-size: .9rem; cursor: pointer; font-weight: 600;
+    }
+    .tabs button[aria-selected="true"] { color: #fff; background: var(--accent); border-color: var(--accent); }
+    .panel[hidden] { display: none; }
+    .panel p { color: var(--muted); margin: 0 0 12px; }
+    .panel .artifact { font-family: ui-monospace, Menlo, monospace; font-size: .85rem; }
+
+    .steps { counter-reset: s; display: grid; gap: 22px; }
+    .step { display: grid; grid-template-columns: 40px 1fr; gap: 16px; }
+    .step::before {
+      counter-increment: s; content: counter(s);
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--accent); color: #fff; font-weight: 700;
+      display: grid; place-items: center;
+    }
+    .step h3 { margin: 4px 0 8px; font-size: 1.05rem; }
+    .step > div { min-width: 0; }
+    .step p { margin: 0 0 10px; color: var(--muted); }
+
+    .arch {
+      display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .arch .box {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 18px; text-align: center; font-size: .9rem;
+    }
+    .arch .box small { display: block; color: var(--muted); }
+    .arch .arrow { color: var(--muted); }
+
+    footer { padding: 36px 0 56px; text-align: center; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--border); }
+  </style>
 </head>
 <body>
-  <div id="app"></div>
-  <script>
-    window.$docsify = {
-      name: 'SNUnit',
-      repo: 'lolgab/snunit'
-    }
-  </script>
-  <!-- Docsify v4 -->
-  <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+  <nav>
+    <div class="wrap">
+      <a class="brand" href="#">SN<span>Unit</span></a>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#libraries">Libraries</a></li>
+        <li><a href="#start">Get started</a></li>
+        <li class="hide-sm"><a href="#config">Configuration</a></li>
+        <li><a href="https://github.com/lolgab/snunit">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="wrap">
+      <h1>Scala Native HTTP servers<br><span class="grad">in a single executable</span></h1>
+      <p class="lead">
+        SNUnit runs your Scala Native web app on <a href="https://freeunit.org/">FreeUnit</a>.
+        Use the libraries you already know &mdash; http4s, Tapir, Cask, Undertow, endpoints4s &mdash; and get
+        process management, load balancing and restarts for free.
+      </p>
+      <div class="buttons">
+        <a class="btn primary" href="#start">Get started</a>
+        <a class="btn" href="https://github.com/lolgab/snunit#readme">Read the docs</a>
+        <a class="btn" href="https://github.com/lolgab/snunit">View on GitHub</a>
+      </div>
+      <div class="install">
+        <code id="install-cmd">curl -fsSL https://raw.githubusercontent.com/lolgab/snunit/main/install.sh | bash</code>
+        <button class="copy" data-copy="install-cmd">Copy</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="alt" style="padding: 48px 0;">
+    <div class="wrap split">
+      <div>
+        <h2>Hello world, no build file</h2>
+        <p>
+          Write one Scala file and run it. The <code>snunit</code> command line tool adds the
+          dependency, builds with Scala Native and serves on port 8080.
+        </p>
+        <ul>
+          <li><strong><code>snunit run Hello.scala</code></strong> builds and serves</li>
+          <li><strong><code>snunit run -w</code></strong> rebuilds and restarts on every change</li>
+          <li><strong><code>snunit package</code></strong> produces the executable to deploy</li>
+        </ul>
+      </div>
+      <pre class="language-scala"><code class="language-scala">import snunit.*
+
+@main
+def run =
+  SyncServerBuilder
+    .setRequestHandler(req =>
+      req.send(
+        statusCode = StatusCode.OK,
+        content = "Hello world!\n",
+        headers = Headers("Content-Type" -> "text/plain")
+      )
+    )
+    .build()
+    .listen()</code></pre>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>Why SNUnit</h2>
+      <p class="sub">A small Scala Native library on top of a battle-tested application server.</p>
+      <div class="grid">
+        <div class="card">
+          <h3><span class="ico">📦</span>Single executable</h3>
+          <p>Your app embeds <code>unitd</code>, starts it with a generated configuration and runs itself as the application. Nothing to install on the server.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico">🔁</span>Restarts &amp; load balancing</h3>
+          <p>FreeUnit restarts crashed processes and balances requests across multiple application processes, static or dynamic.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico">⚡</span>Native performance</h3>
+          <p>Compiled ahead of time with Scala Native: tiny memory footprint and instant startup, with no JVM involved.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico">🔀</span>Sync or async</h3>
+          <p>Simple blocking servers with Cask, Undertow or endpoints4s, or cats-effect with epoll/kqueue in http4s and Tapir to handle many concurrent requests per process.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico">🔌</span>WebSockets</h3>
+          <p>Supported by the http4s and Tapir integrations.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico">⚙️</span>Typed configuration</h3>
+          <p><code>UnitConfig</code> covers listeners and TLS, routes, upstreams, HTTP settings, processes, limits, isolation and access logs, all from Scala code.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico">🛑</span>Graceful shutdown</h3>
+          <p>On <code>SIGTERM</code>, <code>SIGINT</code> or <code>SIGHUP</code> in-flight requests finish before exit. A watchdog cleans up even after <code>SIGKILL</code>.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico">🧰</span>Bring your build tool</h3>
+          <p>Use <code>snunit</code> with scalino, or add <code>unitd</code> to an executable built with sbt, Mill or scala-cli.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico">🖥️</span>Linux &amp; macOS</h3>
+          <p>Prebuilt FreeUnit for Linux x86_64/aarch64 and macOS arm64, downloaded and cached on first use.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="libraries" class="alt">
+    <div class="wrap">
+      <h2>Use the libraries you love</h2>
+      <p class="sub">Pick your style. Same single-executable deployment.</p>
+
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="http4s">http4s</button>
+        <button role="tab" aria-selected="false" data-tab="tapir">Tapir</button>
+        <button role="tab" aria-selected="false" data-tab="cask">Cask</button>
+        <button role="tab" aria-selected="false" data-tab="undertow">Undertow</button>
+        <button role="tab" aria-selected="false" data-tab="e4s">endpoints4s</button>
+      </div>
+
+      <div class="panel" id="tab-http4s">
+        <p>Extend <code>snunit.Http4sApp</code> and implement <code>routes</code>. Based on the <a href="https://github.com/armanbilge/epollcat">epollcat</a> event loop. <span class="artifact">snunit-http4s</span></p>
+<pre class="language-scala"><code class="language-scala">import cats.effect.*
+import org.http4s.*
+import org.http4s.dsl.io.*
+
+object app extends snunit.Http4sApp {
+  def routes = Resource.pure(
+    HttpRoutes
+      .of[IO] { case GET -> Root =>
+        Ok("Hello from SNUnit Http4s!")
+      }
+      .orNotFound
+  )
+}</code></pre>
+      </div>
+
+      <div class="panel" id="tab-tapir" hidden>
+        <p>Describe your endpoints with <a href="https://tapir.softwaremill.com">Tapir</a>. Synchronous and cats-effect interpreters are available. <span class="artifact">snunit-tapir, snunit-tapir-cats-effect</span></p>
+<pre class="language-scala"><code class="language-scala">import cats.effect.*
+import sttp.tapir.*
+
+object Main extends snunit.TapirApp {
+  def serverEndpoints = Resource.pure(
+    endpoint.get
+      .in("hello")
+      .in(query[String]("name"))
+      .out(stringBody)
+      .serverLogic[IO](name => IO(Right(s"Hello $name!"))) :: Nil
+  )
+}</code></pre>
+      </div>
+
+      <div class="panel" id="tab-cask" hidden>
+        <p>Run <a href="https://com-lihaoyi.github.io/cask/">Cask</a> applications unchanged: routes, decorators and all. <span class="artifact">snunit-cask</span></p>
+<pre class="language-scala"><code class="language-scala">object MinimalApplication extends cask.MainRoutes {
+  @cask.get("/")
+  def hello() = "Hello World!"
+
+  @cask.get("/hello")
+  def hello(name: String) = s"Hello $name!"
+
+  @cask.post("/do-thing")
+  def doThing(request: cask.Request) = request.text().reverse
+
+  initialize()
+}</code></pre>
+      </div>
+
+      <div class="panel" id="tab-undertow" hidden>
+        <p>A drop-in replacement for the Undertow builder API, so existing <code>HttpHandler</code>s keep working. <span class="artifact">snunit-undertow</span></p>
+<pre class="language-scala"><code class="language-scala">import io.undertow.Undertow
+import io.undertow.server.{HttpHandler, HttpServerExchange}
+import io.undertow.util.Headers
+
+object HelloWorldServer {
+  def main(args: Array[String]): Unit =
+    Undertow
+      .builder()
+      .addHttpListener(8080, "localhost")
+      .setHandler(new HttpHandler {
+        def handleRequest(exchange: HttpServerExchange) = {
+          exchange.getResponseHeaders.put(Headers.CONTENT_TYPE, "text/plain")
+          exchange.getResponseSender.send("Hello World")
+        }
+      })
+      .build()
+      .start()
+}</code></pre>
+      </div>
+
+      <div class="panel" id="tab-e4s" hidden>
+        <p>A synchronous <a href="https://github.com/endpoints4s/endpoints4s">endpoints4s</a> server interpreter: mix <code>snunit.endpoints4s.Endpoints</code> into your endpoint definitions and pass the result to the server. <span class="artifact">snunit-endpoints4s</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="config">
+    <div class="wrap">
+      <h2>Typed configuration</h2>
+      <p class="sub">
+        Configure FreeUnit from Scala, no JSON. <code>Http4sApp</code> and <code>TapirApp</code> expose a
+        <code>unitConfig</code> you override as a <code>ResourceIO</code>; it covers listeners and TLS, routes, upstreams, HTTP settings,
+        application processes and limits, isolation, access log and telemetry.
+      </p>
+      <div class="split">
+<pre class="language-scala"><code class="language-scala">import cats.effect.*
+import org.http4s.*
+import org.http4s.dsl.io.*
+import snunit.config.*
+import scala.concurrent.duration.*
+
+object app extends snunit.Http4sApp {
+  override def unitConfig = Resource.pure(
+    UnitConfig(
+      listeners = Seq(Listener.port(9000)),
+      application = Application(
+        processes = Some(Processes.Dynamic(max = 8, spare = 2)),
+        limits = Some(Limits(timeout = Some(30.seconds)))
+      ),
+      http = HttpSettings(maxBodySize = Some(1024 * 1024)),
+      shutdownTimeout = 20.seconds
+    )
+  )
+
+  def routes = Resource.pure(
+    HttpRoutes.of[IO] { case GET -> Root => Ok("Hello!") }.orNotFound
+  )
+}</code></pre>
+        <div>
+          <p><code>TapirApp</code> works the same way: override <code>def unitConfig</code>.</p>
+          <p><code>unitConfig</code> is a <code>ResourceIO[UnitConfig]</code> and <code>UnitConfig</code> is a plain case class, so load values with <code>cats.effect.std.Env</code>, from a file or anywhere else:</p>
+<pre class="language-scala"><code class="language-scala">override def unitConfig = Resource.eval(
+  Env[IO].get("PORT").map { port =>
+    UnitConfig().withPort(port.fold(8080)(_.toInt))
+  }
+)</code></pre>
+          <p>HTTPS takes certificate bundles by name:</p>
+<pre class="language-scala"><code class="language-scala">UnitConfig(
+  listeners = Seq(Listener(address = "*:8443", tls = Some(Tls(Seq("main"))))),
+  certificates = Map("main" -> scala.io.Source.fromFile("bundle.pem").mkString)
+)</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <p class="sub">
+        Start the executable and it launches FreeUnit, which launches the same executable as its application.
+      </p>
+      <div class="arch">
+        <div class="box">Your executable<small>started directly</small></div>
+        <span class="arrow">→ extracts &amp; starts →</span>
+        <div class="box"><code>unitd</code><small>FreeUnit router</small></div>
+        <span class="arrow">→ spawns &amp; balances →</span>
+        <div class="box">Your executable<small>N app processes</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="wrap">
+      <h2>Get started</h2>
+      <p class="sub">From zero to a running server in three commands.</p>
+      <div class="steps">
+        <div class="step">
+          <div>
+            <h3>Install <a href="https://github.com/lolgab/scalino">scalino</a> and the <code>snunit</code> CLI</h3>
+            <pre class="language-bash"><code class="language-bash">curl -fsSL https://raw.githubusercontent.com/lolgab/snunit/main/install.sh | bash</code></pre>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>Write <code>Hello.scala</code> and run it</h3>
+            <pre class="language-bash"><code class="language-bash">snunit run Hello.scala      # serves on http://localhost:8080
+snunit run -w Hello.scala   # rebuild and restart on every change</code></pre>
+          </div>
+        </div>
+        <div class="step">
+          <div>
+            <h3>Package it and deploy anywhere</h3>
+            <pre class="language-bash"><code class="language-bash">snunit package Hello.scala -o hello
+./hello</code></pre>
+          </div>
+        </div>
+      </div>
+      <p style="margin-top: 32px;">
+        See the <a href="https://github.com/lolgab/snunit#readme">README</a> for using another build tool,
+        sync vs. async servers and the details of each integration.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      SNUnit is open source under the Apache 2.0 license.
+      <a href="https://github.com/lolgab/snunit">GitHub</a> ·
+      <a href="https://github.com/lolgab/snunit#readme">Docs</a> ·
+      <a href="https://freeunit.org/">FreeUnit</a>
+    </div>
+  </footer>
+
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-clike.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-java.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-scala.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script>
+    Prism.highlightAll();
+
+    document.querySelectorAll('.tabs button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.tabs button').forEach(function (b) {
+          b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+        });
+        document.querySelectorAll('.panel').forEach(function (p) {
+          p.hidden = p.id !== 'tab-' + btn.dataset.tab;
+        });
+      });
+    });
+
+    document.querySelectorAll('button.copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var text = document.getElementById(btn.dataset.copy).textContent;
+        navigator.clipboard.writeText(text).then(function () {
+          btn.textContent = 'Copied!';
+          setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+        });
+      });
+    });
+  </script>
 </body>
 </html>
