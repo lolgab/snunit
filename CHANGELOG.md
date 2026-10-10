@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add `snunit.config.UnitConfig`, a Scala API covering the FreeUnit configuration (listeners, TLS, routes, upstreams, HTTP settings, application processes, limits, isolation, access log, telemetry...). Pass it to `SyncServerBuilder.setConfig`, `SNUnitServerBuilder.withConfig` or override `unitConfig` in `Http4sApp` and `TapirApp`. It replaces the `SNUNIT_PORT` and `SNUNIT_PROCESSES` environment variables
+- Add `snunit.config.UnitConfig`, a Scala API covering the FreeUnit configuration (listeners, TLS, routes, upstreams, HTTP settings, application processes, limits, isolation, access log, telemetry...). Pass it to `SyncServerBuilder.setConfig`, `SNUnitServerBuilder.withConfig` or override `unitConfig` (a `ResourceIO[UnitConfig]`) in `Http4sApp` and `TapirApp`. It replaces the `SNUNIT_PORT` and `SNUNIT_PROCESSES` environment variables
 - Standalone executables shut down gracefully on SIGTERM, SIGINT and SIGHUP: the listeners are closed and the running requests finish (up to `UnitConfig.shutdownTimeout`). A second signal stops without waiting
 - Standalone executables don't leave `unitd` running and the temporary directory behind when they are killed with SIGKILL
 - Standalone executables exit with an error when FreeUnit rejects the configuration
