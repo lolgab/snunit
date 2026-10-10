@@ -37,7 +37,9 @@ jobs:
       - name: Check the CLI's FreeUnit commit matches .github/freeunit-ref
         run: grep -q "\"$(tr -d '[:space:]' < .github/freeunit-ref)\"" snunit-cli/snunit.scala
       - name: Install scalino
-        run: curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
+        run: |
+          sudo apt-get install -y lld
+          curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Build snunit for every platform
