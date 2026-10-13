@@ -239,7 +239,7 @@
           <li><strong><code>snunit package</code></strong> produces the executable to deploy</li>
         </ul>
       </div>
-      <pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit::0.12.1
+      <pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit::0.12.2
 import snunit.*
 
 @main
@@ -321,7 +321,7 @@ def run =
 
       <div class="panel" id="tab-http4s">
         <p>Extend <code>snunit.Http4sApp</code> and implement <code>routes</code>. Based on the <a href="https://github.com/armanbilge/epollcat">epollcat</a> event loop. <span class="artifact">snunit-http4s</span></p>
-<pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit-http4s0.23::0.12.1
+<pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit-http4s0.23::0.12.2
 //> using dep org.http4s::http4s-dsl::0.23.38
 import cats.effect.*
 import org.http4s.*
@@ -340,7 +340,7 @@ object app extends snunit.Http4sApp {
 
       <div class="panel" id="tab-tapir" hidden>
         <p>Describe your endpoints with <a href="https://tapir.softwaremill.com">Tapir</a>. Synchronous and cats-effect interpreters are available. <span class="artifact">snunit-tapir, snunit-tapir-cats-effect</span></p>
-<pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit-tapir-cats-effect::0.12.1
+<pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit-tapir-cats-effect::0.12.2
 import cats.effect.*
 import sttp.tapir.*
 
@@ -357,7 +357,7 @@ object Main extends snunit.TapirApp {
 
       <div class="panel" id="tab-cask" hidden>
         <p>Run <a href="https://com-lihaoyi.github.io/cask/">Cask</a> applications unchanged: routes, decorators and all. <span class="artifact">snunit-cask</span></p>
-<pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit-cask::0.12.1
+<pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit-cask::0.12.2
 
 object MinimalApplication extends cask.MainRoutes {
   @cask.get("/")
@@ -375,7 +375,7 @@ object MinimalApplication extends cask.MainRoutes {
 
       <div class="panel" id="tab-undertow" hidden>
         <p>A drop-in replacement for the Undertow builder API, so existing <code>HttpHandler</code>s keep working. <span class="artifact">snunit-undertow</span></p>
-<pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit-undertow::0.12.1
+<pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit-undertow::0.12.2
 import io.undertow.Undertow
 import io.undertow.server.{HttpHandler, HttpServerExchange}
 import io.undertow.util.Headers
@@ -411,7 +411,7 @@ object HelloWorldServer {
         application processes and limits, isolation, access log and telemetry.
       </p>
       <div class="split">
-<pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit-http4s0.23::0.12.1
+<pre class="language-scala"><code class="language-scala">//> using dep com.github.lolgab::snunit-http4s0.23::0.12.2
 //> using dep org.http4s::http4s-dsl::0.23.38
 import cats.effect.*
 import org.http4s.*
