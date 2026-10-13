@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.12.0
 
 - Add the observability stack: `Observability.stack` (`snunit.config.Stack`) runs metrics, traces, logs and dashboards programs inside FreeUnit with the application, connected to it. They are modified builds of Prometheus, Jaeger, VictoriaLogs and Perses (all Apache-2.0). `snunit stack install` downloads them (built, with their licenses, by the `stack-*` release workflow) and `snunit run --stack` runs an application with them
 - Add `UnitConfig.applications` and `Pass.Application` to run other programs (built with a FreeUnit language module) next to the SNUnit application, and `Observability.logs` to ship the logs of FreeUnit and of the applications to Loki or VictoriaLogs
