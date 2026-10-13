@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.12.2
+
+- Fix `IllegalStateException` from `CharsetEncoder.flush` under concurrent requests (for example `snunit-tapir-cats-effect` under load): the string encoders, decoders and buffers were shared between threads
+- Don't read and write the internals of `String` through raw pointers: Scala Native compact object headers can be enabled. The CLI doesn't pass `--native-compact-headers=false` anymore
+- The launcher checks that the fixed ports of the stack are free and says which is not, prints where the programs are, and stops the programs of the stack that stay running when `unitd` exits
+- The OTLP/HTTP receiver of the stack (port 4318) goes through FreeUnit, with the Jaeger UI (new stack release `stack-v0.0.2`). The internal ports of the programs are any free port
+- With the stack, the metrics are scraped by Prometheus and not also pushed to the traces program (it answered 404 to every push)
+- Document every port of the stack
+- The `snunit` CLI doesn't add the SNUnit dependency anymore (a pinned version was not binary compatible with the other modules): add it with `//> using dep` as in the examples. Removes `SNUNIT_VERSION`
+
 ## 0.12.1
 
 - The JSON access log has a `_msg` field (`GET /path 200`), so log servers that need a message (VictoriaLogs) show something readable
