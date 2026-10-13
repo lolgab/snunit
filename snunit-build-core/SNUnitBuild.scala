@@ -19,11 +19,6 @@ object SNUnitBuild {
   val FreeUnitRef = "872bf04170756e919211799ec5574000d628d521"
   val FreeUnitRef8: String = FreeUnitRef.take(8)
 
-  // snunit library version that applications depend on by default. The CLI and the sbt plugin are released
-  // independently of the library: bump this when you want new releases to use a newer library (checked against
-  // Maven Central by the release workflow).
-  val DefaultSNUnitVersion = "0.12.1"
-
   // Release of the observability stack (Prometheus, Jaeger, VictoriaLogs and Perses built to run inside FreeUnit, see stack/).
   // Keep in sync with .github/stack-release (checked in CI). The archives are published in the snunit release with
   // that tag.

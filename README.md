@@ -39,11 +39,11 @@ curl -fsSL https://raw.githubusercontent.com/lolgab/snunit/main/install.sh | bas
 
 Or download the archive for your platform from the
 [releases](https://github.com/lolgab/snunit/releases) tagged `cli-v*`. The CLI is released
-independently of the library: `snunit` depends on a pinned library version, which you can
-change with `SNUNIT_VERSION`.
+independently of the library: it doesn't add any SNUnit dependency, so your code picks the library
+version with a `//> using dep` directive, as in the examples.
 
 Then write the
-`Hello.scala` above (no build file needed, `snunit` adds the SNUnit dependency) and run:
+`Hello.scala` above (no build file needed, the `//> using dep` line is enough) and run:
 
 ```bash
 snunit run Hello.scala
@@ -93,7 +93,7 @@ built yourself, without scalino:
 snunit bundle target/scala-3.3.0/app -o app-bundled
 ```
 
-The executable still needs `libunit.a` at link time, and compact object headers disabled.
+The executable still needs `libunit.a` at link time.
 `snunit link-flags` downloads FreeUnit and prints the linker options to use, one per line.
 On macOS `unitd` can only be embedded while linking, so there you pass these options to your
 build tool instead of running `snunit bundle`: they include

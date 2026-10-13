@@ -6,63 +6,44 @@ import java.nio._
 import java.nio.charset.Charset
 import java.nio.charset.CoderResult
 import scala.scalanative.memory.PointerBuffer
-import scala.scalanative.runtime.GC
-import scala.scalanative.runtime.Intrinsics.castObjectToRawPtr
-import scala.scalanative.runtime.Intrinsics.castRawPtrToObject
-import scala.scalanative.runtime.Intrinsics.loadInt
-import scala.scalanative.runtime.Intrinsics.loadObject
-import scala.scalanative.runtime.Intrinsics.storeBoolean
-import scala.scalanative.runtime.Intrinsics.storeInt
-import scala.scalanative.runtime.Intrinsics.storeObject
-import scala.scalanative.runtime.fromRawPtr
-import scala.scalanative.runtime.toRawPtr
 import scala.scalanative.unsafe._
 
 private val charset = Charset.defaultCharset()
-private val encoder = charset.newEncoder()
-private val decoder = charset.newDecoder()
 
-private final val sharedBufferSize = 4000
-private final val sharedBuffer = ByteBuffer.allocate(sharedBufferSize)
+// CharsetEncoder/Decoder and ByteBuffer are stateful and not thread-safe:
+// create them per call so concurrent requests (e.g. cats-effect worker threads) don't corrupt each other.
+private final val bufferSize = 4000
 
 private[snunit] def fromCStringAndSize(cstr: CString, size: Int): String = {
   if (size > 0) {
+    val decoder = charset.newDecoder()
     val inputBuffer = PointerBuffer.wrap(cstr, size)
 
     val output: CharBuffer = CharBuffer.allocate(size)
-    decoder.reset()
     decoder.decode(inputBuffer, output, true)
 
-    // write String fields
-    val result = new String(Array.emptyCharArray)
-    val resultRawPtr = castObjectToRawPtr(result)
-    val resultPtr = fromRawPtr[Byte](resultRawPtr)
-    storeObject(toRawPtr(resultPtr + StringCharArrayOffset), castObjectToRawPtr(output.array()))
-    storeInt(toRawPtr(resultPtr + StringOffsetOffset), 0)
-    val length = output.position()
-    storeInt(toRawPtr(resultPtr + StringCountOffset), length)
-    result
+    new String(output.array(), 0, output.position())
   } else ""
 }
 
 private[snunit] inline def readStringBytesWith(string: String)(inline f: ByteBuffer => Unit) = {
-  val input: CharBuffer = newCharBuffer(string)
+  val input: CharBuffer = CharBuffer.wrap(string)
+  val encoder = charset.newEncoder()
+  val buffer = ByteBuffer.allocate(bufferSize)
 
   var result = CoderResult.OVERFLOW
   while (result.isOverflow()) {
-    encoder.reset()
-    sharedBuffer.clear()
-    result = encoder.encode(input, sharedBuffer, true)
-    sharedBuffer.flip()
-    f(sharedBuffer)
+    buffer.clear()
+    result = encoder.encode(input, buffer, true)
+    buffer.flip()
+    f(buffer)
   }
 }
 
 private[snunit] def stringBytes(string: String): ByteBuffer = {
-  val input: CharBuffer = newCharBuffer(string)
+  val input: CharBuffer = CharBuffer.wrap(string)
 
-  encoder.reset()
-  encoder.encode(input)
+  charset.newEncoder().encode(input)
 }
 
 extension (buffer: ByteBuffer)
