@@ -15,7 +15,6 @@ import scala.scalanative.unsafe.*
 // `unitd` live in snunit-build-core, shared with the sbt plugin. Build with both:
 //
 //   scalino package snunit-build-core snunit-cli/snunit.scala -o snunit
-private val SNUnitVersion = sys.env.getOrElse("SNUNIT_VERSION", SNUnitBuild.DefaultSNUnitVersion)
 
 private val usage =
   """snunit: build and run SNUnit applications.
@@ -41,7 +40,6 @@ private val usage =
     |is configured in the code with snunit.config.UnitConfig.
     |
     |Environment:
-    |  SNUNIT_VERSION        snunit library version to depend on
     |  SNUNIT_FREEUNIT_DIR   directory containing `unitd` and `libunit.a`, instead of downloading them
     |  SNUNIT_STACK_DIR      directory of the observability stack (default: ~/.cache/snunit/stack)
     |  SNUNIT_STACK_URL      mirror of the stack release to download from
@@ -78,9 +76,7 @@ private def scalinoCheck(): Unit =
 
 /** Extra scalino flags that turn a Scala program into an SNUnit executable. */
 private def buildFlags(): Seq[String] =
-  Seq("--dep", s"com.github.lolgab::snunit::$SNUnitVersion") ++
-    (if (sys.env.contains("SNUNIT_VERSION")) Seq("--repository", "ivy2Local") else Nil) ++
-    guard(SNUnitBuild.linkOptions(platform)).flatMap(Seq("--native-linking", _))
+  guard(SNUnitBuild.linkOptions(platform)).flatMap(Seq("--native-linking", _))
 
 /** Splits `args` at the first `--`. */
 private def splitProgramArgs(args: Seq[String]): (Seq[String], Seq[String]) = {

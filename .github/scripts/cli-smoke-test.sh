@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Builds a hello world with the snunit CLI and checks that the resulting single
-# binary serves requests. Expects ./bin/snunit and SNUNIT_FREEUNIT_DIR.
+# binary serves requests. Expects ./bin/snunit, SNUNIT_FREEUNIT_DIR and SNUNIT_VERSION (a locally published snunit).
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 
 workdir="$(mktemp -d)"
 trap 'kill "${pid:-}" 2>/dev/null || true; rm -rf "$workdir"' EXIT
 
-cat > "$workdir/Hello.scala" <<'SCALA'
+cat > "$workdir/Hello.scala" <<SCALA
+//> using dep com.github.lolgab::snunit::${SNUNIT_VERSION}
 import snunit.*
 
 @main
@@ -20,7 +21,7 @@ def run =
     .listen()
 SCALA
 
-./bin/snunit package "$workdir/Hello.scala" -o "$workdir/app"
+./bin/snunit package "$workdir/Hello.scala" -o "$workdir/app" --repository ivy2Local
 
 "$workdir/app" > "$workdir/log" 2>&1 &
 pid=$!

@@ -39,11 +39,11 @@ curl -fsSL https://raw.githubusercontent.com/lolgab/snunit/main/install.sh | bas
 
 Or download the archive for your platform from the
 [releases](https://github.com/lolgab/snunit/releases) tagged `cli-v*`. The CLI is released
-independently of the library: `snunit` depends on a pinned library version, which you can
-change with `SNUNIT_VERSION`.
+independently of the library: it doesn't add any SNUnit dependency, so your code picks the library
+version with a `//> using dep` directive, as in the examples.
 
 Then write the
-`Hello.scala` above (no build file needed, `snunit` adds the SNUnit dependency) and run:
+`Hello.scala` above (no build file needed, the `//> using dep` line is enough) and run:
 
 ```bash
 snunit run Hello.scala
