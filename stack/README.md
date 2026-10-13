@@ -22,6 +22,10 @@ or in the code: `Observability("my-service", stack = Some(Stack()))`, see `snuni
 | `logs` | VictoriaLogs | http://localhost:9428/select/vmui |
 | `dashboards` | Perses | http://localhost:3000 |
 
+Ports: the four above are served through FreeUnit on `bindAddress` (`127.0.0.1` by default). Jaeger also opens the OTLP/HTTP
+receiver on 4318 (`127.0.0.1`), and dashboards, traces and logs have internal ports behind FreeUnit on `127.0.0.1` (13000, 13686 and
+16685 for gRPC, 19428). All of them are fields of `snunit.config.Stack`; the application keeps port 8080.
+
 The archives, the directories and the executables are named after the role (`snunit-stack-metrics-*`, `snunit-metrics`...), not after the project: the Linux Foundation asks not to use its marks in the name of a product, and the same is safer for the others.
 
 ## Layout

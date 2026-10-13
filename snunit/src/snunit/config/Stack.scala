@@ -25,6 +25,11 @@ import java.nio.file.Paths
   *   - metrics, on <http://localhost:9090>, scrapes the metrics endpoint of the launcher (`Observability.prometheus`,
   *     which is enabled with its defaults if not set)
   *
+  * Ports (all fields of this class): 3000 dashboards, 9090 metrics, 16686 traces and 9428 logs go through FreeUnit and
+  * are on `bindAddress`; 4318 is the OTLP/HTTP receiver of the traces program, opened by the program itself; 13000,
+  * 13686, 16685 (gRPC) and 19428 are internal ports of the programs behind FreeUnit, on `127.0.0.1`. The application
+  * has its own port, 8080 by default.
+  *
   * The FreeUnit listeners of the programs are on `bindAddress`, the loopback interface by default. None of the programs
   * asks for a login, so don't expose them without your own route in front: change `bindAddress` only if you know what
   * is reachable from there.

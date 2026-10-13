@@ -251,6 +251,20 @@ snunit run --stack Hello.scala    # run with the stack, no change in the code
 | logs | access log, FreeUnit log, output of the programs | <http://localhost:9428/select/vmui> |
 | metrics | the metrics endpoint of the launcher, scraped | <http://localhost:9090> |
 
+### Ports
+
+The four web UIs listen on `bindAddress` (`127.0.0.1` by default), the other ports only on `127.0.0.1`. Your application keeps its own port (8080 by default).
+The ports are fields of `Stack`, so they can be changed.
+
+| Port | Used by | Reachable through FreeUnit | `Stack` field |
+|---|---|---|---|
+| 3000 | dashboards, web UI | yes | `dashboardsPort` |
+| 9090 | metrics, web UI and API | yes | `metricsPort` |
+| 16686 | traces, web UI and API | yes | `tracesPort` |
+| 9428 | logs, web UI (`/select/vmui`) and API | yes | `logsPort` |
+| 4318 | traces, OTLP/HTTP receiver: FreeUnit sends the spans here | no, opened by the program | `tracesOtlpPort` |
+| 13000, 13686, 16685, 19428 | internal ports of dashboards, traces (HTTP, gRPC) and logs behind FreeUnit, on `127.0.0.1` only | no, not meant to be used | `dashboardsInternalPort`, `tracesInternalPort`, `tracesGrpcPort`, `logsInternalPort` |
+
 To have it in the code, and to configure it:
 
 ```scala
