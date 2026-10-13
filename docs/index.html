@@ -93,6 +93,7 @@
     button.copy:hover { color: #fff; border-color: #6a7488; }
 
     section { padding: 64px 0; }
+    section[id] { scroll-margin-top: 56px; }
     section.alt { background: var(--bg-alt); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
     h2 { font-size: 1.9rem; margin: 0 0 10px; letter-spacing: -0.01em; }
     .sub { color: var(--muted); margin: 0 0 36px; max-width: 700px; }
@@ -154,6 +155,38 @@
     .arch .box small { display: block; color: var(--muted); }
     .arch .arrow { color: var(--muted); }
 
+    .shots { margin-top: 28px; }
+    .shot-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; justify-content: center; }
+    .shot-tabs button {
+      background: var(--card); color: var(--muted); border: 1px solid var(--border);
+      border-radius: 999px; padding: 7px 16px; font-size: .9rem; cursor: pointer; font-weight: 600;
+    }
+    .shot-tabs button:hover { color: var(--text); border-color: var(--muted); }
+    .shot-tabs button[aria-selected="true"] { color: #fff; background: var(--accent); border-color: var(--accent); }
+    .frame {
+      border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: #0b0f14;
+      box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .55);
+    }
+    .frame .bar { display: flex; align-items: center; gap: 7px; padding: 10px 14px; background: #1b212b; border-bottom: 1px solid #262e3a; }
+    .frame .bar i { width: 11px; height: 11px; border-radius: 50%; background: #3a4352; display: block; }
+    .frame .bar i:nth-child(1) { background: #ff5f57; }
+    .frame .bar i:nth-child(2) { background: #febc2e; }
+    .frame .bar i:nth-child(3) { background: #28c840; }
+    .frame .bar span {
+      margin-left: 10px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      background: #12161d; color: #8b95a5; border-radius: 6px; padding: 3px 12px; font: .8rem ui-monospace, Menlo, monospace;
+    }
+    .frame img { display: block; width: 100%; height: auto; }
+    .shot[hidden] { display: none; }
+    .shot-caption { color: var(--muted); text-align: center; margin: 14px auto 0; max-width: 720px; font-size: .95rem; }
+    .obs-cmd { max-width: 560px; margin: 0 auto 8px; }
+    .fine { color: var(--muted); font-size: .82rem; max-width: 820px; margin: 28px auto 0; text-align: center; }
+    .badge {
+      display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+      color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      border-radius: 999px; padding: 1px 8px; margin-left: 8px; vertical-align: middle;
+    }
+
     footer { padding: 36px 0 56px; text-align: center; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--border); }
   </style>
 </head>
@@ -166,6 +199,7 @@
         <li><a href="#libraries">Libraries</a></li>
         <li><a href="#start">Get started</a></li>
         <li class="hide-sm"><a href="#config">Configuration</a></li>
+        <li class="hide-sm"><a href="#observability">Observability</a></li>
         <li><a href="https://github.com/lolgab/snunit">GitHub</a></li>
       </ul>
     </div>
@@ -252,6 +286,10 @@ def run =
           <p><code>UnitConfig</code> covers listeners and TLS, routes, upstreams, HTTP settings, processes, limits, isolation and access logs, all from Scala code.</p>
         </div>
         <div class="card">
+          <h3><span class="ico">📈</span>Observability included</h3>
+          <p>OpenTelemetry traces, metrics and logs, and <code>snunit run --stack</code> for dashboards, traces and logs running inside FreeUnit. <a href="#observability">See it</a>.</p>
+        </div>
+        <div class="card">
           <h3><span class="ico">🛑</span>Graceful shutdown</h3>
           <p>On <code>SIGTERM</code>, <code>SIGINT</code> or <code>SIGHUP</code> in-flight requests finish before exit. A watchdog cleans up even after <code>SIGKILL</code>.</p>
         </div>
@@ -261,7 +299,7 @@ def run =
         </div>
         <div class="card">
           <h3><span class="ico">🖥️</span>Linux &amp; macOS</h3>
-          <p>Prebuilt FreeUnit for Linux x86_64/aarch64 and macOS arm64, downloaded and cached on first use.</p>
+          <p>Prebuilt FreeUnit for Linux and macOS, x86_64 and aarch64, downloaded and cached on first use.</p>
         </div>
       </div>
     </div>
@@ -407,6 +445,100 @@ object app extends snunit.Http4sApp {
     </div>
   </section>
 
+  <section id="observability">
+    <div class="wrap">
+      <h2 style="text-align:center">Observability, built in</h2>
+      <p class="sub" style="margin-left:auto;margin-right:auto;text-align:center">
+        One command runs your app with dashboards, traces, logs and metrics, all running inside FreeUnit next to it,
+        already connected. No Docker, no YAML, nothing to wire.
+      </p>
+      <div class="install obs-cmd">
+        <code id="obs-cmd">snunit run --stack Hello.scala</code>
+        <button class="copy" data-copy="obs-cmd">Copy</button>
+      </div>
+      <p class="sub" style="margin:0 auto;text-align:center;font-size:.9rem">
+        The first time, <code>snunit stack install</code> downloads the programs (checksums verified).
+      </p>
+
+      <div class="shots">
+        <div class="shot-tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-shot="dashboards">Dashboards</button>
+          <button role="tab" aria-selected="false" data-shot="traces">Traces</button>
+          <button role="tab" aria-selected="false" data-shot="logs">Logs</button>
+          <button role="tab" aria-selected="false" data-shot="metrics">Metrics</button>
+        </div>
+        <div class="frame">
+          <div class="bar"><i></i><i></i><i></i><span id="shot-url">localhost:3000</span></div>
+          <div class="shot" id="shot-dashboards" data-url="localhost:3000/projects/snunit/dashboards/snunit">
+            <img src="img/dashboards.jpg" width="1440" height="900" alt="Dashboard with the request rate, connections and application processes of an SNUnit app" loading="lazy">
+          </div>
+          <div class="shot" id="shot-traces" data-url="localhost:16686" hidden>
+            <img src="img/traces.jpg" width="1440" height="900" alt="Traces of the requests handled by FreeUnit, with their durations" loading="lazy">
+          </div>
+          <div class="shot" id="shot-logs" data-url="localhost:9428/select/vmui" hidden>
+            <img src="img/logs.jpg" width="1440" height="900" alt="Searchable JSON access logs of the application" loading="lazy">
+          </div>
+          <div class="shot" id="shot-metrics" data-url="localhost:9090/query" hidden>
+            <img src="img/metrics.jpg" width="1440" height="900" alt="Request rate graph queried from the metrics of the application" loading="lazy">
+          </div>
+        </div>
+        <p class="shot-caption" id="shot-caption">
+          A dashboard with the request rate, open connections and application processes, plus links to the traces and logs.
+        </p>
+      </div>
+
+      <div class="grid" style="margin-top:40px">
+        <div class="card">
+          <h3><span class="ico">📊</span>Dashboards</h3>
+          <p>Request rate, connections and processes at a glance, provisioned for you. Built from <a href="https://perses.dev">Perses</a>.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico">🧵</span>Traces</h3>
+          <p>One span per request. The <code>traceparent</code> header reaches your app, so an OpenTelemetry SDK joins the same trace. Built from <a href="https://www.jaegertracing.io">Jaeger</a>.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico">📜</span>Logs</h3>
+          <p>JSON access log, FreeUnit log and your app's output, shipped and searchable. Built from <a href="https://docs.victoriametrics.com/victorialogs/">VictoriaLogs</a>.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico">⏱️</span>Metrics</h3>
+          <p>Connections, requests, processes and sidecars as <code>snunit_*</code> metrics, scraped for you. Built from <a href="https://prometheus.io">Prometheus</a>.</p>
+        </div>
+      </div>
+
+      <div class="split" style="margin-top:40px">
+<pre class="language-scala"><code class="language-scala">UnitConfig(
+  observability = Some(
+    Observability(
+      "my-service",
+      stack = Some(Stack())
+    )
+  )
+)
+
+// pass it to SyncServerBuilder.setConfig,
+// or override unitConfig in Http4sApp / TapirApp</code></pre>
+        <div>
+          <p>The same from code, where you can also keep the data on disk (<code>dataDirectory</code>) and choose the ports. Already have a stack? Point
+          <code>otlpEndpoint</code> to your OTLP receiver, <code>logs</code> to a Loki-compatible server and let your
+          Prometheus scrape the metrics endpoint.</p>
+          <p>Deploying? <code>snunit stack install --dir /opt/snunit-stack</code> in your image and set
+          <code>SNUNIT_STACK_DIR</code>.</p>
+        </div>
+      </div>
+
+      <p class="fine">
+        The programs are <strong>modified builds</strong> of Prometheus, Jaeger, VictoriaLogs and Perses (all Apache-2.0)
+        that serve their HTTP API through FreeUnit. They are not the official releases and are not made, endorsed or
+        supported by their authors; the names belong to their owners. Archives are named after what they do, with the
+        licenses of every dependency inside. See the
+        <a href="https://github.com/lolgab/snunit/blob/main/stack/LICENSES.md">licenses</a> and the
+        <a href="https://github.com/lolgab/snunit/tree/main/stack">build scripts</a>. They listen on localhost and have no login:
+        put your own authentication in front before exposing them.
+      </p>
+    </div>
+  </section>
+
   <section class="alt">
     <div class="wrap">
       <h2>How it works</h2>
@@ -483,6 +615,28 @@ snunit run -w Hello.scala   # rebuild and restart on every change</code></pre>
         });
       });
     });
+
+
+    (function () {
+      var captions = {
+        dashboards: 'A dashboard with the request rate, open connections and application processes, plus links to the traces and logs.',
+        traces: 'Every request FreeUnit handles is a trace, searchable by duration, service and span.',
+        logs: 'The JSON access log, FreeUnit\'s log and your app\'s output, searchable in one place.',
+        metrics: 'The metrics of the launcher, scraped every few seconds: query them with PromQL.'
+      };
+      document.querySelectorAll('.shot-tabs button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.shot-tabs button').forEach(function (b) {
+            b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+          });
+          document.querySelectorAll('.shot').forEach(function (p) {
+            p.hidden = p.id !== 'shot-' + btn.dataset.shot;
+            if (!p.hidden) document.getElementById('shot-url').textContent = p.dataset.url;
+          });
+          document.getElementById('shot-caption').textContent = captions[btn.dataset.shot];
+        });
+      });
+    })();
 
     document.querySelectorAll('button.copy').forEach(function (btn) {
       btn.addEventListener('click', function () {
