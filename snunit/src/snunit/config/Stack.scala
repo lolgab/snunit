@@ -23,7 +23,8 @@ import java.nio.file.Paths
   *   - logs, on <http://localhost:9428/select/vmui>, has the logs: the launcher ships them to it (`Observability.logs`,
   *     enabled if not set)
   *   - metrics, on <http://localhost:9090>, scrapes the metrics endpoint of the launcher (`Observability.prometheus`,
-  *     which is enabled with its defaults if not set)
+  *     which is enabled with its defaults if not set). They are not also pushed over OTLP to the traces program, which
+  *     only takes traces (`Observability.metricsInterval` is ignored while `otlpEndpoint` is the one of the stack)
   *
   * Ports (all fields of this class): 3000 dashboards, 9090 metrics, 16686 traces and 9428 logs go through FreeUnit and
   * are on `bindAddress`. 4318 is the OTLP/HTTP receiver of the traces program: it does not go through FreeUnit, because

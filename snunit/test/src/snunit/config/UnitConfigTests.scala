@@ -170,6 +170,12 @@ object UnitConfigTests extends TestSuite {
       // Only the fixed ports have to be free, the internal ones are any free port.
       config.observability.flatMap(_.stack).get.fixedPorts.map(_._3).sorted ==> Seq(3001, 4318, 9090, 9428, 16686)
       config.observability.flatMap(_.stack).get.urls.toMap.apply("dashboards") ==> "http://127.0.0.1:3001"
+      // The metrics are scraped, not pushed to the traces program (it would answer 404).
+      config.resolvedObservability.get.metricsInterval ==> None
+      // Unless they go to another collector.
+      UnitConfig(observability =
+        Some(Observability("svc", otlpEndpoint = "http://collector:4319", stack = Some(Stack())))
+      ).resolvedObservability.get.metricsInterval.isDefined ==> true
       // The logs go to VictoriaLogs.
       val logs = config.resolvedObservability.flatMap(_.logs).get
       logs.url ==> "http://127.0.0.1:9428"

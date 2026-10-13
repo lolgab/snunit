@@ -1,6 +1,7 @@
 package snunit.config
 
 import scala.concurrent.duration.*
+import scala.util.Try
 
 /** Metrics, traces and logs of an SNUnit application, wired to the usual tooling (OpenTelemetry collector, Prometheus,
   * Perses...).
@@ -95,7 +96,12 @@ final case class Observability(
 
   /** With a [[Stack]] the metrics, the logs and the traces go to it unless set otherwise. */
   private[config] def withStackDefaults: Observability = stack.fold(this) { s =>
+    // The traces program only takes traces, so pushing the metrics to it fails (404): Prometheus scrapes them.
+    val pushesToStack = Try(new java.net.URI(otlpEndpoint)).toOption.exists { uri =>
+      uri.getPort == s.tracesOtlpPort && Set("localhost", "127.0.0.1", s.localHost).contains(uri.getHost)
+    }
     copy(
+      metricsInterval = if (pushesToStack) None else metricsInterval,
       prometheus = prometheus.orElse(Some(Prometheus())),
       logs = logs.orElse(
         // VictoriaLogs takes the Loki push protocol on its own path.
