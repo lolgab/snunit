@@ -195,6 +195,7 @@ private[snunit] object Launcher {
       shipper.foreach(_.tick(flush = true)) // the last lines, including the shutdown of the application
       // Sidecars outlive the application: the last telemetry still has somewhere to go.
       sidecars.stopAll()
+      stopGroup(unitdPid)
       watchdog.foreach(_.stop())
       watchdog = None
       deleteRecursively(dir)
@@ -202,7 +203,10 @@ private[snunit] object Launcher {
     } catch {
       case e: Throwable =>
         // Don't leave unitd running if the launcher can't supervise it.
-        if (unitdPid > 0) signal.kill(unitdPid, signal.SIGKILL)
+        if (unitdPid > 0) {
+          signal.kill(unitdPid, signal.SIGKILL)
+          signal.kill(-unitdPid, signal.SIGKILL)
+        }
         sidecars.killAll()
         exporter.foreach(_.close())
         watchdog.foreach(_.stop())
@@ -210,6 +214,23 @@ private[snunit] object Launcher {
         throw e
     }
   }
+
+  /** Stops what is left of the process group of `unitd` after it exited: the programs that don't quit when `unitd` does
+    * (the observability stack: Jaeger and VictoriaLogs go on running) would stay there holding their ports.
+    */
+  private def stopGroup(pgid: Int): Unit =
+    if (pgid > 0) {
+      def alive = signal.kill(-pgid, 0) == 0
+      if (alive) {
+        signal.kill(-pgid, signal.SIGTERM)
+        var attempts = 0
+        while (alive && attempts < 100) {
+          Thread.sleep(50)
+          attempts += 1
+        }
+        if (alive) signal.kill(-pgid, signal.SIGKILL)
+      }
+    }
 
   /** Waits for `pid` to exit and returns its exit code, handling the shutdown requests.
     *
