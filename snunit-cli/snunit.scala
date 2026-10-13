@@ -80,8 +80,6 @@ private def scalinoCheck(): Unit =
 private def buildFlags(): Seq[String] =
   Seq("--dep", s"com.github.lolgab::snunit::$SNUnitVersion") ++
     (if (sys.env.contains("SNUNIT_VERSION")) Seq("--repository", "ivy2Local") else Nil) ++
-    // snunit reads String internals through raw pointers, which breaks with compact object headers.
-    Seq("--native-compact-headers=false") ++
     guard(SNUnitBuild.linkOptions(platform)).flatMap(Seq("--native-linking", _))
 
 /** Splits `args` at the first `--`. */

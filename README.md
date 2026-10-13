@@ -93,7 +93,7 @@ built yourself, without scalino:
 snunit bundle target/scala-3.3.0/app -o app-bundled
 ```
 
-The executable still needs `libunit.a` at link time, and compact object headers disabled.
+The executable still needs `libunit.a` at link time.
 `snunit link-flags` downloads FreeUnit and prints the linker options to use, one per line.
 On macOS `unitd` can only be embedded while linking, so there you pass these options to your
 build tool instead of running `snunit bundle`: they include
