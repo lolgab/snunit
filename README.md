@@ -262,7 +262,7 @@ The ports are fields of `Stack`, so they can be changed. On start the applicatio
 | 9090 | metrics, web UI and API | yes | `metricsPort` |
 | 16686 | traces, web UI and API | yes | `tracesPort` |
 | 9428 | logs, web UI (`/select/vmui`) and API | yes | `logsPort` |
-| 4318 | traces, OTLP/HTTP receiver: FreeUnit sends the spans here | no, Jaeger's OTLP receiver is not patched to be served by FreeUnit | `tracesOtlpPort` |
+| 4318 | traces, OTLP/HTTP receiver: FreeUnit sends the spans here (`/v1/traces`) | yes, to the same program as the UI | `tracesOtlpPort` |
 | any free port | internal ports of dashboards, traces (HTTP, gRPC) and logs behind FreeUnit, on `127.0.0.1` only | no, not meant to be used | `dashboardsInternalPort`, `tracesInternalPort`, `tracesGrpcPort`, `logsInternalPort` (0 = any free port) |
 
 To have it in the code, and to configure it:

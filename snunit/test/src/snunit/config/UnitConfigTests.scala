@@ -148,8 +148,9 @@ object UnitConfigTests extends TestSuite {
           Some(Observability("svc", stack = Some(Stack(directory = Some("/stack"), dashboardsPort = 3001))))
       )
       val json = config.toJson("/bin/app", "/work/logs", "/work")
-      Seq("dashboards" -> 3001, "metrics" -> 9090, "traces" -> 16686, "logs" -> 9428).foreach { (name, port) =>
-        json.contains(s""""127.0.0.1:$port":{"pass":"applications/$name"}""") ==> true
+      Seq("dashboards" -> 3001, "metrics" -> 9090, "traces" -> 16686, "logs" -> 9428, "traces" -> 4318).foreach {
+        (name, port) =>
+          json.contains(s""""127.0.0.1:$port":{"pass":"applications/$name"}""") ==> true
       }
       json.contains(""""executable":"/stack/dashboards/snunit-dashboards"""") ==> true
       json.contains(""""executable":"/stack/logs/snunit-logs"""") ==> true

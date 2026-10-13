@@ -26,8 +26,8 @@ import java.nio.file.Paths
   *     which is enabled with its defaults if not set)
   *
   * Ports (all fields of this class): 3000 dashboards, 9090 metrics, 16686 traces and 9428 logs go through FreeUnit and
-  * are on `bindAddress`. 4318 is the OTLP/HTTP receiver of the traces program: it does not go through FreeUnit, because
-  * the receiver of Jaeger is not patched to be served by it, and it is on `bindAddress` too. The programs also open
+  * are on `bindAddress`, and so is 4318, the OTLP/HTTP receiver of the traces program: it goes through FreeUnit too,
+  * to the same program as the UI of Jaeger. The programs also open
   * ports of their own on `127.0.0.1` behind FreeUnit (`*InternalPort`, `tracesGrpcPort`): they are any free port by
   * default (0). The application has its own port, 8080 by default. The launcher checks that the fixed ports are free
   * before starting and prints where the programs are.
@@ -37,8 +37,7 @@ import java.nio.file.Paths
   * is reachable from there.
   *
   * FreeUnit only speaks HTTP/1.1, so only the HTTP APIs of the programs go through it. The traces program also opens a
-  * gRPC port and an internal HTTP port for itself, and receives OTLP/HTTP on its own port; the dashboards and the logs
-  * have an internal HTTP port too.
+  * gRPC port and an internal HTTP port for itself; the dashboards and the logs have an internal HTTP port too.
   *
   * The licenses of the programs are in their directories, and in `stack/LICENSES.md` of the snunit repository.
   *
@@ -112,7 +111,9 @@ final case class Stack(
       "dashboards" -> dashboardsPort,
       "metrics" -> metricsPort,
       "traces" -> tracesPort,
-      "logs" -> logsPort
+      "logs" -> logsPort,
+      // The OTLP/HTTP receiver of the traces program, served by the same program as its UI.
+      "traces" -> tracesOtlpPort
     ).map((name, port) => Listener(address = s"$bindAddress:$port", pass = Pass.Application(name)))
 
   /** The applications, to run with `workDirectory` for the configuration and `data` for the data. */
