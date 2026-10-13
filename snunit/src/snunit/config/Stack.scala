@@ -25,13 +25,20 @@ import java.nio.file.Paths
   *   - metrics, on <http://localhost:9090>, scrapes the metrics endpoint of the launcher (`Observability.prometheus`,
   *     which is enabled with its defaults if not set)
   *
+  * Ports (all fields of this class): 3000 dashboards, 9090 metrics, 16686 traces and 9428 logs go through FreeUnit and
+  * are on `bindAddress`. 4318 is the OTLP/HTTP receiver of the traces program: it does not go through FreeUnit, because
+  * the receiver of Jaeger is not patched to be served by it, and it is on `bindAddress` too. The programs also open
+  * ports of their own on `127.0.0.1` behind FreeUnit (`*InternalPort`, `tracesGrpcPort`): they are any free port by
+  * default (0). The application has its own port, 8080 by default. The launcher checks that the fixed ports are free
+  * before starting and prints where the programs are.
+  *
   * The FreeUnit listeners of the programs are on `bindAddress`, the loopback interface by default. None of the programs
   * asks for a login, so don't expose them without your own route in front: change `bindAddress` only if you know what
   * is reachable from there.
   *
   * FreeUnit only speaks HTTP/1.1, so only the HTTP APIs of the programs go through it. The traces program also opens a
   * gRPC port and an internal HTTP port for itself, and receives OTLP/HTTP on its own port; the dashboards and the logs
-  * have an internal HTTP port too (`*InternalPort`, `*GrpcPort`).
+  * have an internal HTTP port too.
   *
   * The licenses of the programs are in their directories, and in `stack/LICENSES.md` of the snunit repository.
   *
@@ -51,11 +58,34 @@ final case class Stack(
     tracesPort: Int = 16686,
     logsPort: Int = 9428,
     tracesOtlpPort: Int = 4318,
-    dashboardsInternalPort: Int = 13000,
-    tracesInternalPort: Int = 13686,
-    tracesGrpcPort: Int = 16685,
-    logsInternalPort: Int = 19428
+    dashboardsInternalPort: Int = 0,
+    tracesInternalPort: Int = 0,
+    tracesGrpcPort: Int = 0,
+    logsInternalPort: Int = 0
 ) {
+
+  /** The address and the name of every fixed port of the stack, that has to be free to start it. */
+  private[snunit] def fixedPorts: Seq[(String, String, Int)] =
+    Seq(
+      ("dashboards", bindAddress, dashboardsPort),
+      ("metrics", bindAddress, metricsPort),
+      ("traces", bindAddress, tracesPort),
+      ("logs", bindAddress, logsPort),
+      ("traces OTLP/HTTP receiver", bindAddress, tracesOtlpPort),
+      ("dashboards internal port", "127.0.0.1", dashboardsInternalPort),
+      ("traces internal port", "127.0.0.1", tracesInternalPort),
+      ("traces gRPC port", "127.0.0.1", tracesGrpcPort),
+      ("logs internal port", "127.0.0.1", logsInternalPort)
+    ).filter(_._3 > 0)
+
+  /** Where to open the programs, for the message at startup. */
+  private[snunit] def urls: Seq[(String, String)] =
+    Seq(
+      "dashboards" -> s"http://$localHost:$dashboardsPort",
+      "metrics" -> s"http://$localHost:$metricsPort",
+      "traces" -> s"http://$localHost:$tracesPort",
+      "logs" -> s"http://$localHost:$logsPort/select/vmui"
+    )
 
   /** The directory with the programs. */
   def resolvedDirectory: String = directory.orElse(sys.env.get("SNUNIT_STACK_DIR")).getOrElse {
