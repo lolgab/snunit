@@ -129,6 +129,8 @@ object Observability {
     format = Some(
       AccessLog.Format.Fields(
         Map(
+          // The message of the log servers that need one (VictoriaLogs), a summary of the request.
+          "_msg" -> "$method $uri $status",
           "time" -> "$time_local",
           "client.address" -> "$remote_addr",
           "http.request.method" -> "$method",

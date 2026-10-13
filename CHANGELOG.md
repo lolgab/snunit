@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.1
+
+- The JSON access log has a `_msg` field (`GET /path 200`), so log servers that need a message (VictoriaLogs) show something readable
+- The dashboard of the observability stack has stat panels, filled charts and clearer links
+
 ## 0.12.0
 
 - Add the observability stack: `Observability.stack` (`snunit.config.Stack`) runs metrics, traces, logs and dashboards programs inside FreeUnit with the application, connected to it. They are modified builds of Prometheus, Jaeger, VictoriaLogs and Perses (all Apache-2.0). `snunit stack install` downloads them (built, with their licenses, by the `stack-*` release workflow) and `snunit run --stack` runs an application with them

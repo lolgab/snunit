@@ -227,24 +227,34 @@ object Stack {
     "dashboards" -> "dashboards/snunit-dashboards"
   )
 
-  private def panel(name: String, queries: Seq[(String, String)]): String = {
-    val q = queries
-      .map((query, legend) =>
-        s"""{"kind":"TimeSeriesQuery","spec":{"plugin":{"kind":"PrometheusTimeSeriesQuery","spec":{"query":"${query
-            .replace("\"", "\\\"")}","seriesNameFormat":"$legend"}}}}"""
-      )
-      .mkString(",")
-    s"""{"kind":"Panel","spec":{"display":{"name":"$name"},"plugin":{"kind":"TimeSeriesChart","spec":{}},"queries":[$q]}}"""
-  }
+  private def query(promql: String, legend: String): String =
+    s"""{"kind":"TimeSeriesQuery","spec":{"plugin":{"kind":"PrometheusTimeSeriesQuery","spec":{"query":"${promql
+        .replace("\"", "\\\"")}","seriesNameFormat":"$legend"}}}}"""
+
+  private def chart(name: String, queries: Seq[(String, String)]): String =
+    s"""{"kind":"Panel","spec":{"display":{"name":"$name"},"plugin":{"kind":"TimeSeriesChart","spec":{"visual":{"areaOpacity":0.25,"lineWidth":2},"yAxis":{"min":0}}},"queries":[${queries
+        .map(query)
+        .mkString(",")}]}}"""
+
+  private def stat(name: String, promql: String): String =
+    s"""{"kind":"Panel","spec":{"display":{"name":"$name"},"plugin":{"kind":"StatChart","spec":{"calculation":"last","format":{"unit":"decimal"},"sparkline":{}}},"queries":[${query(
+        promql,
+        name
+      )}]}}"""
 
   /** Request rate, connections and processes, and where to find the traces and the logs. */
   private[config] def dashboard(host: String, tracesPort: Int, logsPort: Int): String = {
     val links =
-      s"""**Traces**: [Traces](http://$host:$tracesPort)\\n\\n**Logs**: [Logs](http://$host:$logsPort/select/vmui)"""
+      s"""**Traces**: [open the traces](http://$host:$tracesPort) &nbsp;·&nbsp; **Logs**: [open the logs](http://$host:$logsPort/select/vmui)"""
+    def item(x: Int, y: Int, w: Int, h: Int, panel: String) =
+      s"""{"x":$x,"y":$y,"width":$w,"height":$h,"content":{"$$ref":"#/spec/panels/$panel"}}"""
     s"""{"kind":"Dashboard","metadata":{"name":"snunit","project":"snunit"},"spec":{"display":{"name":"SNUnit on FreeUnit"},""" +
       s""""duration":"15m","refreshInterval":"5s","panels":{""" +
-      s""""requests":${panel("Requests per second", Seq("rate(snunit_requests_total[30s])" -> "req/s"))},""" +
-      s""""connections":${panel(
+      s""""total":${stat("Requests", "snunit_requests_total")},""" +
+      s""""open":${stat("Open connections", "snunit_connections_active")},""" +
+      s""""processes":${stat("Application processes", "sum(snunit_application_processes{state=\"running\"})")},""" +
+      s""""requests":${chart("Requests per second", Seq("rate(snunit_requests_total[30s])" -> "req/s"))},""" +
+      s""""connections":${chart(
           "Connections and processes",
           Seq(
             "snunit_connections_active" -> "active connections",
@@ -252,9 +262,14 @@ object Stack {
           )
         )},""" +
       s""""links":{"kind":"Panel","spec":{"display":{"name":"Traces and logs"},"plugin":{"kind":"Markdown","spec":{"text":"$links"}}}}},""" +
-      """"layouts":[{"kind":"Grid","spec":{"display":{"title":"SNUnit"},"items":[""" +
-      """{"x":0,"y":0,"width":12,"height":8,"content":{"$ref":"#/spec/panels/requests"}},""" +
-      """{"x":12,"y":0,"width":12,"height":8,"content":{"$ref":"#/spec/panels/connections"}},""" +
-      """{"x":0,"y":8,"width":24,"height":4,"content":{"$ref":"#/spec/panels/links"}}]}}]}}"""
+      s""""layouts":[{"kind":"Grid","spec":{"display":{"title":"SNUnit"},"items":[""" +
+      Seq(
+        item(0, 0, 8, 4, "total"),
+        item(8, 0, 8, 4, "open"),
+        item(16, 0, 8, 4, "processes"),
+        item(0, 4, 12, 9, "requests"),
+        item(12, 4, 12, 9, "connections"),
+        item(0, 13, 24, 3, "links")
+      ).mkString(",") + "]}}]}}"
   }
 }
