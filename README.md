@@ -1,6 +1,7 @@
 # SNUnit: Scala Native HTTP server based on FreeUnit
 
 ```scala
+//> using dep com.github.lolgab::snunit::0.12.1
 import snunit.*
 
 @main
@@ -113,6 +114,7 @@ proxying, redirects...), upstreams, HTTP settings (timeouts, `max_body_size`...)
 and limits, isolation, access log and telemetry. Whatever you don't set keeps the FreeUnit default.
 
 ```scala
+//> using dep com.github.lolgab::snunit::0.12.1
 import snunit.*
 import snunit.config.*
 import scala.concurrent.duration.*
@@ -333,6 +335,7 @@ implement with your server logic.
 Here an example "Hello world" app:
 
 ```scala
+//> using dep com.github.lolgab::snunit-tapir-cats-effect::0.12.1
 import cats.effect.*
 import sttp.tapir.*
 
@@ -409,6 +412,8 @@ server logic.
 Here an example "Hello world" app:
 
 ```scala
+//> using dep com.github.lolgab::snunit-http4s0.23::0.12.1
+//> using dep org.http4s::http4s-dsl::0.23.38
 import cats.effect.*
 import org.http4s.*
 import org.http4s.dsl.io.*
@@ -432,8 +437,8 @@ If you want to have more control over the server creation, you can use the
 For example, here you see it in combination with `cats.effect.IOApp`
 
 ```scala
-package snunit.tests
-
+//> using dep com.github.lolgab::snunit-http4s0.23::0.12.1
+//> using dep org.http4s::http4s-dsl::0.23.38
 import cats.effect.*
 import org.http4s.*
 import org.http4s.dsl.io.*
