@@ -3,7 +3,7 @@ package snunit.config
 import scala.concurrent.duration.FiniteDuration
 
 /** Minimal JSON tree, enough to render the FreeUnit configuration. */
-private[config] enum Json {
+private[snunit] enum Json {
   case Obj(fields: Seq[(String, Json)])
   case Arr(items: Seq[Json])
   case Str(value: String)
@@ -17,7 +17,7 @@ private[config] enum Json {
   }
 }
 
-private[config] object Json {
+private[snunit] object Json {
   def int(value: Long): Json = Num(value.toString)
   def seconds(value: FiniteDuration): Json = Num(value.toSeconds.toString)
   def strings(values: Seq[String]): Json = Arr(values.map(Str(_)))

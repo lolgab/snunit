@@ -31,11 +31,11 @@ jobs:
         run: echo "VERSION=${GITHUB_REF_NAME#cli-v}" >> "$GITHUB_ENV"
       - name: Check the default snunit library version is published
         run: |
-          version="$(sed -n 's/^private val DefaultSNUnitVersion = "\(.*\)"/\1/p' snunit-cli/snunit.scala)"
+          version="$(sed -n 's/^  val DefaultSNUnitVersion = "\(.*\)"/\1/p' snunit-build-core/SNUnitBuild.scala)"
           echo "DefaultSNUnitVersion=$version"
           curl -fsI "https://repo1.maven.org/maven2/com/github/lolgab/snunit_native0.5_3/$version/snunit_native0.5_3-$version.pom"
       - name: Check the CLI's FreeUnit commit matches .github/freeunit-ref
-        run: grep -q "\"$(tr -d '[:space:]' < .github/freeunit-ref)\"" snunit-cli/snunit.scala
+        run: grep -q "\"$(tr -d '[:space:]' < .github/freeunit-ref)\"" snunit-build-core/SNUnitBuild.scala
       - name: Install scalino
         run: |
           sudo apt-get install -y lld
@@ -45,7 +45,7 @@ jobs:
       - name: Build snunit for every platform
         run: |
           export PATH=$HOME/.local/bin:$PATH
-          scalino package snunit-cli/snunit.scala -o dist \
+          scalino package snunit-build-core snunit-cli/snunit.scala -o dist \
             --format tar \
             --pkg-name snunit \
             --pkg-version "$VERSION" \

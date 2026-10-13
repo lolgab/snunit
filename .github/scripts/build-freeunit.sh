@@ -4,7 +4,7 @@
 # is the first 8 characters of the git ref (commit or tag).
 #
 # The FreeUnit commit is pinned in .github/freeunit-ref (override with $FREEUNIT_REF).
-# Keep it in sync with snunit-cli/snunit.scala (checked in CI).
+# Keep it in sync with snunit-build-core/SNUnitBuild.scala (checked in CI).
 #
 # Prerequisites (installed by the workflow): a C toolchain, make, pcre2, openssl.
 set -euo pipefail

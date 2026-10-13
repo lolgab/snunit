@@ -62,6 +62,26 @@ snunit package Hello.scala -o hello
 ./hello
 ```
 
+### Using sbt
+
+The `sbt-snunit` plugin (sbt 1.x and 2.x, with `sbt-scala-native` 0.5) links `libunit` and embeds `unitd`
+for you, with no CLI needed:
+
+```scala
+// project/plugins.sbt
+addSbtPlugin("com.github.lolgab" % "sbt-snunit" % "<version>")
+
+// build.sbt
+lazy val app = project
+  .enablePlugins(ScalaNativePlugin, SNUnitPlugin)
+  .settings(libraryDependencies += "com.github.lolgab" %%% "snunit" % "<version>") // %% on sbt 2
+```
+
+`sbt app/snunitBundle` builds the single executable to deploy. On Linux it is a copy of the linked
+binary with `unitd` appended, on macOS `unitd` is embedded while linking. `snunitPlatform` picks the
+platform to bundle for (default: this machine). FreeUnit is downloaded the first time and cached in
+`~/.cache/snunit`, like the CLI does.
+
 ### Using another build tool
 
 Already building with sbt, Mill or scala-cli? `snunit` can add `unitd` to an executable you
@@ -82,8 +102,8 @@ build tool instead of running `snunit bundle`: they include
 the usual flags work (for example `//> using dep` to add a library).
 Program arguments go after `--`: `snunit run Hello.scala -- --my-flag`.
 
-`snunit` downloads the prebuilt FreeUnit for your platform (Linux x86_64/aarch64,
-macOS arm64) the first time and caches it in `~/.cache/snunit`.
+`snunit` downloads the prebuilt FreeUnit for your platform (Linux and macOS, x86_64 and
+aarch64) the first time and caches it in `~/.cache/snunit`.
 
 ### Configuration
 
@@ -141,6 +161,116 @@ UnitConfig(
 
 The configuration only applies when the executable is started directly. It is ignored when the
 executable runs under a FreeUnit you configured yourself.
+
+### Observability
+
+`UnitConfig.observability` wires the application to the usual metrics, tracing and logging tools
+(OpenTelemetry, Prometheus, Jaeger, Perses):
+
+```scala
+UnitConfig(
+  observability = Some(
+    Observability(
+      serviceName = "my-service",
+      serviceVersion = Some("1.2.3"),
+      otlpEndpoint = "http://localhost:4318", // an OTLP/HTTP receiver: a collector...
+      prometheus = Some(Prometheus(port = 9464))
+    )
+  ),
+  sidecars = Seq(Sidecar.otelCollector("collector.yaml"))
+)
+```
+
+- **Traces**: FreeUnit sends a span for every request to `otlpEndpoint` and passes the `traceparent`
+  header to the application. The application processes get the standard `OTEL_SERVICE_NAME`,
+  `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_RESOURCE_ATTRIBUTES`... variables, so any OpenTelemetry SDK or
+  agent in the application is configured and continues the same trace. FreeUnit's own spans are
+  reported with the service name `NGINX Unit`.
+- **Metrics**: the launcher reads the FreeUnit status and exposes connections, requests, application
+  processes and sidecar state (`snunit_*`) at `http://127.0.0.1:9464/metrics` for Prometheus, and
+  pushes them as OTLP every `metricsInterval` (15 seconds) to `otlpEndpoint`. Pushing needs a plain
+  `http://` endpoint: use a local collector to forward to a remote one.
+- **Logs**: one JSON object per request (OpenTelemetry HTTP attribute names, with the `traceparent`
+  header to correlate with traces) is written to the standard output next to the FreeUnit log, where
+  a collector or the container runtime collects it. Set `accessLog = false` to disable it, or give
+  your own `UnitConfig.accessLog`.
+
+- **Logs shipping**: FreeUnit only writes logs to files and has no way to send them. With
+  `logs = Some(Logs(url = "http://localhost:3100"))` the launcher has FreeUnit write the access log,
+  its own log and the output of the applications to files, follows them and pushes the new lines to
+  a server with the Loki push protocol (Loki, VictoriaLogs...) every second (still copying them to
+  the standard output). Streams are labelled `service_name`, `job="snunit"` and `source`
+  (`access`, `unit`...). Lines the server can't take yet are kept in memory and sent later, so the
+  server can be one of the FreeUnit applications starting at the same time.
+
+What you set explicitly in `telemetry`, `accessLog` or `application.environment` wins over what
+`observability` generates.
+
+#### Sidecars
+
+FreeUnit only runs applications speaking its protocol, so tools like an OpenTelemetry collector
+run as `Sidecar`s: processes the launcher starts with FreeUnit, restarts when they exit (with a
+growing delay), and stops after the running requests have finished, so that they receive the last
+telemetry. They are stopped even if the launcher is killed. `Sidecar.otelCollector`
+covers the common one, any other process is a `Sidecar(name, command, arguments)`. Expose one next to
+the application with a route:
+
+```scala
+UnitConfig(
+  listeners = Seq(Listener(pass = Pass.Route("main"))),
+  routes = Map(
+    "main" -> Seq(
+      RouteStep(Action.Proxy("127.0.0.1:3000"), Match(uri = Seq("/collector/*"))),
+      RouteStep(Action.PassTo())
+    )
+  ),
+  sidecars = Seq(Sidecar("my-tool", "/opt/my-tool/bin/my-tool", Seq("--port=3000")))
+)
+```
+
+#### The observability stack, inside FreeUnit
+
+Metrics, traces, logs and dashboards programs can run inside FreeUnit together with your application, already connected
+to it. They are modified builds of [Prometheus](https://prometheus.io) (metrics), [Jaeger](https://www.jaegertracing.io)
+(traces), [VictoriaLogs](https://docs.victoriametrics.com/victorialogs/) (logs) and [Perses](https://perses.dev)
+(dashboards): all Apache-2.0, Prometheus and Jaeger are CNCF graduated projects and Perses is a CNCF project (the CNCF
+has no project that stores logs). The CLI installs them (they are built by the CI of this repository and downloaded with
+their checksums):
+
+```bash
+snunit stack install              # once: ~/.cache/snunit/stack
+snunit run --stack Hello.scala    # run with the stack, no change in the code
+```
+
+| | | |
+|---|---|---|
+| dashboards | request rate, connections, processes | <http://localhost:3000> |
+| traces | one span per request | <http://localhost:16686> |
+| logs | access log, FreeUnit log, output of the programs | <http://localhost:9428/select/vmui> |
+| metrics | the metrics endpoint of the launcher, scraped | <http://localhost:9090> |
+
+To have it in the code, and to configure it:
+
+```scala
+UnitConfig(observability = Some(Observability("my-service", stack = Some(Stack(dataDirectory = Some("/var/lib/my-service"))))))
+```
+
+By default the data is temporary. To deploy, install the stack where the executable runs
+(`snunit stack install --dir /opt/snunit-stack`, then `SNUNIT_STACK_DIR=/opt/snunit-stack`), for example in your
+Dockerfile. The programs only listen on the loopback interface and have no login: put your own authentication in front
+before exposing them.
+
+**These are not the official releases** of those projects: they are built from their sources with a small change (when
+started by FreeUnit they serve HTTP through it), and they are not endorsed or supported by their authors. The names
+belong to their owners. See [`stack/`](./stack) and its [licenses](./stack/LICENSES.md) (every archive has the licenses
+of the program and of its dependencies, and the change we made). FreeUnit speaks HTTP/1.1 only, so gRPC doesn't go
+through it, and every program runs with one process.
+
+You can also run other programs built with a FreeUnit language module next to the application with
+`UnitConfig.applications` (`Application(executable = ...)`) and `Pass.Application(name)`.
+
+If you already run a stack, point `Observability.otlpEndpoint` to its OTLP/HTTP receiver, `Observability.logs` to a
+Loki-compatible server (`Logs(url = ...)`), and let your Prometheus scrape `Observability.prometheus`.
 
 ### Shutdown
 

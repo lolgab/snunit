@@ -6,6 +6,11 @@ enum Pass {
   /** The SNUnit application. */
   case App
 
+  /** The extra application with this name of [[UnitConfig.applications]], for example a Go program built with the
+    * FreeUnit Go module.
+    */
+  case Application(name: String)
+
   /** The route with this name of [[UnitConfig.routes]]. */
   case Route(name: String)
 
@@ -13,9 +18,10 @@ enum Pass {
   case Upstream(name: String)
 
   private[config] def target: String = this match {
-    case Pass.App            => "applications/app"
-    case Pass.Route(name)    => s"routes/$name"
-    case Pass.Upstream(name) => s"upstreams/$name"
+    case Pass.App               => "applications/app"
+    case Pass.Application(name) => s"applications/$name"
+    case Pass.Route(name)       => s"routes/$name"
+    case Pass.Upstream(name)    => s"upstreams/$name"
   }
 }
 

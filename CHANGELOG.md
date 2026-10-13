@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add the observability stack: `Observability.stack` (`snunit.config.Stack`) runs metrics, traces, logs and dashboards programs inside FreeUnit with the application, connected to it. They are modified builds of Prometheus, Jaeger, VictoriaLogs and Perses (all Apache-2.0). `snunit stack install` downloads them (built, with their licenses, by the `stack-*` release workflow) and `snunit run --stack` runs an application with them
+- Add `UnitConfig.applications` and `Pass.Application` to run other programs (built with a FreeUnit language module) next to the SNUnit application, and `Observability.logs` to ship the logs of FreeUnit and of the applications to Loki or VictoriaLogs
+- Add `UnitConfig.observability` and `UnitConfig.sidecars`: OpenTelemetry tracing and `OTEL_*` variables for the application, a JSON access log, a Prometheus endpoint and OTLP push of the FreeUnit status metrics, and supervised sidecar processes (OpenTelemetry collector...) run with the executable
 - Add `snunit.config.UnitConfig`, a Scala API covering the FreeUnit configuration (listeners, TLS, routes, upstreams, HTTP settings, application processes, limits, isolation, access log, telemetry...). Pass it to `SyncServerBuilder.setConfig`, `SNUnitServerBuilder.withConfig` or override `unitConfig` (a `ResourceIO[UnitConfig]`) in `Http4sApp` and `TapirApp`. It replaces the `SNUNIT_PORT` and `SNUNIT_PROCESSES` environment variables
 - Standalone executables shut down gracefully on SIGTERM, SIGINT and SIGHUP: the listeners are closed and the running requests finish (up to `UnitConfig.shutdownTimeout`). A second signal stops without waiting
 - Standalone executables don't leave `unitd` running and the temporary directory behind when they are killed with SIGKILL
