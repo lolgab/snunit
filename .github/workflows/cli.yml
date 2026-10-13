@@ -90,8 +90,12 @@ jobs:
           cp "$(find dist -type f -name snunit)" bin/snunit
           chmod +x bin/snunit
       # No SNUNIT_FREEUNIT_DIR: this also tests the prebuilt FreeUnit download.
+      # The CLI doesn't add the snunit dependency: the test program depends on the latest published library.
       - name: Smoke test
-        run: bash .github/scripts/cli-smoke-test.sh
+        run: |
+          export SNUNIT_VERSION="$(curl -fsSL https://repo1.maven.org/maven2/com/github/lolgab/snunit_native0.5_3/maven-metadata.xml | sed -n 's:.*<release>\(.*\)</release>.*:\1:p')"
+          echo "SNUNIT_VERSION=$SNUNIT_VERSION"
+          bash .github/scripts/cli-smoke-test.sh
 
   release:
     if: startsWith(github.ref, 'refs/tags/cli-v')

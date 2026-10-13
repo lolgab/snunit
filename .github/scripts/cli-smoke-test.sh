@@ -8,7 +8,7 @@ workdir="$(mktemp -d)"
 trap 'kill "${pid:-}" 2>/dev/null || true; rm -rf "$workdir"' EXIT
 
 cat > "$workdir/Hello.scala" <<SCALA
-//> using dep com.github.lolgab::snunit::${SNUNIT_VERSION}
+//> using dep com.github.lolgab::snunit::${SNUNIT_VERSION:?SNUNIT_VERSION is not set}
 import snunit.*
 
 @main
