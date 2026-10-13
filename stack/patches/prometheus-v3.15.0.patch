@@ -1,0 +1,66 @@
+diff --git a/cmd/prometheus/main.go b/cmd/prometheus/main.go
+index c6f737e..c335e8e 100644
+--- a/cmd/prometheus/main.go
++++ b/cmd/prometheus/main.go
+@@ -1254,10 +1254,14 @@ func main() {
+ 		})
+ 	}
+ 
+-	listeners, err := webHandler.Listeners()
+-	if err != nil {
+-		logger.Error("Unable to start web listener", "err", err)
+-		os.Exit(1)
++	// Modified by the snunit project (https://github.com/lolgab/snunit): when started by FreeUnit it owns the listeners.
++	var listeners []net.Listener
++	if os.Getenv("NXT_UNIT_INIT") == "" {
++		listeners, err = webHandler.Listeners()
++		if err != nil {
++			logger.Error("Unable to start web listener", "err", err)
++			os.Exit(1)
++		}
+ 	}
+ 
+ 	err = toolkit_web.Validate(*webConfig)
+diff --git a/web/web.go b/web/web.go
+index b7ad8e3..08f4bb8 100644
+--- a/web/web.go
++++ b/web/web.go
+@@ -50,6 +50,7 @@ import (
+ 	toolkit_web "github.com/prometheus/exporter-toolkit/web"
+ 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+ 	"go.uber.org/atomic"
++	unit "unit.nginx.org/go"
+ 
+ 	"github.com/prometheus/prometheus/config"
+ 	"github.com/prometheus/prometheus/notifier"
+@@ -742,7 +743,8 @@ func (h *Handler) Listener(address string, sem chan struct{}) (net.Listener, err
+ 
+ // Run serves the HTTP endpoints.
+ func (h *Handler) Run(ctx context.Context, listeners []net.Listener, webConfig string) error {
+-	if len(listeners) == 0 {
++	underUnit := os.Getenv("NXT_UNIT_INIT") != ""
++	if len(listeners) == 0 && !underUnit {
+ 		var err error
+ 		listeners, err = h.Listeners()
+ 		if err != nil {
+@@ -778,9 +780,17 @@ func (h *Handler) Run(ctx context.Context, listeners []net.Listener, webConfig s
+ 	}
+ 
+ 	errCh := make(chan error, 1)
+-	go func() {
+-		errCh <- toolkit_web.ServeMultiple(listeners, httpSrv, &toolkit_web.FlagConfig{WebConfigFile: &webConfig}, h.logger)
+-	}()
++	if underUnit {
++		// Modified by the snunit project (https://github.com/lolgab/snunit): when started by FreeUnit the program
++		// serves HTTP through it. FreeUnit owns the listeners and passes the requests to us.
++		go func() {
++			errCh <- unit.ListenAndServe("", httpSrv.Handler)
++		}()
++	} else {
++		go func() {
++			errCh <- toolkit_web.ServeMultiple(listeners, httpSrv, &toolkit_web.FlagConfig{WebConfigFile: &webConfig}, h.logger)
++		}()
++	}
+ 
+ 	select {
+ 	case e := <-errCh:

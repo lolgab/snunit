@@ -107,8 +107,14 @@ final case class Isolation(
   }
 }
 
-/** The SNUnit application: the executable itself, run by FreeUnit as an `external` application. */
+/** An `external` application run by FreeUnit: by default the SNUnit executable itself.
+  *
+  * With `executable` it is another program built with a FreeUnit language module (for example a Go program using
+  * `unit.ListenAndServe`), declared in [[UnitConfig.applications]].
+  */
 final case class Application(
+    /** The program to run, by default the SNUnit executable itself. */
+    executable: Option[String] = None,
     /** Command line arguments of the application processes. */
     arguments: Seq[String] = Nil,
     environment: Map[String, String] = Map.empty,
@@ -125,9 +131,9 @@ final case class Application(
 ) {
   def withProcesses(count: Int): Application = copy(processes = Some(Processes.Fixed(count)))
 
-  private[config] def toJson(executable: String): Json = Json.obj { o =>
+  private[config] def toJson(self: String): Json = Json.obj { o =>
     o.put("type", Json.Str("external"))
-    o.put("executable", Json.Str(executable))
+    o.put("executable", Json.Str(executable.getOrElse(self)))
     if (arguments.nonEmpty) o.put("arguments", Json.strings(arguments))
     o.putMap("environment", environment)
     o.put("user", user)(Json.Str(_))

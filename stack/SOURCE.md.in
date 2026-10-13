@@ -1,0 +1,28 @@
+# @ROLE@ for SNUnit, built from @REPO@
+
+This directory contains `@BINARY@`, a **modified build** of the software in https://github.com/@REPO@ at the tag
+`@VERSION@` (commit `@COMMIT@`), made by the [snunit](https://github.com/lolgab/snunit) project so that it runs as an
+application inside FreeUnit. It is **not an official release**: it is not made, endorsed, supported or sponsored by the
+authors of that software or by @TRADEMARK@. The names of the upstream project and its marks belong to their owners
+(trademarks of @TRADEMARK@) and are used here only to state, factually, what this build is made from.
+
+- License of the upstream software: **@LICENSE@**, see `UPSTREAM-LICENSE` (and `UPSTREAM-NOTICE` when present)
+- Licenses of the Go modules compiled into the binary: `licenses/go-modules/` (list with versions:
+  `licenses/go-modules.txt`)
+- Licenses of the npm packages in the web UI embedded in the binary: `licenses/npm/` (when it has one)
+- Modules under weak copyleft licenses (MPL, LGPL), unmodified: `licenses/copyleft-notice.txt`
+- FreeUnit (Apache-2.0) is linked into the binary (`libunit`): `licenses/freeunit/`. FreeUnit commit `@FREEUNIT_REF@`
+
+## What was changed
+
+When started by FreeUnit (the environment variable `NXT_UNIT_INIT` is set) the program serves its HTTP API through
+FreeUnit (`unit.ListenAndServe` of the FreeUnit Go module) instead of opening its own HTTP listener. Otherwise it
+behaves as upstream. The complete change to the upstream files is in `SNUNIT-MODIFICATIONS.patch`, and the changed
+files say so in a comment (Apache-2.0 section 4(b)). The FreeUnit Go module (Apache-2.0) is added as
+`third_party/unit-go`. The upstream copyright and attribution notices are kept (section 4(c)) and so is the NOTICE
+file, if the project has one (section 4(d)).
+
+## Source code
+
+The patch applies to the upstream tag above, and the build script is `stack/build.sh` in
+https://github.com/lolgab/snunit. This text and the build scripts are provided without any warranty.

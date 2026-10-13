@@ -19,6 +19,9 @@ private[snunit] final class ControlClient(socketPath: String) {
   /** The configured listeners as JSON (`{}` if there are none), `None` if the server can't be asked. */
   def listeners(): Option[String] = request("GET", "/config/listeners").map(_.trim)
 
+  /** The FreeUnit status as JSON, `None` if the server can't be asked. */
+  def status(): Option[String] = request("GET", "/status")
+
   /** Number of active client connections, `None` if the server can't be asked. */
   def activeConnections(): Option[Int] =
     request("GET", "/status").flatMap(body =>

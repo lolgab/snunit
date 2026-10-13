@@ -42,7 +42,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check the CLI's FreeUnit commit matches .github/freeunit-ref
-        run: grep -q "\"$(tr -d '[:space:]' < .github/freeunit-ref)\"" snunit-cli/snunit.scala
+        run: grep -q "\"$(tr -d '[:space:]' < .github/freeunit-ref)\"" snunit-build-core/SNUnitBuild.scala
+      - name: Check the CLI's stack release matches .github/stack-release
+        run: grep -q "\"$(tr -d '[:space:]' < .github/stack-release)\"" snunit-build-core/SNUnitBuild.scala
       - name: Install scalino
         run: curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
         env:
@@ -66,13 +68,37 @@ jobs:
         run: |
           export PATH=$HOME/.local/bin:$PATH
           mkdir -p bin
-          scalino package snunit-cli/snunit.scala -o bin/snunit
+          scalino package snunit-build-core snunit-cli/snunit.scala -o bin/snunit
       - name: Smoke test
         run: |
           export SNUNIT_VERSION="$(./mill --disable-ticker show snunit.publishVersion | tr -d '"')"
           bash .github/scripts/cli-smoke-test.sh
         env:
           SNUNIT_FREEUNIT_DIR: ${{ github.workspace }}/freeunit-bin
+
+  sbt-plugin:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-14]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: sbt/setup-sbt@v1
+      - name: Install clang and the FreeUnit runtime libraries (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang libpcre2-dev libssl-dev
+      - name: Install the FreeUnit runtime libraries (macOS)
+        if: runner.os == 'macOS'
+        run: brew install pcre2 openssl@3
+      # Downloads the prebuilt FreeUnit, so this also tests the download.
+      - name: Scripted tests
+        run: cd sbt-snunit && sbt +scripted
 
   check-binary-compatibility:
     runs-on: ubuntu-24.04

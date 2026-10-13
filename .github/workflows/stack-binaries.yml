@@ -1,0 +1,87 @@
+name: stack-binaries
+
+# Builds Prometheus, Jaeger, VictoriaLogs and Perses patched to run inside FreeUnit (see stack/), per platform, and publishes them
+# with their licenses and the change we made to each in the release tagged `stack-*`. The `snunit` CLI downloads them
+# (`snunit stack install`). The tag must be the one in .github/stack-release.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "stack-*"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-22.04, ubuntu-22.04-arm, macos-14, macos-15-intel]
+        component: [prometheus, jaeger, victorialogs, perses]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libpcre2-dev libssl-dev
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install pcre2 openssl@3
+      - name: Download libunit
+        run: |
+          ref8="$(tr -d '[:space:]' < .github/freeunit-ref | cut -c1-8)"
+          case "$(uname -s)" in Linux) os=linux ;; Darwin) os=macos ;; esac
+          case "$(uname -m)" in x86_64) arch=x86_64 ;; *) arch=aarch64 ;; esac
+          name="freeunit-$ref8-$os-$arch"
+          mkdir -p "$RUNNER_TEMP/libunit"
+          curl -fsSL "https://github.com/lolgab/snunit/releases/download/freeunit-$ref8/$name.tar.gz" \
+            | tar xz -C "$RUNNER_TEMP/libunit"
+          echo "LIBUNIT_DIR=$RUNNER_TEMP/libunit/$name" >> "$GITHUB_ENV"
+      - name: Get the FreeUnit sources (Go module and headers)
+        run: |
+          ref="$(tr -d '[:space:]' < .github/freeunit-ref)"
+          mkdir -p "$RUNNER_TEMP/freeunit"
+          curl -fsSL "https://github.com/freeunitorg/freeunit/archive/$ref.tar.gz" \
+            | tar xz -C "$RUNNER_TEMP/freeunit" --strip-components=1
+          cd "$RUNNER_TEMP/freeunit"
+          # Same options as .github/scripts/build-freeunit.sh: only the generated headers are needed.
+          args=(--openssl --otel)
+          if [ "$(uname -s)" = Darwin ]; then
+            prefix="$(brew --prefix openssl@3)"
+            args+=("--cc-opt=-I$prefix/include" "--ld-opt=-L$prefix/lib")
+          fi
+          ./configure "${args[@]}"
+          echo "FREEUNIT_SRC=$PWD" >> "$GITHUB_ENV"
+      - name: Build ${{ matrix.component }}
+        run: bash stack/build.sh ${{ matrix.component }} dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stack-${{ matrix.component }}-${{ matrix.runner }}
+          path: dist/*.tar.gz
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/stack-')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: The tag is the one the CLI downloads
+        run: test "$GITHUB_REF_NAME" = "$(tr -d '[:space:]' < .github/stack-release)"
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum *.tar.gz > SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: stack/RELEASE_NOTES.md
+          files: |
+            dist/*.tar.gz
+            dist/SHA256SUMS

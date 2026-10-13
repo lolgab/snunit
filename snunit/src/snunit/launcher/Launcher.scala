@@ -2,6 +2,7 @@ package snunit.launcher
 
 import java.nio.file.{Files, Path, Paths}
 import java.nio.file.attribute.PosixFilePermissions
+import scala.concurrent.duration.*
 import snunit.config.UnitConfig
 import scala.scalanative.libc.errno
 import scala.scalanative.libc.stdlib.getenv
@@ -51,8 +52,14 @@ private[snunit] object Launcher {
   def runIfNeeded(config: UnitConfig): Unit =
     if (getenv(UnitInitEnv) == null) {
       EmbeddedUnitd.bytes() match {
-        case Some(bytes) => run(bytes, config)
-        case None        => () // Not started by unitd and no unitd embedded: nothing we can do.
+        case Some(bytes) =>
+          // `snunit run --stack` asks for the observability stack without any change in the code.
+          val effective =
+            if (sys.env.get("SNUNIT_STACK").exists(_.nonEmpty))
+              config.withDefaultStack(Paths.get(selfExecutable()).getFileName.toString)
+            else config
+          run(bytes, effective)
+        case None => () // Not started by unitd and no unitd embedded: nothing we can do.
       }
     }
 
@@ -68,14 +75,31 @@ private[snunit] object Launcher {
     else Paths.get("/proc/self/exe").toRealPath().toString
 
   private def run(unitdBytes: Array[Byte], config: UnitConfig): Nothing = {
+    val missing = config.missingStackPrograms
+    if (missing.nonEmpty) {
+      System.err.println(
+        s"snunit: the observability stack is not installed (missing: ${missing.mkString(", ")}). Run `snunit stack install`, " +
+          "or start the application with `snunit run --stack`, or set SNUNIT_STACK_DIR to the directory it is installed in"
+      )
+      sys.exit(1)
+    }
     // Short path: unix socket paths are limited to ~100 characters.
     val dir = Files.createTempDirectory(Paths.get("/tmp"), "snunit")
     var watchdog: Option[Watchdog] = None
+    var sidecars: Sidecars = new Sidecars(Nil, _ => 0)
+    var exporter: Option[MetricsExporter] = None
     try {
       val statedir = Files.createDirectory(dir.resolve("statedir"))
       Files.createDirectory(dir.resolve("tmp"))
       writeCertificates(statedir, config)
-      Files.write(statedir.resolve("conf.json"), config.toJson(selfExecutable()).getBytes("UTF-8"))
+      val logDir = Files.createDirectory(dir.resolve("logs"))
+      val logFiles = config.logFiles(logDir.toString, dir.toString)
+      logFiles.foreach((_, file) => Files.createFile(Paths.get(file)))
+      writeStack(dir, config)
+      Files.write(
+        statedir.resolve("conf.json"),
+        config.toJson(selfExecutable(), logDir.toString, dir.toString).getBytes("UTF-8")
+      )
 
       // Started before unitd, so that there is no window where unitd runs unsupervised.
       watchdog = Watchdog.start(dir, config)
@@ -90,7 +114,7 @@ private[snunit] object Launcher {
           "--pid",
           dir.resolve("unit.pid").toString,
           "--log",
-          "/dev/stdout",
+          if (logFiles.nonEmpty) logDir.resolve("unit.log").toString else "/dev/stdout",
           "--statedir",
           statedir.toString,
           "--tmpdir",
@@ -101,6 +125,19 @@ private[snunit] object Launcher {
         newProcessGroup = true
       )
       watchdog.foreach(_.watch(unitdPid))
+      sidecars = new Sidecars(
+        config.sidecars,
+        sidecar =>
+          spawnProcess(
+            Sidecars.resolve(sidecar.command),
+            sidecar.arguments,
+            environment = sidecar.environment,
+            workingDirectory = sidecar.workingDirectory,
+            // Same group as unitd, so that the watchdog also reaches them.
+            joinGroup = unitdPid
+          )
+      )
+      sidecars.startAll()
 
       // Writing to a watchdog that died must not kill the launcher.
       signal.signal(signal.SIGPIPE, ignoreSignal)
@@ -108,7 +145,32 @@ private[snunit] object Launcher {
       signal.signal(signal.SIGINT, onShutdownSignal)
       signal.signal(signal.SIGHUP, onShutdownSignal)
 
-      val code = waitForExit(unitdPid, dir, config)
+      val control = new ControlClient(dir.resolve("control.sock").toString)
+      exporter = config.resolvedObservability.map { observability =>
+        new MetricsExporter(
+          observability,
+          () => {
+            val status = control.status().map(Metrics.fromStatus).getOrElse(Nil)
+            Sample(
+              "snunit_up",
+              "1 if FreeUnit answers.",
+              false,
+              if (status.nonEmpty) 1 else 0
+            ) +: (status ++ sidecars.samples)
+          }
+        )
+      }
+
+      val shipper = for {
+        o <- config.resolvedObservability
+        logs <- o.logs
+      } yield new LogShipper(logs, o.serviceName, logFiles)
+
+      val code = waitForExit(unitdPid, control, config, sidecars, exporter, shipper, logDir.toString, dir.toString)
+      exporter.foreach(_.close())
+      shipper.foreach(_.tick(flush = true)) // the last lines, including the shutdown of the application
+      // Sidecars outlive the application: the last telemetry still has somewhere to go.
+      sidecars.stopAll()
       watchdog.foreach(_.stop())
       watchdog = None
       deleteRecursively(dir)
@@ -117,6 +179,8 @@ private[snunit] object Launcher {
       case e: Throwable =>
         // Don't leave unitd running if the launcher can't supervise it.
         if (unitdPid > 0) signal.kill(unitdPid, signal.SIGKILL)
+        sidecars.killAll()
+        exporter.foreach(_.close())
         watchdog.foreach(_.stop())
         deleteRecursively(dir)
         throw e
@@ -131,8 +195,16 @@ private[snunit] object Launcher {
     * second signal, or the timeout, stops `unitd` without waiting. After 5 more seconds, or the third signal, it is
     * killed.
     */
-  private def waitForExit(pid: Int, unitdDir: Path, config: UnitConfig): Int = {
-    val control = new ControlClient(unitdDir.resolve("control.sock").toString)
+  private def waitForExit(
+      pid: Int,
+      control: ControlClient,
+      config: UnitConfig,
+      sidecars: Sidecars,
+      exporter: Option[MetricsExporter],
+      shipper: Option[LogShipper],
+      logDirectory: String,
+      workDirectory: String
+  ): Int = {
     val status = stackalloc[CInt]()
     val timeoutNanos = config.shutdownTimeout.toNanos
     val killTimeoutNanos = 5L * 1000 * 1000 * 1000
@@ -163,7 +235,7 @@ private[snunit] object Launcher {
               configurationRejected = true
               System.err.println(
                 "snunit: FreeUnit rejected the configuration, see its log above. Configuration:\n" +
-                  config.toJson(selfExecutable())
+                  config.toJson(selfExecutable(), logDirectory, workDirectory)
               )
               signalsReceived = 2 // stop without draining
             }
@@ -197,9 +269,25 @@ private[snunit] object Launcher {
           killed = true
         }
       }
-      Thread.sleep(20)
+      sidecars.tick()
+      shipper.foreach(_.tick())
+      // The scrape endpoint waits for requests instead of sleeping.
+      exporter match {
+        case Some(e) => e.tick(20.millis, pushing = signals == 0)
+        case None    => Thread.sleep(20)
+      }
     }
     0
+  }
+
+  /** The configuration and data directories of the observability stack, if the configuration has one. */
+  private def writeStack(dir: Path, config: UnitConfig): Unit = {
+    config.stackDataDirectories(dir.toString).foreach(d => Files.createDirectories(Paths.get(d)))
+    config.stackFiles(dir.toString).foreach { (path, content) =>
+      val file = Paths.get(path)
+      Files.createDirectories(file.getParent)
+      Files.write(file, content.getBytes("UTF-8"))
+    }
   }
 
   /** Certificates are read by `unitd` from the `certs` directory of its state directory. */
@@ -221,36 +309,63 @@ private[snunit] object Launcher {
     *   file descriptor to use as the standard input of the process
     * @param newProcessGroup
     *   run the process in a new process group
+    * @param environment
+    *   added to the environment of the launcher
+    * @param workingDirectory
+    *   the launcher's one by default
+    * @param joinGroup
+    *   run the process in this process group, if positive
     */
-  private def spawnProcess(path: String, args: Seq[String], stdin: Int = -1, newProcessGroup: Boolean = false): Int =
-    Zone {
-      def cStrings(values: Seq[String]): Ptr[CString] = {
-        val array = alloc[CString](values.length + 1)
-        values.zipWithIndex.foreach((value, i) => array(i) = toCString(value))
-        array(values.length) = null
-        array
+  private[launcher] def spawnProcess(
+      path: String,
+      args: Seq[String],
+      stdin: Int = -1,
+      newProcessGroup: Boolean = false,
+      environment: Map[String, String] = Map.empty,
+      workingDirectory: Option[String] = None,
+      joinGroup: Int = 0
+  ): Int = workingDirectory match {
+    // No portable way to change directory in posix_spawn.
+    case Some(dir) =>
+      spawnProcess(
+        "/bin/sh",
+        Seq("-c", "cd \"$0\" && exec \"$@\"", dir, path) ++ args,
+        stdin,
+        newProcessGroup,
+        environment,
+        None,
+        joinGroup
+      )
+    case None =>
+      Zone {
+        def cStrings(values: Seq[String]): Ptr[CString] = {
+          val array = alloc[CString](values.length + 1)
+          values.zipWithIndex.foreach((value, i) => array(i) = toCString(value))
+          array(values.length) = null
+          array
+        }
+        val argv = cStrings(path +: args)
+        val envp = cStrings((sys.env ++ environment).map((k, v) => s"$k=$v").toSeq)
+
+        val actions = alloc[spawn.posix_spawn_file_actions_t]()
+        spawn.posix_spawn_file_actions_init(actions)
+        if (stdin >= 0) spawn.posix_spawn_file_actions_adddup2(actions, stdin, 0)
+
+        val attributes = alloc[spawn.posix_spawnattr_t]()
+        spawn.posix_spawnattr_init(attributes)
+        if (newProcessGroup || joinGroup > 0) {
+          spawn.posix_spawnattr_setflags(attributes, spawn.POSIX_SPAWN_SETPGROUP.toShort)
+          spawn.posix_spawnattr_setpgroup(attributes, if (newProcessGroup) 0 else joinGroup)
+        }
+
+        val pid = alloc[spawn.pid_t]()
+        val result = spawn.posix_spawn(pid, toCString(path), actions, attributes, argv, envp)
+        spawn.posix_spawn_file_actions_destroy(actions)
+        spawn.posix_spawnattr_destroy(attributes)
+        if (result != 0) throw new java.io.IOException(s"Cannot run $path: ${fromCString(string.strerror(result))}")
+        !pid
       }
-      val argv = cStrings(path +: args)
-      val envp = cStrings(sys.env.map((k, v) => s"$k=$v").toSeq)
-
-      val actions = alloc[spawn.posix_spawn_file_actions_t]()
-      spawn.posix_spawn_file_actions_init(actions)
-      if (stdin >= 0) spawn.posix_spawn_file_actions_adddup2(actions, stdin, 0)
-
-      val attributes = alloc[spawn.posix_spawnattr_t]()
-      spawn.posix_spawnattr_init(attributes)
-      if (newProcessGroup) {
-        spawn.posix_spawnattr_setflags(attributes, spawn.POSIX_SPAWN_SETPGROUP.toShort)
-        spawn.posix_spawnattr_setpgroup(attributes, 0)
-      }
-
-      val pid = alloc[spawn.pid_t]()
-      val result = spawn.posix_spawn(pid, toCString(path), actions, attributes, argv, envp)
-      spawn.posix_spawn_file_actions_destroy(actions)
-      spawn.posix_spawnattr_destroy(attributes)
-      if (result != 0) throw new java.io.IOException(s"Cannot run $path: ${fromCString(string.strerror(result))}")
-      !pid
-    }
+  }
 
   /** A shell process that stops `unitd` and removes the temporary directory when the launcher dies without cleaning up.
     *
@@ -288,6 +403,8 @@ private[snunit] object Launcher {
         |kill -QUIT "$pid" 2>/dev/null; wait_exit "$timeout"
         |kill -TERM "$pid" 2>/dev/null; wait_exit 5
         |kill -KILL "$pid" 2>/dev/null
+        |kill -TERM -- "-$pid" 2>/dev/null; sleep 5
+        |kill -KILL -- "-$pid" 2>/dev/null
         |rm -rf "$dir"
         |""".stripMargin
 

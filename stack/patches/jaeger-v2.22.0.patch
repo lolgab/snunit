@@ -1,0 +1,36 @@
+diff --git a/cmd/jaeger/internal/extension/jaegerquery/internal/server.go b/cmd/jaeger/internal/extension/jaegerquery/internal/server.go
+index 232efc9..ec3c2b1 100644
+--- a/cmd/jaeger/internal/extension/jaegerquery/internal/server.go
++++ b/cmd/jaeger/internal/extension/jaegerquery/internal/server.go
+@@ -12,6 +12,7 @@ import (
+ 	"net/http"
+ 	"net/http/httputil"
+ 	"net/url"
++	"os"
+ 	"path"
+ 	"strings"
+ 	"sync"
+@@ -27,6 +28,7 @@ import (
+ 	"google.golang.org/grpc/health"
+ 	"google.golang.org/grpc/health/grpc_health_v1"
+ 	"google.golang.org/grpc/reflection"
++	unit "unit.nginx.org/go"
+ 
+ 	"github.com/jaegertracing/jaeger-idl/proto-gen/api_v2"
+ 	"github.com/jaegertracing/jaeger/cmd/jaeger/internal/extension/jaegerquery/internal/apiv3"
+@@ -475,7 +477,14 @@ func (s *Server) Start(ctx context.Context) error {
+ 
+ 	s.bgFinished.Go(func() {
+ 		s.telset.Logger.Info("Starting HTTP server", zap.Int("port", httpPort), zap.String("addr", s.queryOptions.HTTP.NetAddr.Endpoint))
+-		err := s.httpServer.Serve(s.httpConn)
++		var err error
++		if os.Getenv("NXT_UNIT_INIT") != "" {
++			// Modified by the snunit project (https://github.com/lolgab/snunit): when started by FreeUnit the
++			// program serves HTTP through it. FreeUnit owns the HTTP listener and passes the requests to us.
++			err = unit.ListenAndServe("", s.httpServer.Handler)
++		} else {
++			err = s.httpServer.Serve(s.httpConn)
++		}
+ 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+ 			s.telset.Logger.Error("Could not start HTTP server", zap.Error(err))
+ 			s.telset.ReportStatus(componentstatus.NewFatalErrorEvent(err))

@@ -87,6 +87,122 @@ object UnitConfigTests extends TestSuite {
       json.contains(""""access_log":{"path":"/dev/stdout","format":"$status"}""") ==> true
       json.contains(""""telemetry":{"endpoint":"http://localhost:4318","sampling_ratio":0.5}""") ==> true
     }
+    test("observability") {
+      val config = UnitConfig(
+        observability = Some(
+          Observability(
+            "svc",
+            serviceVersion = Some("1.0"),
+            resourceAttributes = Map("deployment.environment.name" -> "a b,c"),
+            traces = Some(Traces(samplingRatio = Some(0.5)))
+          )
+        ),
+        sidecars = Seq(Sidecar.otelCollector("c.yaml"))
+      )
+      val json = config.toJson("/bin/app")
+      json.contains(
+        """"telemetry":{"endpoint":"http://localhost:4318/v1/traces","protocol":"http","sampling_ratio":0.5}"""
+      ) ==> true
+      json.contains(""""access_log":{"path":"/dev/stdout","format":{""") ==> true
+      json.contains(""""OTEL_SERVICE_NAME":"svc"""") ==> true
+      json.contains(
+        """"OTEL_RESOURCE_ATTRIBUTES":"service.version=1.0,deployment.environment.name=a%20b%2Cc""""
+      ) ==> true
+      json.contains(""""OTEL_TRACES_SAMPLER":"parentbased_traceidratio"""") ==> true
+    }
+    test("observabilityExplicitWins") {
+      val config = UnitConfig(
+        observability = Some(Observability("svc")),
+        application = Application(environment = Map("OTEL_SERVICE_NAME" -> "mine")),
+        accessLog = Some(AccessLog("/tmp/log")),
+        telemetry = Some(Telemetry("http://x"))
+      )
+      val json = config.toJson("/bin/app")
+      json.contains(""""OTEL_SERVICE_NAME":"mine"""") ==> true
+      json.contains(""""access_log":{"path":"/tmp/log"}""") ==> true
+      json.contains(""""telemetry":{"endpoint":"http://x"}""") ==> true
+    }
+    test("observabilityLogs") {
+      val config = UnitConfig(
+        observability = Some(Observability("svc", logs = Some(Logs()))),
+        applications = Map("extra" -> Application(executable = Some("/bin/extra")))
+      )
+      val json = config.toJson("/bin/app", "/logs")
+      json.contains(""""access_log":{"path":"/logs/access.log"""") ==> true
+      json.contains(""""stdout":"/logs/app.stdout.log","stderr":"/logs/app.stderr.log"""") ==> true
+      json.contains(""""stdout":"/logs/extra.stdout.log"""") ==> true
+      config.logFiles("/logs").map(_._1) ==> Seq(
+        "access",
+        "unit",
+        "app.stdout",
+        "app.stderr",
+        "extra.stdout",
+        "extra.stderr"
+      )
+      UnitConfig().logFiles("/logs") ==> Nil
+      UnitConfig(observability = Some(Observability("svc"))).toJson("/bin/app").contains(""""stdout":""") ==> false
+    }
+    test("stack") {
+      val config = UnitConfig(
+        observability =
+          Some(Observability("svc", stack = Some(Stack(directory = Some("/stack"), dashboardsPort = 3001))))
+      )
+      val json = config.toJson("/bin/app", "/work/logs", "/work")
+      Seq("dashboards" -> 3001, "metrics" -> 9090, "traces" -> 16686, "logs" -> 9428).foreach { (name, port) =>
+        json.contains(s""""127.0.0.1:$port":{"pass":"applications/$name"}""") ==> true
+      }
+      json.contains(""""executable":"/stack/dashboards/snunit-dashboards"""") ==> true
+      json.contains(""""executable":"/stack/logs/snunit-logs"""") ==> true
+      json.contains(""""arguments":["--config=/work/stack/traces.yaml"]""") ==> true
+      // The metrics, the logs and the traces go to the stack.
+      json.contains(""""telemetry":{"endpoint":"http://localhost:4318/v1/traces"""") ==> true
+      config.logFiles("/work/logs", "/work").map(_._1).contains("logs.stdout") ==> true
+      val files = config.stackFiles("/work").toMap
+      files("/work/stack/metrics.yml").contains("127.0.0.1:9464") ==> true
+      files("/work/stack/traces.yaml").contains("endpoint: 127.0.0.1:4318") ==> true
+      files("/work/stack/traces.yaml").contains("keys: /work/data/traces/keys") ==> true
+      files("/work/stack/dashboards.yaml").contains("folder: /work/data/dashboards/db") ==> true
+      files("/work/stack/dashboards.yaml").contains("archive_path: /stack/dashboards/plugins-archive") ==> true
+      files("/work/stack/dashboards/provisioning/datasource.json").contains("http://127.0.0.1:9090") ==> true
+      files("/work/stack/dashboards/provisioning/dashboard.json").contains("rate(snunit_requests_total[30s])") ==> true
+      files("/work/stack/dashboards/provisioning/dashboard.json").contains("http://127.0.0.1:16686") ==> true
+      config.missingStackPrograms.sorted ==> Seq("dashboards", "logs", "metrics", "traces")
+      // The logs go to VictoriaLogs.
+      val logs = config.resolvedObservability.flatMap(_.logs).get
+      logs.url ==> "http://127.0.0.1:9428"
+      logs.pushPath ==> "/insert/loki/api/v1/push"
+      // Own data directory, and no stack without Stack.
+      UnitConfig(observability = Some(Observability("svc", stack = Some(Stack(dataDirectory = Some("/data"))))))
+        .stackFiles("/work")
+        .toMap
+        .apply("/work/stack/traces.yaml")
+        .contains("keys: /data/traces/keys") ==> true
+      UnitConfig().stackFiles("/work") ==> Nil
+      assertThrows[IllegalArgumentException] {
+        UnitConfig(
+          applications = Map("dashboards" -> Application(executable = Some("/x"))),
+          observability = Some(Observability("svc", stack = Some(Stack())))
+        ).toJson("/bin/app")
+      }
+    }
+    test("defaultStack") {
+      UnitConfig().withDefaultStack("svc").observability.flatMap(_.stack).nonEmpty ==> true
+      UnitConfig().withDefaultStack("svc").observability.map(_.serviceName) ==> Some("svc")
+      val own = UnitConfig(observability = Some(Observability("mine")))
+      own.withDefaultStack("svc").observability.map(_.serviceName) ==> Some("mine")
+      val configured = UnitConfig(observability = Some(Observability("a", stack = Some(Stack(dashboardsPort = 1)))))
+      configured.withDefaultStack("svc") ==> configured
+    }
+    test("observabilityValidation") {
+      def invalid(config: UnitConfig): Unit = assertThrows[IllegalArgumentException] { config.toJson("/bin/app") }
+      invalid(UnitConfig(observability = Some(Observability(""))))
+      invalid(UnitConfig(observability = Some(Observability("a", otlpEndpoint = "https://collector:4318"))))
+      invalid(UnitConfig(observability = Some(Observability("a", traces = Some(Traces(samplingRatio = Some(2.0)))))))
+      invalid(UnitConfig(sidecars = Seq(Sidecar("a", "x"), Sidecar("a", "y"))))
+      UnitConfig(observability = Some(Observability("a", otlpEndpoint = "https://c", metricsInterval = None)))
+        .toJson("/bin/app")
+        .nonEmpty ==> true
+    }
     test("validation") {
       def invalid(config: UnitConfig): Unit = assertThrows[IllegalArgumentException] { config.toJson("/bin/app") }
       invalid(UnitConfig(listeners = Nil))
