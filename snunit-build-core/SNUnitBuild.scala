@@ -22,7 +22,7 @@ object SNUnitBuild {
   // Release of the observability stack (Prometheus, Jaeger, VictoriaLogs and Perses built to run inside FreeUnit, see stack/).
   // Keep in sync with .github/stack-release (checked in CI). The archives are published in the snunit release with
   // that tag.
-  val StackRelease = "stack-v0.0.1"
+  val StackRelease = "stack-v0.0.2"
   val StackComponents: Seq[String] = Seq("metrics", "traces", "logs", "dashboards")
   val StackPlatforms: Seq[String] = Seq("linux-aarch64", "linux-x86_64", "macos-aarch64", "macos-x86_64")
   private val StackMarker = ".snunit-stack-release"

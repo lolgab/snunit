@@ -91,6 +91,11 @@ echo "== Adding the FreeUnit Go module"
 mkdir -p "$src/third_party/unit-go"
 cp "$FREEUNIT_SRC"/go/*.go "$FREEUNIT_SRC"/go/*.c "$FREEUNIT_SRC"/go/*.h "$FREEUNIT_SRC"/go/go.mod "$src/third_party/unit-go/"
 cp "$FREEUNIT_SRC/LICENSE" "$FREEUNIT_SRC/NOTICE" "$src/third_party/unit-go/"
+if [ "$component" = jaeger ]; then
+  # Shares the one handler FreeUnit gives to a program between the query server and the OTLP/HTTP receiver.
+  mkdir -p "$src/third_party/unitmux"
+  cp "$here"/unitmux/go.mod "$here"/unitmux/unitmux.go "$src/third_party/unitmux/"
+fi
 
 echo "== Patching"
 case "$component" in
@@ -100,6 +105,10 @@ case "$component" in
       cd "$src"
       go mod edit -require=unit.nginx.org/go@v0.0.0 -replace=unit.nginx.org/go=./third_party/unit-go
     )
+    if [ "$component" = jaeger ]; then
+      # The OTLP/HTTP receiver is in the OpenTelemetry collector, a dependency: a patched copy is used.
+      "$here/patch-jaeger-otlp.sh" "$src"
+    fi
     ;;
   victorialogs)
     "$here/patch-victorialogs.sh" "$src"
@@ -110,10 +119,12 @@ case "$component" in
 esac
 # What we changed in the upstream files, for the license obligations (and for the reader).
 git -C "$src" -c core.quotepath=off diff -- . ':!third_party' > "$work/modifications.patch"
-if [ -f "$src/third_party/perses-common.patch" ]; then
-  # The change is in a copy of a dependency of Perses.
-  cat "$src/third_party/perses-common.patch" >> "$work/modifications.patch"
-fi
+for dependency_patch in perses-common otlpreceiver; do
+  if [ -f "$src/third_party/$dependency_patch.patch" ]; then
+    # The change is in a copy of a dependency (of Perses, of Jaeger).
+    cat "$src/third_party/$dependency_patch.patch" >> "$work/modifications.patch"
+  fi
+done
 
 if [ "$component" = prometheus ] || [ "$component" = jaeger ]; then
   # The web UI of Prometheus is built with pnpm, and the dependencies of the one of Jaeger are listed with it (not installed everywhere, and the npm package of that name is a stub).

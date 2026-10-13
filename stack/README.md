@@ -18,13 +18,13 @@ or in the code: `Observability("my-service", stack = Some(Stack()))`, see `snuni
 | Role (archive and directory) | Built from | Where |
 |---|---|---|
 | `metrics` | Prometheus | http://localhost:9090 |
-| `traces` | Jaeger | http://localhost:16686 (OTLP/HTTP on 4318) |
+| `traces` | Jaeger | http://localhost:16686 (OTLP/HTTP on 4318, `/v1/traces`) |
 | `logs` | VictoriaLogs | http://localhost:9428/select/vmui |
 | `dashboards` | Perses | http://localhost:3000 |
 
-Ports: the four above are served through FreeUnit on `bindAddress` (`127.0.0.1` by default). Jaeger also opens the OTLP/HTTP
-receiver on 4318 (`bindAddress`): it is not served through FreeUnit because only Jaeger's query server is patched, not the
-OTLP receiver of its collector. The programs also bind ports of their own on `127.0.0.1` behind FreeUnit (dashboards, traces
+Ports: the four above and 4318, the OTLP/HTTP receiver of Jaeger, are served through FreeUnit on `bindAddress`
+(`127.0.0.1` by default). Jaeger gets both through the one handler FreeUnit gives to a program: `unitmux/` routes `/v1/*` to
+the receiver (a patched copy of the OpenTelemetry collector's, `patch-jaeger-otlp.sh`) and the rest to the query server. The programs also bind ports of their own on `127.0.0.1` behind FreeUnit (dashboards, traces
 HTTP and gRPC, logs): the launcher asks for any free port (0), so they can't clash. All of them are fields of
 `snunit.config.Stack`; the application keeps port 8080.
 
@@ -35,7 +35,8 @@ The archives, the directories and the executables are named after the role (`snu
 | File | |
 |---|---|
 | `versions.env` | upstream versions of the programs |
-| `patches/` | the change to Prometheus and Jaeger |
+| `patches/` | the change to Prometheus and Jaeger (its query server) |
+| `patch-jaeger-otlp.sh`, `unitmux/` | the change to the OTLP/HTTP receiver Jaeger uses (a copy of the OpenTelemetry collector's) and the Go package that shares the one FreeUnit handler between it and the query server |
 | `patch-victorialogs.sh`, `patch-perses.sh` | the change to VictoriaLogs (vendored `lib/httpserver`) and Perses (a copy of `perses/common`) |
 | `build.sh` | clone, patch, build (including the web UIs), collect the licenses, check them and package one program |
 | `collect-licenses.sh`, `collect-npm-licenses.sh`, `collect-npm-licenses.js` | license files of the Go modules and the npm packages in a binary |
@@ -55,5 +56,5 @@ The archives, the directories and the executables are named after the role (`snu
 
 ## Limits
 
-FreeUnit speaks HTTP/1.1 only, so gRPC doesn't go through it. Jaeger's OTLP/HTTP receiver keeps its own port too: its collector is not patched, only the query server (serving it would also need the receiver and the UI to share the one handler FreeUnit gives to a program). Each
+FreeUnit speaks HTTP/1.1 only, so gRPC doesn't go through it.  Each
 program runs with a single process. The patches have to be redone for new upstream versions. None of the programs is configured with a login: they listen on the loopback interface.

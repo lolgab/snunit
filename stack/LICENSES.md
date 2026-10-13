@@ -46,7 +46,7 @@ npm packages, so a new upstream version can't bring one in without notice.
 Each program is built from the unmodified upstream source of the pinned version plus a small change: when it is started
 by FreeUnit it serves its HTTP API through FreeUnit (`unit.ListenAndServe`) instead of opening its own listener.
 
-- `patches/*.patch` (Prometheus, Jaeger) and `patch-victorialogs.sh`, `patch-perses.sh` contain the change. They modify
+- `patches/*.patch` (Prometheus, Jaeger) and `patch-victorialogs.sh`, `patch-perses.sh`, `patch-jaeger-otlp.sh` (and `unitmux/`, our own small package) contain the change. They modify
   Apache-2.0 files, so they are under the same license. The build scripts (`build.sh`, `collect-*.sh`,
   `check-licenses.sh`) and the rest of this repository are Apache-2.0.
 - The binaries are **modified builds** and are not the official releases. They are not made, endorsed or supported by
