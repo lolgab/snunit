@@ -253,8 +253,8 @@ snunit run --stack Hello.scala    # run with the stack, no change in the code
 
 ### Ports
 
-The four web UIs listen on `bindAddress` (`127.0.0.1` by default), the other ports only on `127.0.0.1`. Your application keeps its own port (8080 by default).
-The ports are fields of `Stack`, so they can be changed.
+The first five ports listen on `bindAddress` (`127.0.0.1` by default), the internal ones only on `127.0.0.1`. Your application keeps its own port (8080 by default).
+The ports are fields of `Stack`, so they can be changed. On start the application checks that the fixed ones are free (and says which is not), and prints where the programs are.
 
 | Port | Used by | Reachable through FreeUnit | `Stack` field |
 |---|---|---|---|
@@ -262,8 +262,8 @@ The ports are fields of `Stack`, so they can be changed.
 | 9090 | metrics, web UI and API | yes | `metricsPort` |
 | 16686 | traces, web UI and API | yes | `tracesPort` |
 | 9428 | logs, web UI (`/select/vmui`) and API | yes | `logsPort` |
-| 4318 | traces, OTLP/HTTP receiver: FreeUnit sends the spans here | no, opened by the program | `tracesOtlpPort` |
-| 13000, 13686, 16685, 19428 | internal ports of dashboards, traces (HTTP, gRPC) and logs behind FreeUnit, on `127.0.0.1` only | no, not meant to be used | `dashboardsInternalPort`, `tracesInternalPort`, `tracesGrpcPort`, `logsInternalPort` |
+| 4318 | traces, OTLP/HTTP receiver: FreeUnit sends the spans here | no, Jaeger's OTLP receiver is not patched to be served by FreeUnit | `tracesOtlpPort` |
+| any free port | internal ports of dashboards, traces (HTTP, gRPC) and logs behind FreeUnit, on `127.0.0.1` only | no, not meant to be used | `dashboardsInternalPort`, `tracesInternalPort`, `tracesGrpcPort`, `logsInternalPort` (0 = any free port) |
 
 To have it in the code, and to configure it:
 

@@ -167,6 +167,9 @@ object UnitConfigTests extends TestSuite {
       files("/work/stack/dashboards/provisioning/dashboard.json").contains("rate(snunit_requests_total[30s])") ==> true
       files("/work/stack/dashboards/provisioning/dashboard.json").contains("http://127.0.0.1:16686") ==> true
       config.missingStackPrograms.sorted ==> Seq("dashboards", "logs", "metrics", "traces")
+      // Only the fixed ports have to be free, the internal ones are any free port.
+      config.observability.flatMap(_.stack).get.fixedPorts.map(_._3).sorted ==> Seq(3001, 4318, 9090, 9428, 16686)
+      config.observability.flatMap(_.stack).get.urls.toMap.apply("dashboards") ==> "http://127.0.0.1:3001"
       // The logs go to VictoriaLogs.
       val logs = config.resolvedObservability.flatMap(_.logs).get
       logs.url ==> "http://127.0.0.1:9428"

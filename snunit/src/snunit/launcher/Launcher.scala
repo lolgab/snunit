@@ -63,6 +63,17 @@ private[snunit] object Launcher {
       }
     }
 
+  /** Whether `host:port` can be bound now. */
+  private def portIsFree(host: String, port: Int): Boolean =
+    try {
+      val socket = new java.net.ServerSocket()
+      try {
+        socket.setReuseAddress(true)
+        socket.bind(new java.net.InetSocketAddress(java.net.InetAddress.getByName(host), port))
+        true
+      } finally socket.close()
+    } catch { case _: java.io.IOException => false }
+
   /** Real path of the running executable. */
   def selfExecutable(): String =
     if (LinktimeInfo.isMac) Zone {
@@ -82,6 +93,19 @@ private[snunit] object Launcher {
           "or start the application with `snunit run --stack`, or set SNUNIT_STACK_DIR to the directory it is installed in"
       )
       sys.exit(1)
+    }
+    config.observability.flatMap(_.stack).foreach { stack =>
+      val busy = stack.fixedPorts.filterNot((_, host, port) => portIsFree(host, port))
+      if (busy.nonEmpty) {
+        busy.foreach((name, host, port) =>
+          System.err.println(s"snunit: the $name port is already in use: $host:$port (set it in `snunit.config.Stack`)")
+        )
+        System.err.println(
+          "snunit: stop what uses it, for example a stack from a previous run that did not exit, or choose other ports"
+        )
+        sys.exit(1)
+      }
+      System.err.println("snunit: observability stack: " + stack.urls.map((n, u) => s"$n $u").mkString(", "))
     }
     // Short path: unix socket paths are limited to ~100 characters.
     val dir = Files.createTempDirectory(Paths.get("/tmp"), "snunit")

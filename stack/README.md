@@ -23,8 +23,10 @@ or in the code: `Observability("my-service", stack = Some(Stack()))`, see `snuni
 | `dashboards` | Perses | http://localhost:3000 |
 
 Ports: the four above are served through FreeUnit on `bindAddress` (`127.0.0.1` by default). Jaeger also opens the OTLP/HTTP
-receiver on 4318 (`127.0.0.1`), and dashboards, traces and logs have internal ports behind FreeUnit on `127.0.0.1` (13000, 13686 and
-16685 for gRPC, 19428). All of them are fields of `snunit.config.Stack`; the application keeps port 8080.
+receiver on 4318 (`bindAddress`): it is not served through FreeUnit because only Jaeger's query server is patched, not the
+OTLP receiver of its collector. The programs also bind ports of their own on `127.0.0.1` behind FreeUnit (dashboards, traces
+HTTP and gRPC, logs): the launcher asks for any free port (0), so they can't clash. All of them are fields of
+`snunit.config.Stack`; the application keeps port 8080.
 
 The archives, the directories and the executables are named after the role (`snunit-stack-metrics-*`, `snunit-metrics`...), not after the project: the Linux Foundation asks not to use its marks in the name of a product, and the same is safer for the others.
 
@@ -53,5 +55,5 @@ The archives, the directories and the executables are named after the role (`snu
 
 ## Limits
 
-FreeUnit speaks HTTP/1.1 only, so gRPC doesn't go through it (Jaeger's OTLP/HTTP receiver keeps its own port). Each
+FreeUnit speaks HTTP/1.1 only, so gRPC doesn't go through it. Jaeger's OTLP/HTTP receiver keeps its own port too: its collector is not patched, only the query server (serving it would also need the receiver and the UI to share the one handler FreeUnit gives to a program). Each
 program runs with a single process. The patches have to be redone for new upstream versions. None of the programs is configured with a login: they listen on the loopback interface.
