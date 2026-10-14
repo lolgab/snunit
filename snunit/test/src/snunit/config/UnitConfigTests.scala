@@ -110,6 +110,19 @@ object UnitConfigTests extends TestSuite {
       ) ==> true
       json.contains(""""OTEL_TRACES_SAMPLER":"parentbased_traceidratio"""") ==> true
     }
+    test("observabilityStackDisablesLogsAndMetricsExporters") {
+      val json = UnitConfig(observability = Some(Observability("svc", stack = Some(Stack())))).toJson("/bin/app")
+      json.contains(""""OTEL_LOGS_EXPORTER":"none"""") ==> true
+      json.contains(""""OTEL_METRICS_EXPORTER":"none"""") ==> true
+    }
+    test("observabilityOwnCollectorKeepsExporters") {
+      val json = UnitConfig(
+        observability = Some(Observability("svc", otlpEndpoint = "http://collector:4318", stack = Some(Stack())))
+      ).toJson("/bin/app")
+      json.contains("OTEL_LOGS_EXPORTER") ==> false
+      val noStack = UnitConfig(observability = Some(Observability("svc"))).toJson("/bin/app")
+      noStack.contains("OTEL_LOGS_EXPORTER") ==> false
+    }
     test("observabilityExplicitWins") {
       val config = UnitConfig(
         observability = Some(Observability("svc")),

@@ -251,6 +251,35 @@ snunit run --stack Hello.scala    # run with the stack, no change in the code
 | logs | access log, FreeUnit log, output of the programs | <http://localhost:9428/select/vmui> |
 | metrics | the metrics endpoint of the launcher, scraped | <http://localhost:9090> |
 
+#### Tracing the application with otel4s
+
+`snunit-otel4s` runs a Tapir application with [otel4s](https://typelevel.org/otel4s) already configured: the SDK reads the
+`OTEL_*` variables SNUnit gives to the application (so it works with `snunit run --stack` or your own collector), every
+request is a server span that is a child of the span FreeUnit sends, and the same `Otel4s` is given to your code for
+your own spans and metrics.
+
+```scala
+//> using dep com.github.lolgab::snunit-otel4s::0.12.2
+import cats.effect.*
+import org.typelevel.otel4s.Otel4s
+import sttp.tapir.*
+
+object Main extends snunit.Otel4sTapirApp {
+  def serverEndpoints(otel4s: Otel4s[IO]) =
+    Resource.eval(otel4s.tracerProvider.get("my-service")).map { tracer =>
+      endpoint.get
+        .in("hello")
+        .out(stringBody)
+        .serverLogicSuccess[IO](_ => tracer.span("work").surround(IO.pure("hello"))) :: Nil
+    }
+}
+```
+
+With another server or framework, use otel4s as usual (`OpenTelemetrySdk.autoConfigured` with
+`OtlpExportersAutoConfigure`) and continue the trace with `tracer.joinOrRoot(headers)`, where `headers` are the lowercased
+request headers. With the stack, SNUnit sets `OTEL_LOGS_EXPORTER=none` and `OTEL_METRICS_EXPORTER=none` because its
+traces program only takes traces: the metrics of the launcher are scraped by Prometheus.
+
 ### Ports
 
 The first five ports listen on `bindAddress` (`127.0.0.1` by default), the internal ones only on `127.0.0.1`. Your application keeps its own port (8080 by default).
