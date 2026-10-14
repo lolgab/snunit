@@ -81,7 +81,19 @@ final case class Observability(
         Seq("OTEL_TRACES_SAMPLER" -> "parentbased_traceidratio", "OTEL_TRACES_SAMPLER_ARG" -> ratio.toString)
       case None => Nil
     }
-    (base ++ sampling).toMap
+    // The traces program of the stack takes traces only: the logs and the metrics an SDK would push to it get a 404.
+    // Prometheus scrapes the metrics of the launcher, the logs are shipped from the files.
+    val unsupported =
+      if (otlpEndpointIsStack) Seq("OTEL_LOGS_EXPORTER" -> "none", "OTEL_METRICS_EXPORTER" -> "none")
+      else Nil
+    (base ++ sampling ++ unsupported).toMap
+  }
+
+  /** True if `otlpEndpoint` is the OTLP receiver of the traces program of the [[Stack]]. */
+  private def otlpEndpointIsStack: Boolean = stack.exists { s =>
+    Try(new java.net.URI(otlpEndpoint)).toOption.exists { uri =>
+      uri.getPort == s.tracesOtlpPort && Set("localhost", "127.0.0.1", s.localHost).contains(uri.getHost)
+    }
   }
 
   private[config] def telemetry: Option[Telemetry] =
@@ -97,11 +109,8 @@ final case class Observability(
   /** With a [[Stack]] the metrics, the logs and the traces go to it unless set otherwise. */
   private[config] def withStackDefaults: Observability = stack.fold(this) { s =>
     // The traces program only takes traces, so pushing the metrics to it fails (404): Prometheus scrapes them.
-    val pushesToStack = Try(new java.net.URI(otlpEndpoint)).toOption.exists { uri =>
-      uri.getPort == s.tracesOtlpPort && Set("localhost", "127.0.0.1", s.localHost).contains(uri.getHost)
-    }
     copy(
-      metricsInterval = if (pushesToStack) None else metricsInterval,
+      metricsInterval = if (otlpEndpointIsStack) None else metricsInterval,
       prometheus = prometheus.orElse(Some(Prometheus())),
       logs = logs.orElse(
         // VictoriaLogs takes the Loki push protocol on its own path.
