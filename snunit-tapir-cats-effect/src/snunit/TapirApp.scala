@@ -14,10 +14,12 @@ trait TapirApp extends IOApp.Simple {
   /** Configures FreeUnit and the standalone executable. */
   def unitConfig: ResourceIO[snunit.config.UnitConfig] = Resource.pure(snunit.config.UnitConfig())
 
-  /** Tapir interceptors applied to every request. */
+  /** Tapir interceptors applied to every request, for example the tracing of [[TapirOtel4s]]. It is acquired before
+    * `serverEndpoints`.
+    */
   def serverInterceptors: Resource[IO, List[Interceptor[IO]]] = Resource.pure(Nil)
 
-  override def run = (unitConfig, serverEndpoints, serverInterceptors).tupled.use { case (config, se, interceptors) =>
+  override def run = (unitConfig, serverInterceptors, serverEndpoints).tupled.use { case (config, interceptors, se) =>
     tapir.SNUnitServerBuilder
       .default[IO]
       .withConfig(config)

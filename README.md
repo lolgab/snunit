@@ -253,20 +253,19 @@ snunit run --stack Hello.scala    # run with the stack, no change in the code
 
 #### Tracing the application with otel4s
 
-`snunit-otel4s-tapir` and `snunit-otel4s-http4s` run the application with [otel4s](https://typelevel.org/otel4s) already
-configured: the SDK reads the `OTEL_*` variables SNUnit gives to the application (so it works with `snunit run --stack` or
-your own collector), every request is a server span that is a child of the span FreeUnit sends, and the same `Otel4s` is
-given to your code for your own spans and metrics.
+Extend `snunit.TapirOtel4s` instead of `snunit.TapirApp`, or `snunit.Http4sOtel4s` instead of `snunit.Http4sApp`, to run the
+application with [otel4s](https://typelevel.org/otel4s) already configured: the SDK reads the `OTEL_*` variables SNUnit gives
+to the application (so it works with `snunit run --stack` or your own collector), every request is a server span that is a
+child of the span FreeUnit sends, and `otel4s` gives you the same `Otel4s` for your own spans and metrics.
 
 ```scala
-//> using dep com.github.lolgab::snunit-otel4s-tapir::0.12.2
+//> using dep com.github.lolgab::snunit-tapir-cats-effect::0.12.2
 import cats.effect.*
-import org.typelevel.otel4s.Otel4s
 import sttp.tapir.*
 
-object Main extends snunit.Otel4sTapirApp {
-  def serverEndpoints(otel4s: Otel4s[IO]) =
-    Resource.eval(otel4s.tracerProvider.get("my-service")).map { tracer =>
+object Main extends snunit.TapirOtel4s {
+  def serverEndpoints =
+    Resource.eval(otel4s.flatMap(_.tracerProvider.get("my-service"))).map { tracer =>
       endpoint.get
         .in("hello")
         .out(stringBody)
@@ -275,17 +274,16 @@ object Main extends snunit.Otel4sTapirApp {
 }
 ```
 
-The OTLP exporter of otel4s uses the TLS of fs2-io, so on Linux the application links (`libs2n-dev`) and runs
-(`libs2n1`) with [s2n-tls](https://github.com/aws/s2n-tls), and on macOS it needs `brew install s2n`.
+It is off unless you extend these traits. The modules depend on otel4s, but the Scala Native linker only keeps the code an
+application uses: the other ones are the same size as before and don't need anything more. The ones that use it also link
+the TLS of fs2-io, so they need [s2n-tls](https://github.com/aws/s2n-tls) at build time and at runtime (`brew install s2n`
+on macOS; on Linux it isn't packaged by Ubuntu, build it with CMake as in
+[`build.yml`](.github/workflows/build.yml)).
 
-With http4s (`snunit-otel4s-http4s0.23` or `snunit-otel4s-http4s1`) extend `snunit.Otel4sHttp4sApp` and implement
-`routes(otel4s: Otel4s[IO]): Resource[IO, HttpApp[IO]]`.
-
-With another framework, use otel4s as usual (`snunit.otel4s.Otel4sSdk.resource` from `snunit-otel4s`, or
-`OpenTelemetrySdk.autoConfigured` with `OtlpExportersAutoConfigure`) and continue the trace with
-`tracer.joinOrRoot(headers)`, where `headers` are the lowercased request headers. With the stack, SNUnit sets
-`OTEL_LOGS_EXPORTER=none` and `OTEL_METRICS_EXPORTER=none` because its traces program only takes traces: the metrics of
-the launcher are scraped by Prometheus.
+With another framework, use otel4s as usual (`snunit.otel4s.Otel4sSdk.resource`, or `OpenTelemetrySdk.autoConfigured` with
+`OtlpExportersAutoConfigure`) and continue the trace with `tracer.joinOrRoot(headers)`, where `headers` are the lowercased
+request headers. With the stack, SNUnit sets `OTEL_LOGS_EXPORTER=none` and `OTEL_METRICS_EXPORTER=none` because its
+traces program only takes traces: the metrics of the launcher are scraped by Prometheus.
 
 ### Ports
 

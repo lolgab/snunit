@@ -1,4 +1,4 @@
-package snunit.otel4s
+package snunit.tapir
 
 import cats.effect.IO
 import org.typelevel.otel4s.Attribute

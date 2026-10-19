@@ -15,9 +15,15 @@ jobs:
           key: out-folder-cache
       - name: Install FreeUnit
         run: bash .github/scripts/install-freeunit.sh
-      # fs2-io TLS (the OTLP exporter of otel4s) links s2n
+      # fs2-io TLS (the OTLP exporter of otel4s) links s2n, which Ubuntu doesn't package
       - name: Install s2n
-        run: sudo apt-get update && sudo apt-get install -y libs2n-dev
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake ninja-build libssl-dev
+          git clone --depth 1 --branch v1.7.12 https://github.com/aws/s2n-tls /tmp/s2n-tls
+          cmake -S /tmp/s2n-tls -B /tmp/s2n-tls/build -G Ninja -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/s2n-tls/build
+          sudo cmake --install /tmp/s2n-tls/build
+          sudo ldconfig
       - name: Download dependencies
         run: |
           ./mill __.prepareOffline
