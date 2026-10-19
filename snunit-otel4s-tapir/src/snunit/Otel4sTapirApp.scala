@@ -5,6 +5,7 @@ import cats.effect.IOApp
 import cats.effect.Resource
 import cats.effect.ResourceIO
 import org.typelevel.otel4s.Otel4s
+import snunit.otel4s.Otel4sSdk
 import snunit.otel4s.Otel4sTapir
 import sttp.tapir.server.ServerEndpoint
 
@@ -32,7 +33,7 @@ trait Otel4sTapirApp extends IOApp.Simple {
 
   override def run: IO[Unit] = (for {
     config <- unitConfig
-    otel4s <- Otel4sTapir.sdk
+    otel4s <- Otel4sSdk.resource
     tracer <- Resource.eval(otel4s.tracerProvider.get(tracerName))
     endpoints <- serverEndpoints(otel4s)
   } yield (config, endpoints, tracer)).use { case (config, endpoints, tracer) =>

@@ -18,6 +18,11 @@ object Http4sTests extends TestSuite {
         assert(result == expectedResult)
       }
     }
+    test("http4s-otel4s") {
+      withDeployedExample("http4s-otel4s", readyUrl = uri"$baseUrl/hello?name=Lorenzo") {
+        otel4sTracingTest(uri"$baseUrl/hello?name=Lorenzo")
+      }
+    }
     test("unit-restart") {
       withDeployedExample("http4s-app") {
         for (i <- 0.to(3)) {

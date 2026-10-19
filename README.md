@@ -253,13 +253,13 @@ snunit run --stack Hello.scala    # run with the stack, no change in the code
 
 #### Tracing the application with otel4s
 
-`snunit-otel4s` runs a Tapir application with [otel4s](https://typelevel.org/otel4s) already configured: the SDK reads the
-`OTEL_*` variables SNUnit gives to the application (so it works with `snunit run --stack` or your own collector), every
-request is a server span that is a child of the span FreeUnit sends, and the same `Otel4s` is given to your code for
-your own spans and metrics.
+`snunit-otel4s-tapir` and `snunit-otel4s-http4s` run the application with [otel4s](https://typelevel.org/otel4s) already
+configured: the SDK reads the `OTEL_*` variables SNUnit gives to the application (so it works with `snunit run --stack` or
+your own collector), every request is a server span that is a child of the span FreeUnit sends, and the same `Otel4s` is
+given to your code for your own spans and metrics.
 
 ```scala
-//> using dep com.github.lolgab::snunit-otel4s::0.12.2
+//> using dep com.github.lolgab::snunit-otel4s-tapir::0.12.2
 import cats.effect.*
 import org.typelevel.otel4s.Otel4s
 import sttp.tapir.*
@@ -275,10 +275,14 @@ object Main extends snunit.Otel4sTapirApp {
 }
 ```
 
-With another server or framework, use otel4s as usual (`OpenTelemetrySdk.autoConfigured` with
-`OtlpExportersAutoConfigure`) and continue the trace with `tracer.joinOrRoot(headers)`, where `headers` are the lowercased
-request headers. With the stack, SNUnit sets `OTEL_LOGS_EXPORTER=none` and `OTEL_METRICS_EXPORTER=none` because its
-traces program only takes traces: the metrics of the launcher are scraped by Prometheus.
+With http4s (`snunit-otel4s-http4s0.23` or `snunit-otel4s-http4s1`) extend `snunit.Otel4sHttp4sApp` and implement
+`routes(otel4s: Otel4s[IO]): Resource[IO, HttpApp[IO]]`.
+
+With another framework, use otel4s as usual (`snunit.otel4s.Otel4sSdk.resource` from `snunit-otel4s`, or
+`OpenTelemetrySdk.autoConfigured` with `OtlpExportersAutoConfigure`) and continue the trace with
+`tracer.joinOrRoot(headers)`, where `headers` are the lowercased request headers. With the stack, SNUnit sets
+`OTEL_LOGS_EXPORTER=none` and `OTEL_METRICS_EXPORTER=none` because its traces program only takes traces: the metrics of
+the launcher are scraped by Prometheus.
 
 ### Ports
 

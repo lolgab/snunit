@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add `snunit-otel4s`: `snunit.Otel4sTapirApp` is a `TapirApp` traced with otel4s. Every request is a span, a child of the span FreeUnit sends (the `traceparent` header is continued), and the `Otel4s` instance, configured by the `OTEL_*` variables of `Observability` (`snunit run --stack` included), is given to `serverEndpoints`. Also add `TapirApp.serverInterceptors` and `SNUnitServerBuilder.withInterceptors` to run Tapir interceptors
+- Add `snunit-otel4s-tapir` (`snunit.Otel4sTapirApp`) and `snunit-otel4s-http4s` (`snunit.Otel4sHttp4sApp`): a `TapirApp` or `Http4sApp` traced with otel4s. Every request is a span, a child of the span FreeUnit sends (the `traceparent` header is continued), and the `Otel4s` instance, configured by the `OTEL_*` variables of `Observability` (`snunit run --stack` included), is given to `serverEndpoints` or `routes`. `snunit-otel4s` has the SDK setup (`Otel4sSdk.resource`). Also add `TapirApp.serverInterceptors` and `SNUnitServerBuilder.withInterceptors` to run Tapir interceptors
 - With the stack, the application gets `OTEL_LOGS_EXPORTER=none` and `OTEL_METRICS_EXPORTER=none` (when `otlpEndpoint` is the receiver of the stack), so an OpenTelemetry SDK doesn't push logs and metrics to the traces program, which answers 404 to every push
 
 ## 0.12.2
