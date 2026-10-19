@@ -7,6 +7,19 @@ import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.trace.SpanKind
 import org.typelevel.otel4s.trace.Tracer
 
+/** Tracing of an http4s application with [[https://typelevel.org/otel4s otel4s]].
+  *
+  * {{{
+  * object Main extends snunit.Http4sApp {
+  *   def routes = for {
+  *     otel4s <- Otel4sSdk.resource
+  *     tracer <- Resource.eval(otel4s.tracerProvider.get("my-service"))
+  *   } yield Otel4sHttp4s.middleware(tracer)(
+  *     HttpRoutes.of[IO] { case GET -> Root / "hello" => tracer.span("work").surround(Ok("hello")) }.orNotFound
+  *   )
+  * }
+  * }}}
+  */
 object Otel4sHttp4s {
 
   /** A server span for every request, a child of the span FreeUnit sends (continuing the trace of the `traceparent`
