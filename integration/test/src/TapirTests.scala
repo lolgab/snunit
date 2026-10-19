@@ -14,6 +14,11 @@ object TapirTests extends TestSuite {
         tapirHelloWorldTest(baseUrl)
       }
     }
+    test("tapir-otel4s") {
+      withDeployedExample("tapir-otel4s", readyUrl = uri"$baseUrl/hello?name=Lorenzo") {
+        otel4sTracingTest(uri"$baseUrl/hello?name=Lorenzo")
+      }
+    }
     test("tapir-app") {
       withDeployedExample("tapir-app", readyUrl = uri"$baseUrl/hello?name=Lorenzo") {
         tapirHelloWorldTest(baseUrl)

@@ -14,11 +14,14 @@ trait Http4sApp extends IOApp.Simple {
   /** Configures FreeUnit and the standalone executable. */
   def unitConfig: ResourceIO[snunit.config.UnitConfig] = Resource.pure(snunit.config.UnitConfig())
 
-  override def run = (unitConfig, routes).tupled.use { case (config, r) =>
+  /** Wraps `routes`, for example to trace the requests (see [[Http4sOtel4s]]). It is acquired before `routes`. */
+  def middleware: Resource[IO, HttpApp[IO] => HttpApp[IO]] = Resource.pure(identity)
+
+  override def run = (unitConfig, middleware, routes).tupled.use { case (config, wrap, r) =>
     SNUnitServerBuilder
       .default[IO]
       .withConfig(config)
-      .withHttpApp(r)
+      .withHttpApp(wrap(r))
       .run
   }
 }

@@ -24,6 +24,7 @@ object Versions {
   val endpoints4s = "1.14.0"
   val cask = "0.10.2"
   val catsEffect = "3.7.1"
+  val otel4s = "0.19.4"
   val http4s023 = "0.23.38"
   val http4s1 = "1.0.0-M47"
   val utest = "0.9.5"
@@ -217,7 +218,10 @@ object `snunit-async-cats-effect` extends Common.Native with Publish {
   def mvnDeps =
     Task {
       super.mvnDeps() ++ Seq(
-        mvn"org.typelevel::cats-effect::${Versions.catsEffect}"
+        mvn"org.typelevel::cats-effect::${Versions.catsEffect}",
+        // Only linked into the applications that use it (snunit.Http4sOtel4s, snunit.TapirOtel4s)
+        mvn"org.typelevel::otel4s-sdk::${Versions.otel4s}",
+        mvn"org.typelevel::otel4s-sdk-exporter::${Versions.otel4s}"
       )
     }
 }
@@ -376,6 +380,15 @@ object integration extends ScalaModule {
       )
       def mvnDeps = super.mvnDeps() ++ Seq(
         mvn"org.http4s::http4s-dsl::$http4sVersion"
+      )
+    }
+    object `tapir-otel4s` extends Common.Native {
+      def moduleDeps = Seq(`snunit-tapir-cats-effect`)
+    }
+    object `http4s-otel4s` extends Common.Native {
+      def moduleDeps = Seq(`snunit-http4s`(Versions.http4s023))
+      def mvnDeps = super.mvnDeps() ++ Seq(
+        mvn"org.http4s::http4s-dsl::${Versions.http4s023}"
       )
     }
     object `tapir-helloworld-cats-effect` extends Common.Native {

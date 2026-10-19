@@ -5,10 +5,14 @@ import cats.effect.std.Dispatcher
 import sttp.capabilities.WebSockets
 import sttp.capabilities.fs2.Fs2Streams
 import sttp.tapir.WebSocketBodyOutput
+import sttp.tapir.server.interceptor.Interceptor
 import sttp.tapir.integ.cats.effect.CatsMonadError
 
-private[tapir] class SNUnitCatsServerInterpreter[F[_]: Async](ceDispatcher: Dispatcher[F])
-    extends SNUnitGenericServerInterpreter {
+private[tapir] class SNUnitCatsServerInterpreter[F[_]: Async](
+    ceDispatcher: Dispatcher[F],
+    serverInterceptors: List[Interceptor[F]] = Nil
+) extends SNUnitGenericServerInterpreter {
+  override private[tapir] def interceptors: List[Interceptor[Wrapper]] = serverInterceptors
   private[tapir] type Wrapper[T] = F[T]
   private[tapir] type HandlerWrapper = F[snunit.RequestHandler]
   private[tapir] type Caps = Fs2Streams[F] & WebSockets

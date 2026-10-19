@@ -108,7 +108,7 @@ private[tapir] trait SNUnitGenericServerInterpreter {
     ): Body = webSocketBody[REQ, RESP](pipe, o)
   }
 
-  private val interceptors: List[Interceptor[Wrapper]] = Nil
+  private[tapir] def interceptors: List[Interceptor[Wrapper]] = Nil
 
   private val deleteFile: TapirFile => Wrapper[Unit] = _ => monadError.unit(())
 

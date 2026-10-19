@@ -251,6 +251,40 @@ snunit run --stack Hello.scala    # run with the stack, no change in the code
 | logs | access log, FreeUnit log, output of the programs | <http://localhost:9428/select/vmui> |
 | metrics | the metrics endpoint of the launcher, scraped | <http://localhost:9090> |
 
+#### Tracing the application with otel4s
+
+Extend `snunit.TapirOtel4s` instead of `snunit.TapirApp`, or `snunit.Http4sOtel4s` instead of `snunit.Http4sApp`, to run the
+application with [otel4s](https://typelevel.org/otel4s) already configured: the SDK reads the `OTEL_*` variables SNUnit gives
+to the application (so it works with `snunit run --stack` or your own collector), every request is a server span that is a
+child of the span FreeUnit sends, and `otel4s` gives you the same `Otel4s` for your own spans and metrics.
+
+```scala
+//> using dep com.github.lolgab::snunit-tapir-cats-effect::0.12.2
+import cats.effect.*
+import sttp.tapir.*
+
+object Main extends snunit.TapirOtel4s {
+  def serverEndpoints =
+    Resource.eval(otel4s.flatMap(_.tracerProvider.get("my-service"))).map { tracer =>
+      endpoint.get
+        .in("hello")
+        .out(stringBody)
+        .serverLogicSuccess[IO](_ => tracer.span("work").surround(IO.pure("hello"))) :: Nil
+    }
+}
+```
+
+It is off unless you extend these traits. The modules depend on otel4s, but the Scala Native linker only keeps the code an
+application uses: the other ones are the same size as before and don't need anything more. The ones that use it also link
+the TLS of fs2-io, so they need [s2n-tls](https://github.com/aws/s2n-tls) at build time and at runtime (`brew install s2n`
+on macOS; on Linux it isn't packaged by Ubuntu, build it with CMake as in
+[`build.yml`](.github/workflows/build.yml)).
+
+With another framework, use otel4s as usual (`snunit.otel4s.Otel4sSdk.resource`, or `OpenTelemetrySdk.autoConfigured` with
+`OtlpExportersAutoConfigure`) and continue the trace with `tracer.joinOrRoot(headers)`, where `headers` are the lowercased
+request headers. With the stack, SNUnit sets `OTEL_LOGS_EXPORTER=none` and `OTEL_METRICS_EXPORTER=none` because its
+traces program only takes traces: the metrics of the launcher are scraped by Prometheus.
+
 ### Ports
 
 The first five ports listen on `bindAddress` (`127.0.0.1` by default), the internal ones only on `127.0.0.1`. Your application keeps its own port (8080 by default).
