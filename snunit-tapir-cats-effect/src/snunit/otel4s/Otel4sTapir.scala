@@ -1,4 +1,4 @@
-package snunit.tapir
+package snunit.otel4s
 
 import cats.effect.IO
 import org.typelevel.otel4s.Attribute
@@ -11,6 +11,22 @@ import sttp.tapir.server.interceptor.Responder
 import sttp.tapir.server.interceptor.RequestResult
 import sttp.tapir.server.model.ServerResponse
 
+/** Tracing of a Tapir application with [[https://typelevel.org/otel4s otel4s]].
+  *
+  * {{{
+  * object Main extends IOApp.Simple {
+  *   def run = Otel4sSdk.resource.use { otel4s =>
+  *     otel4s.tracerProvider.get("my-service").flatMap { tracer =>
+  *       SNUnitServerBuilder
+  *         .default[IO]
+  *         .withInterceptors(Otel4sTapir.interceptor(tracer) :: Nil)
+  *         .withServerEndpoints(endpoints(tracer))
+  *         .run
+  *     }
+  *   }
+  * }
+  * }}}
+  */
 object Otel4sTapir {
 
   /** A server span for every request, a child of the span FreeUnit sends (continuing the trace of the `traceparent`
