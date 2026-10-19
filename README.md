@@ -253,37 +253,64 @@ snunit run --stack Hello.scala    # run with the stack, no change in the code
 
 #### Tracing the application with otel4s
 
-Extend `snunit.TapirOtel4s` instead of `snunit.TapirApp`, or `snunit.Http4sOtel4s` instead of `snunit.Http4sApp`, to run the
-application with [otel4s](https://typelevel.org/otel4s) already configured: the SDK reads the `OTEL_*` variables SNUnit gives
-to the application (so it works with `snunit run --stack` or your own collector), every request is a server span that is a
-child of the span FreeUnit sends, and `otel4s` gives you the same `Otel4s` for your own spans and metrics.
+[otel4s](https://typelevel.org/otel4s) is configured by the `OTEL_*` variables SNUnit gives to the application, so
+`Otel4sSdk.resource` works with `snunit run --stack` or your own collector. `Otel4sHttp4s.middleware` and
+`Otel4sTapir.interceptor` make every request a server span, a child of the span FreeUnit sends, and you create your own
+spans with the same tracer.
+
+With http4s:
+
+```scala
+//> using dep com.github.lolgab::snunit-http4s0.23::0.12.2
+import cats.effect.*
+import org.http4s.*
+import org.http4s.dsl.io.*
+import snunit.otel4s.{Otel4sHttp4s, Otel4sSdk}
+
+object Main extends snunit.Http4sApp {
+  def routes = for {
+    otel4s <- Otel4sSdk.resource
+    tracer <- Resource.eval(otel4s.tracerProvider.get("my-service"))
+  } yield Otel4sHttp4s.middleware(tracer)(
+    HttpRoutes.of[IO] { case GET -> Root / "hello" => tracer.span("work").surround(Ok("hello")) }.orNotFound
+  )
+}
+```
+
+With Tapir:
 
 ```scala
 //> using dep com.github.lolgab::snunit-tapir-cats-effect::0.12.2
 import cats.effect.*
+import snunit.otel4s.{Otel4sSdk, Otel4sTapir}
+import snunit.tapir.SNUnitServerBuilder
 import sttp.tapir.*
 
-object Main extends snunit.TapirOtel4s {
-  def serverEndpoints =
-    Resource.eval(otel4s.flatMap(_.tracerProvider.get("my-service"))).map { tracer =>
-      endpoint.get
+object Main extends IOApp.Simple {
+  def run = Otel4sSdk.resource.use { otel4s =>
+    otel4s.tracerProvider.get("my-service").flatMap { tracer =>
+      val hello = endpoint.get
         .in("hello")
         .out(stringBody)
-        .serverLogicSuccess[IO](_ => tracer.span("work").surround(IO.pure("hello"))) :: Nil
+        .serverLogicSuccess[IO](_ => tracer.span("work").surround(IO.pure("hello")))
+      SNUnitServerBuilder
+        .default[IO]
+        .withInterceptors(Otel4sTapir.interceptor(tracer) :: Nil)
+        .withServerEndpoints(hello :: Nil)
+        .run
     }
+  }
 }
 ```
 
-It is off unless you extend these traits. The modules depend on otel4s, but the Scala Native linker only keeps the code an
-application uses: the other ones are the same size as before and don't need anything more. The ones that use it also link
-the TLS of fs2-io, so they need [s2n-tls](https://github.com/aws/s2n-tls) at build time and at runtime (`brew install s2n`
-on macOS; on Linux it isn't packaged by Ubuntu, build it with CMake as in
-[`build.yml`](.github/workflows/build.yml)).
+The modules depend on otel4s, but the Scala Native linker only keeps the code an application uses: the applications that
+don't use it are the same size as before and don't need anything more. The ones that do also link the TLS of fs2-io, so
+they need [s2n-tls](https://github.com/aws/s2n-tls) at build time and at runtime (`brew install s2n` on macOS; on Linux it
+isn't packaged by Ubuntu, build it with CMake as in [`build.yml`](.github/workflows/build.yml)).
 
-With another framework, use otel4s as usual (`snunit.otel4s.Otel4sSdk.resource`, or `OpenTelemetrySdk.autoConfigured` with
-`OtlpExportersAutoConfigure`) and continue the trace with `tracer.joinOrRoot(headers)`, where `headers` are the lowercased
-request headers. With the stack, SNUnit sets `OTEL_LOGS_EXPORTER=none` and `OTEL_METRICS_EXPORTER=none` because its
-traces program only takes traces: the metrics of the launcher are scraped by Prometheus.
+With another framework, use otel4s as usual and continue the trace with `tracer.joinOrRoot(headers)`, where `headers` are
+the lowercased request headers. With the stack, SNUnit sets `OTEL_LOGS_EXPORTER=none` and `OTEL_METRICS_EXPORTER=none`
+because its traces program only takes traces: the metrics of the launcher are scraped by Prometheus.
 
 ### Ports
 
