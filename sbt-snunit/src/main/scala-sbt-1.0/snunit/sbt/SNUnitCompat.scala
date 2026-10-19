@@ -10,6 +10,14 @@ private[sbt] object SNUnitCompat {
     snunitBundle := {
       val linked = (Compile / nativeLink).value
       SNUnitPlugin.bundle(linked, target.value / "snunit" / name.value, snunitPlatform.value)
+    },
+    snunitBundleReleaseFast := {
+      val linked = (Compile / nativeLinkReleaseFast).value
+      SNUnitPlugin.bundle(linked, target.value / "snunit" / "release-fast" / name.value, snunitPlatform.value)
+    },
+    snunitBundleReleaseFull := {
+      val linked = (Compile / nativeLinkReleaseFull).value
+      SNUnitPlugin.bundle(linked, target.value / "snunit" / "release-full" / name.value, snunitPlatform.value)
     }
   )
 }

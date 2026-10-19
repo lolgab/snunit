@@ -23,6 +23,8 @@ object SNUnitPlugin extends AutoPlugin {
     val snunitBundle = taskKey[File](
       "Links the application and returns an executable that embeds unitd (a copy of the linked binary on Linux)"
     )
+    val snunitBundleReleaseFast = taskKey[File]("Like snunitBundle, but links with nativeLinkReleaseFast")
+    val snunitBundleReleaseFull = taskKey[File]("Like snunitBundle, but links with nativeLinkReleaseFull")
   }
 
   import autoImport._

@@ -78,7 +78,8 @@ lazy val app = project
   .settings(libraryDependencies += "com.github.lolgab" %%% "snunit" % "<version>") // %% on sbt 2
 ```
 
-`sbt app/snunitBundle` builds the single executable to deploy. On Linux it is a copy of the linked
+`sbt app/snunitBundle` builds the single executable to deploy (`snunitBundleReleaseFast` and
+`snunitBundleReleaseFull` link with `nativeLinkReleaseFast` and `nativeLinkReleaseFull` instead). On Linux it is a copy of the linked
 binary with `unitd` appended, on macOS `unitd` is embedded while linking. `snunitPlatform` picks the
 platform to bundle for (default: this machine). FreeUnit is downloaded the first time and cached in
 `~/.cache/snunit`, like the CLI does.

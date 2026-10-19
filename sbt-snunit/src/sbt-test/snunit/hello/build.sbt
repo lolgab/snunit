@@ -6,9 +6,7 @@ enablePlugins(ScalaNativePlugin, SNUnitPlugin)
 libraryDependencies += "com.github.lolgab" % "snunit_native0.5_3" % sys.props.getOrElse("snunit.version", "0.11.0")
 
 // Starts the bundled executable and checks that it serves requests: it must carry its own unitd.
-val checkServes = taskKey[Unit]("")
-checkServes := {
-  val exe = snunitBundle.value
+def checkServing(exe: File): Unit = {
   val log = java.nio.file.Files.createTempFile("snunit", ".log").toFile
   val proc = Process(Seq(exe.getAbsolutePath)).run(ProcessLogger(log))
   try {
@@ -21,3 +19,9 @@ checkServes := {
     assert(body == "Hello world!", s"unexpected response '$body'")
   } finally proc.destroy()
 }
+
+val checkServes = taskKey[Unit]("")
+checkServes := checkServing(snunitBundle.value)
+
+val checkServesReleaseFast = taskKey[Unit]("")
+checkServesReleaseFast := checkServing(snunitBundleReleaseFast.value)
