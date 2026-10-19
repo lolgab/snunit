@@ -16,7 +16,7 @@ on:
       - "cli-v*"
 
 env:
-  SCALINO_VERSION: v0.0.21
+  SCALINO_VERSION: v0.0.23
 
 jobs:
   build:
@@ -91,6 +91,22 @@ jobs:
           chmod +x bin/snunit
       # No SNUNIT_FREEUNIT_DIR: this also tests the prebuilt FreeUnit download.
       # The CLI doesn't add the snunit dependency: the test program depends on the latest published library.
+      # A library release is tagged `x.y.z` and published to Maven Central a few minutes later:
+      # wait for the newest tag to be there, so that the test doesn't run against the previous release.
+      - name: Wait for the latest snunit release on Maven Central
+        run: |
+          METADATA=https://repo1.maven.org/maven2/com/github/lolgab/snunit_native0.5_3/maven-metadata.xml
+          LATEST_TAG="$(git ls-remote --tags --refs origin '[0-9]*.[0-9]*.[0-9]*' | sed 's:.*refs/tags/::' | sort -V | tail -n1)"
+          echo "Waiting for snunit $LATEST_TAG"
+          for _ in $(seq 60); do
+            if curl -fsSL "$METADATA" | grep -q "<version>$LATEST_TAG</version>"; then
+              echo "snunit $LATEST_TAG is on Maven Central"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "snunit $LATEST_TAG was not published to Maven Central in 30 minutes" >&2
+          exit 1
       - name: Smoke test
         run: |
           export SNUNIT_VERSION="$(curl -fsSL https://repo1.maven.org/maven2/com/github/lolgab/snunit_native0.5_3/maven-metadata.xml | sed -n 's:.*<release>\(.*\)</release>.*:\1:p')"
