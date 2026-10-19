@@ -275,6 +275,9 @@ object Main extends snunit.Otel4sTapirApp {
 }
 ```
 
+The OTLP exporter of otel4s uses the TLS of fs2-io, so on Linux the application links (`libs2n-dev`) and runs
+(`libs2n1`) with [s2n-tls](https://github.com/aws/s2n-tls), and on macOS it needs `brew install s2n`.
+
 With http4s (`snunit-otel4s-http4s0.23` or `snunit-otel4s-http4s1`) extend `snunit.Otel4sHttp4sApp` and implement
 `routes(otel4s: Otel4s[IO]): Resource[IO, HttpApp[IO]]`.
 

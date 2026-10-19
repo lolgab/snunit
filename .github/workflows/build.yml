@@ -15,6 +15,9 @@ jobs:
           key: out-folder-cache
       - name: Install FreeUnit
         run: bash .github/scripts/install-freeunit.sh
+      # fs2-io TLS (the OTLP exporter of otel4s) links s2n
+      - name: Install s2n
+        run: sudo apt-get update && sudo apt-get install -y libs2n-dev
       - name: Download dependencies
         run: |
           ./mill __.prepareOffline
