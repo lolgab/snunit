@@ -1,5 +1,5 @@
 diff --git a/cask/src/cask/decorators/compress.scala b/cask/src/cask/decorators/compress.scala
-index cd384c1..e73af28 100644
+index 71f4bb4..ab833e1 100644
 --- a/cask/src/cask/decorators/compress.scala
 +++ b/cask/src/cask/decorators/compress.scala
 @@ -7,7 +7,7 @@ import cask.model.{Request, Response}
@@ -12,7 +12,7 @@ index cd384c1..e73af28 100644
        .flatMap(_.asScala)
        .flatMap(_.split(", "))
 diff --git a/cask/src/cask/endpoints/JsonEndpoint.scala b/cask/src/cask/endpoints/JsonEndpoint.scala
-index 72f8277..97accf8 100644
+index 50591a9..9d8c5b4 100644
 --- a/cask/src/cask/endpoints/JsonEndpoint.scala
 +++ b/cask/src/cask/endpoints/JsonEndpoint.scala
 @@ -52,7 +52,7 @@ abstract class postJsonBase(val path: String, override val subpath: Boolean = fa
@@ -25,7 +25,7 @@ index 72f8277..97accf8 100644
            "Input text is invalid JSON: " + e + "\n" + Util.stackTraceString(e),
            statusCode = 400
 diff --git a/cask/src/cask/endpoints/WebEndpoints.scala b/cask/src/cask/endpoints/WebEndpoints.scala
-index c6a61f2..448302d 100644
+index b2b9731..b831155 100644
 --- a/cask/src/cask/endpoints/WebEndpoints.scala
 +++ b/cask/src/cask/endpoints/WebEndpoints.scala
 @@ -18,7 +18,7 @@ trait WebEndpoint extends HttpEndpoint[Response.Raw, Seq[String]]{
@@ -38,7 +38,7 @@ index c6a61f2..448302d 100644
        val deque = queryParams.get(k)
        val arr = new Array[String](deque.size)
 diff --git a/cask/src/cask/endpoints/WebSocketEndpoint.scala b/cask/src/cask/endpoints/WebSocketEndpoint.scala
-index a5032de..35ec18a 100644
+index ea5bbd6..b59217f 100644
 --- a/cask/src/cask/endpoints/WebSocketEndpoint.scala
 +++ b/cask/src/cask/endpoints/WebSocketEndpoint.scala
 @@ -42,31 +42,31 @@ extends WebsocketResult with WebSocketConnectionCallback {
@@ -80,10 +80,10 @@ index a5032de..35ec18a 100644
         }
       )
 diff --git a/cask/src/cask/main/Main.scala b/cask/src/cask/main/Main.scala
-index c1ade66..a230946 100644
+index 15c3656..5a0282c 100644
 --- a/cask/src/cask/main/Main.scala
 +++ b/cask/src/cask/main/Main.scala
-@@ -85,16 +85,15 @@ abstract class Main{
+@@ -63,10 +63,10 @@ abstract class Main{
  
    def main(args: Array[String]): Unit = {
      if (!verbose) Main.silenceJboss()
@@ -94,15 +94,9 @@ index c1ade66..a230946 100644
 -      .build
 +      .build()
      server.start()
-     //register an on exit hook to stop the server
-     Runtime.getRuntime.addShutdownHook(new Thread(() => {
-       server.stop()
-       cachedHandlerExecutor.foreach(_.shutdown())
--      executionContext.shutdown()
-     }))
    }
  
-@@ -115,7 +114,7 @@ object Main {
+@@ -82,7 +82,7 @@ object Main{
                        (implicit log: Logger) extends HttpHandler() {
      def handleRequest(exchange: HttpServerExchange): Unit = try {
        //        println("Handling Request: " + exchange.getRequestPath)
@@ -111,7 +105,7 @@ index c1ade66..a230946 100644
          Tuple2(
            "websocket",
            (r: Any) =>
-@@ -129,12 +128,12 @@ object Main {
+@@ -96,12 +96,12 @@ object Main{
              }
          )
        } else Tuple2(
@@ -126,14 +120,14 @@ index c1ade66..a230946 100644
          .iterator
          .map(java.net.URLDecoder.decode(_, "UTF-8"))
          .toList
-@@ -210,24 +209,24 @@ object Main {
+@@ -176,24 +176,24 @@ object Main{
  
    def writeResponse(exchange: HttpServerExchange, response: Response.Raw) = {
-     response.data.headers.foreach { case (k, v) =>
+     response.data.headers.foreach{case (k, v) =>
 -      exchange.getResponseHeaders.put(new HttpString(k), v)
 +      exchange.getResponseHeaders().put(new HttpString(k), v)
      }
-     response.headers.foreach { case (k, v) =>
+     response.headers.foreach{case (k, v) =>
 -      exchange.getResponseHeaders.put(new HttpString(k), v)
 +      exchange.getResponseHeaders().put(new HttpString(k), v)
      }
@@ -157,10 +151,10 @@ index c1ade66..a230946 100644
      })
    }
 diff --git a/cask/src/cask/model/Params.scala b/cask/src/cask/model/Params.scala
-index 6f3fba6..3b04feb 100644
+index 56a7135..710c31a 100644
 --- a/cask/src/cask/model/Params.scala
 +++ b/cask/src/cask/model/Params.scala
-@@ -15,9 +15,9 @@ case class Request(exchange: HttpServerExchange, remainingPathSegments: Seq[Stri
+@@ -13,9 +13,9 @@ case class Request(exchange: HttpServerExchange, remainingPathSegments: Seq[Stri
  extends geny.ByteData with geny.Readable {
    import collection.JavaConverters._
    lazy val cookies: Map[String, Cookie] = {
@@ -172,7 +166,7 @@ index 6f3fba6..3b04feb 100644
  
    /**
     * Read all the bytes of the incoming request *with* caching
-@@ -33,11 +33,11 @@ extends geny.ByteData with geny.Readable {
+@@ -31,11 +31,11 @@ extends geny.ByteData with geny.Readable {
      baos.toByteArray
    }
    lazy val queryParams: Map[String, collection.Seq[String]] = {
@@ -187,7 +181,7 @@ index 6f3fba6..3b04feb 100644
        .toMap
    }
  
-@@ -47,18 +47,18 @@ object Cookie{
+@@ -45,18 +45,18 @@ object Cookie{
  
    def fromUndertow(from: io.undertow.server.handlers.Cookie): Cookie = {
      Cookie(
@@ -218,19 +212,14 @@ index 6f3fba6..3b04feb 100644
      )
    }
    def toUndertow(from: Cookie): io.undertow.server.handlers.Cookie = {
-@@ -101,12 +101,12 @@ sealed trait FormEntry{
+@@ -99,8 +99,8 @@ sealed trait FormEntry{
  }
  object FormEntry{
-   def fromUndertow(from: io.undertow.server.handlers.form.FormData.FormValue): FormEntry = {
--    val isOctetStream = Option(from.getHeaders)
-+    val isOctetStream = Option(from.getHeaders())
-       .flatMap(headers => Option(headers.get(HttpString.tryFromString("Content-Type"))))
-       .exists(h => h.asScala.exists(v => v == "application/octet-stream"))
-     // browsers will set empty file fields to content type: octet-stream
--    if (isOctetStream || from.isFileItem) FormFile(from.getFileName, Try(from.getFileItem.getFile).toOption, from.getHeaders)
--    else FormValue(from.getValue, from.getHeaders)
-+    if (isOctetStream || from.isFileItem()) FormFile(from.getFileName(), Try(from.getFileItem().getFile()).toOption, from.getHeaders())
-+    else FormValue(from.getValue(), from.getHeaders())
+   def fromUndertow(from: io.undertow.server.handlers.form.FormData.FormValue) = {
+-    if (!from.isFile) FormValue(from.getValue, from.getHeaders)
+-    else FormFile(from.getFileName, from.getPath, from.getHeaders)
++    if (!from.isFile()) FormValue(from.getValue(), from.getHeaders())
++    else FormFile(from.getFileName(), from.getPath(), from.getHeaders())
    }
  
  }

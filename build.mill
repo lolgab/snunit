@@ -22,7 +22,7 @@ object Versions {
   val scala3 = "3.9.0"
   val tapir = "1.14.0"
   val endpoints4s = "1.14.0"
-  val cask = "0.11.3"
+  val cask = "0.10.2"
   val catsEffect = "3.7.1"
   val otel4s = "0.19.4"
   val http4s023 = "0.23.38"
