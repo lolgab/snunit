@@ -10,6 +10,14 @@ private[sbt] object SNUnitCompat {
     snunitBundle := Def.uncached {
       val linked = fileConverter.value.toPath((Compile / nativeLink).value).toFile
       SNUnitPlugin.bundle(linked, target.value / "snunit" / name.value, snunitPlatform.value)
+    },
+    snunitBundleReleaseFast := Def.uncached {
+      val linked = fileConverter.value.toPath((Compile / nativeLinkReleaseFast).value).toFile
+      SNUnitPlugin.bundle(linked, target.value / "snunit" / "release-fast" / name.value, snunitPlatform.value)
+    },
+    snunitBundleReleaseFull := Def.uncached {
+      val linked = fileConverter.value.toPath((Compile / nativeLinkReleaseFull).value).toFile
+      SNUnitPlugin.bundle(linked, target.value / "snunit" / "release-full" / name.value, snunitPlatform.value)
     }
   )
 }

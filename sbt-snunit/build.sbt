@@ -2,7 +2,15 @@
 // The logic shared with the `snunit` command line tool lives in ../snunit-build-core.
 organization := "com.github.lolgab"
 name := "sbt-snunit"
-version := "0.1.0-SNAPSHOT"
+description := "sbt plugin that links libunit and embeds unitd into Scala Native executables"
+homepage := Some(url("https://github.com/lolgab/snunit"))
+licenses := Seq("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0"))
+developers := List(Developer("lolgab", "Lorenzo Gabriele", "", url("https://github.com/lolgab")))
+scmInfo := Some(ScmInfo(url("https://github.com/lolgab/snunit"), "scm:git:git@github.com:lolgab/snunit.git"))
+
+// The version is the latest `x.y.z` tag: the plugin is released together with the library (the `cli-v*`, `freeunit-*`
+// and `stack-v*` tags are not versions).
+ThisBuild / dynverTagPrefix := ""
 
 enablePlugins(SbtPlugin)
 
@@ -13,8 +21,8 @@ crossScalaVersions := Seq(scala212, scala3)
 
 pluginCrossBuild / sbtVersion := {
   scalaBinaryVersion.value match {
-    case "2.12" => "1.13.0"
-    case _      => "2.0.10"
+    case "2.12" => "1.9.9"
+    case _      => "2.0.11"
   }
 }
 

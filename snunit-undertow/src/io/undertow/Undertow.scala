@@ -12,6 +12,9 @@ class Undertow private (builder: Undertow.Builder) {
       .build()
       .listen()
   }
+
+  /** Shutdown is handled by the launcher on SIGTERM/SIGINT/SIGHUP, so there is nothing to stop here. */
+  def stop(): Unit = ()
 }
 
 object Undertow {

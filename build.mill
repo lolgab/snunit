@@ -20,9 +20,9 @@ object Versions {
   val undertow = "2.3.18.Final"
   val scala212 = "2.12.19"
   val scala3 = "3.9.0"
-  val tapir = "1.13.32"
+  val tapir = "1.14.0"
   val endpoints4s = "1.14.0"
-  val cask = "0.10.2"
+  val cask = "0.11.3"
   val catsEffect = "3.7.1"
   val otel4s = "0.19.4"
   val http4s023 = "0.23.38"
@@ -30,11 +30,11 @@ object Versions {
   val utest = "0.9.5"
   val osLib = "0.11.8"
   val sttp = "3.11.0"
-  val sttpShared = "1.5.2"
+  val sttpShared = "1.6.0"
   val fs2 = "3.14.0"
   val pprint = "0.9.6"
   val castor = "0.3.0"
-  val scalaJavaTime = "2.7.0"
+  val scalaJavaTime = "2.8.0"
 }
 
 def freeUnitLinkingOptions = Task.Input {
