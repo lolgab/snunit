@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.13.0
 
 - Publish the `sbt-snunit` plugin (sbt 1.x and 2.x, Scala Native 0.5) to Maven Central with every release: `addSbtPlugin("com.github.lolgab" % "sbt-snunit" % "<version>")`. It links `libunit`, embeds `unitd` and adds `snunitBundle`, `snunitBundleReleaseFast` and `snunitBundleReleaseFull`. It works with sbt 1.9+
 - Update dependencies: Tapir 1.14.0, cask 0.11.3 (`cask.patch` rebased), scala-java-time 2.8.0, sttp shared 1.6.0, sbt 2.0.11. Scala stays 3.9.0 and Mill 1.1.10 (Mill 1.3.0 hangs in `prepareOffline`)
