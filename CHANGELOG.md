@@ -3,7 +3,8 @@
 ## Unreleased
 
 - Publish the `sbt-snunit` plugin (sbt 1.x and 2.x, Scala Native 0.5) to Maven Central with every release: `addSbtPlugin("com.github.lolgab" % "sbt-snunit" % "<version>")`. It links `libunit`, embeds `unitd` and adds `snunitBundle`, `snunitBundleReleaseFast` and `snunitBundleReleaseFull`. It works with sbt 1.9+
-- Update dependencies: Scala 3.10.0, Tapir 1.14.0, cask 0.11.3 (`cask.patch` rebased), scala-java-time 2.8.0, sttp shared 1.6.0, Mill 1.3.0, sbt 2.0.11
+- Update dependencies: Tapir 1.14.0, cask 0.11.3 (`cask.patch` rebased), scala-java-time 2.8.0, sttp shared 1.6.0, sbt 2.0.11. Scala stays 3.9.0 and Mill 1.1.10 (Mill 1.3.0 hangs in `prepareOffline`)
+- cask: the virtual thread handler executor of cask 0.11 is disabled in `cask.patch` (`java.lang.invoke` doesn't exist on Scala Native), requests always use the blocking handler. Add `Undertow.stop()` to `snunit-undertow`, a no-op: the launcher shuts the server down on SIGTERM, SIGINT and SIGHUP
 - Add otel4s tracing for http4s and Tapir: `Otel4sSdk.resource` (the SDK configured by the `OTEL_*` variables of `Observability`, `snunit run --stack` included), `Otel4sHttp4s.middleware` and `Otel4sTapir.interceptor` (a server span for every request, a child of the span FreeUnit sends: the `traceparent` header is continued). `snunit-async-cats-effect` depends on otel4s, but the code is only linked into the applications that use it. Also add `SNUnitServerBuilder.withInterceptors` (Tapir)
 - With the stack, the application gets `OTEL_LOGS_EXPORTER=none` and `OTEL_METRICS_EXPORTER=none` (when `otlpEndpoint` is the receiver of the stack), so an OpenTelemetry SDK doesn't push logs and metrics to the traces program, which answers 404 to every push
 
