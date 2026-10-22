@@ -14,6 +14,17 @@ object MyHandler extends RequestHandler {
             content = array,
             headers = Headers("Content-Type" -> "text/plain")
           )
+        else if (path == "/large")
+          // More than the shm of the application: while the client doesn't read, write_nb returns short writes
+          val chunk = new Array[Byte](1024 * 1024)
+          req.startSend(StatusCode.OK, Headers("Content-Type" -> "application/octet-stream"))
+          var i = 0
+          while (i < 160) {
+            java.util.Arrays.fill(chunk, (i % 251).toByte)
+            req.sendBatch(chunk)
+            i += 1
+          }
+          req.sendDone()
         else if (path == "/headers")
           req.send(
             statusCode = StatusCode.OK,

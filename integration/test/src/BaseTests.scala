@@ -33,6 +33,20 @@ object BaseTests extends TestSuite {
           assert(result == expectedResult)
         }
         locally {
+          // A client that starts reading late makes the shm of the application fill up
+          val socket = new java.net.Socket("localhost", BuildInfo.port.toInt)
+          try {
+            socket.getOutputStream.write("GET /large HTTP/1.0\r\nHost: localhost\r\n\r\n".getBytes)
+            socket.getOutputStream.flush()
+            Thread.sleep(3000)
+            val all = socket.getInputStream.readAllBytes()
+            val bodyStart = new String(all, "ISO-8859-1").indexOf("\r\n\r\n") + 4
+            val body = all.drop(bodyStart)
+            assert(body.length == 160 * 1024 * 1024)
+            assert(body.indices.forall(i => body(i) == ((i / (1024 * 1024)) % 251).toByte))
+          } finally socket.close()
+        }
+        locally {
           val responseHeaders = request
             .get(uri"$baseUrl/headers")
             .header("foo", "bar")

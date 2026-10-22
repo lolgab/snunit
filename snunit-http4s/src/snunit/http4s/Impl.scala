@@ -10,6 +10,7 @@ import org.http4s.server.websocket.SNUnitWebSocketSupport
 import org.typelevel.ci.CIString
 import org.typelevel.vault.Vault
 import snunit.*
+import snunit.unsafe.throwException
 
 import java.util.concurrent.CancellationException
 
@@ -51,11 +52,11 @@ private[http4s] object Impl {
                         case v =>
                           http4s.Method
                             .fromString(v)
-                            .getOrElse(throw new Exception(s"Method not valid $v"))
+                            .getOrElse(throwException(new Exception(s"Method not valid $v")))
                       }
                       val uri = {
                         val v = req.target
-                        http4s.Uri.fromString(v).getOrElse(throw new Exception(s"Uri not valid $v"))
+                        http4s.Uri.fromString(v).getOrElse(throwException(new Exception(s"Uri not valid $v")))
                       }
                       val headers = {
                         var list: List[http4s.Header.Raw] = Nil
@@ -72,7 +73,7 @@ private[http4s] object Impl {
                         case v =>
                           http4s.HttpVersion
                             .fromString(v)
-                            .getOrElse(throw new Exception(s"Version not valid $v"))
+                            .getOrElse(throwException(new Exception(s"Version not valid $v")))
                       }
 
                       http4s.Request[F](
