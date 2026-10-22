@@ -105,6 +105,7 @@ private def sendReq(req: Req) = simpleHttpClient.send(req)
 extension (req: Req)
   def text() = sendReq(req).body
   def responseHeaders() = sendReq(req).headers
+  def bytes(): Array[Byte] = simpleHttpClient.send(req.response(sttp.client3.asByteArrayAlways)).body
   def statusCode() = sendReq(req).code.code
   def websocket() =
     req

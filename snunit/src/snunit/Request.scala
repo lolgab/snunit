@@ -35,7 +35,9 @@ extension (req: Request) {
   @inline def headersLength: Int = req.request.fields_count
   private inline def checkIndex(index: Int): Unit = {
     if (index < 0 || index >= req.request.fields_count)
-      throw new IndexOutOfBoundsException(s"Index $index out of bounds for length ${req.request.fields_count}")
+      throwException(
+        new IndexOutOfBoundsException(s"Index $index out of bounds for length ${req.request.fields_count}")
+      )
   }
   def headerName(index: Int): String = {
     checkIndex(index)
@@ -75,7 +77,7 @@ extension (req: Request) {
 
   /** Like [[readContentUnsafe]] on a part of an array. */
   def readContent(dst: Array[Byte], off: Int, length: Int): Int = {
-    if (off < 0 || length < 0 || length > dst.length - off) throw new IndexOutOfBoundsException
+    if (off < 0 || length < 0 || length > dst.length - off) throwException(new IndexOutOfBoundsException)
     if (length == 0) 0 else readContentUnsafe(dst.at(off), length)
   }
 
@@ -92,7 +94,7 @@ extension (req: Request) {
     val n = stringBytes(name)
     val v = stringBytes(value)
     val res = nxt_unit_response_add_field(req, n.pointer, n.contentLength.toByte, v.pointer, v.contentLength)
-    if (res != 0) throw new Exception("Failed to add field")
+    if (res != 0) throwException(new Exception("Failed to add field"))
   }
 
   private inline def startSendUnsafe(
@@ -102,7 +104,7 @@ extension (req: Request) {
   ): Unit = {
     locally {
       val res = nxt_unit_response_init(req, statusCode, headers.length, headers.fieldsLength + contentLength)
-      if (res != NXT_UNIT_OK) throw new Exception("Failed to create response")
+      if (res != NXT_UNIT_OK) throwException(new Exception("Failed to create response"))
     }
 
     headers.foreach((name, value) => addHeader(name, value))
@@ -112,41 +114,32 @@ extension (req: Request) {
   def sendByte(byte: Int): Unit = {
     val bytePtr = stackalloc[Byte]()
     !bytePtr = byte.toByte
-    val res = nxt_unit_response_write_nb(
-      req,
-      bytePtr,
-      1.toCSize,
-      0.toCSize
-    )
-    if (res < 0) {
-      throw new Exception("Failed to send byte")
+    writeFully(bytePtr, 1)
+  }
+  // nxt_unit_response_write_nb with min_size=0 may write fewer bytes than requested
+  // (e.g. under shm pressure), so keep going until everything is written.
+  private def writeFully(data: Ptr[Byte], len: Int): Unit = {
+    var written = 0
+    while (written < len) {
+      val res = nxt_unit_response_write_nb(
+        req,
+        data + written,
+        (len - written).toCSize,
+        0.toCSize
+      )
+      if (res < 0) {
+        throwException(new Exception("Failed to send batch"))
+      }
+      written += res.toInt
     }
   }
-  private inline def sendBatchUnsafe(inline data: Ptr[Byte], inline len: Int): Unit = {
-    val res = nxt_unit_response_write_nb(
-      req,
-      data,
-      len.toCSize,
-      0.toCSize
-    )
-    if (res < 0) {
-      throw new Exception("Failed to send batch")
-    }
-  }
-  private inline def sendBatchUnsafe(data: Array[Byte], off: Int, len: Int): Unit = {
-    val res = nxt_unit_response_write_nb(
-      req,
-      data.at(off),
-      len.toCSize,
-      0L.toCSize
-    )
-    if (res < 0) {
-      throw new Exception("Failed to send batch")
-    }
-  }
+  private inline def sendBatchUnsafe(inline data: Ptr[Byte], inline len: Int): Unit =
+    writeFully(data, len)
+  private inline def sendBatchUnsafe(data: Array[Byte], off: Int, len: Int): Unit =
+    if (len > 0) writeFully(data.at(off), len)
   def sendBatch(data: Array[Byte], off: Int, len: Int): Unit = {
     if (off < 0 || len < 0 || len > data.length - off) {
-      throw new IndexOutOfBoundsException
+      throwException(new IndexOutOfBoundsException)
     }
     sendBatchUnsafe(data, off, len)
   }
@@ -183,19 +176,19 @@ extension (req: Request) {
     val res =
       if (content.length == 0) nxt_unit_websocket_send(req, opcode, last, null, 0.toCSize)
       else nxt_unit_websocket_send(req, opcode, last, content.at(0), content.length.toCSize)
-    if (res != NXT_UNIT_OK) throw new Exception("Failed to send websocket frame")
+    if (res != NXT_UNIT_OK) throwException(new Exception("Failed to send websocket frame"))
   }
 
   inline def isWebsocketHandshake: Boolean = nxt_unit_request_is_websocket_handshake(req) != 0
   def upgrade(): Unit = {
     locally {
       val res = nxt_unit_response_init(req, 101, 0, 0)
-      if (res != NXT_UNIT_OK) throw new Exception("Failed to create response")
+      if (res != NXT_UNIT_OK) throwException(new Exception("Failed to create response"))
     }
 
     locally {
       val res = nxt_unit_response_upgrade(req)
-      if (res != 0) throw new Exception("Failed to upgrade connection")
+      if (res != 0) throwException(new Exception("Failed to upgrade connection"))
     }
 
     nxt_unit_response_send(req)

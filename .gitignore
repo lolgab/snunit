@@ -6,3 +6,4 @@ target
 .bsp
 .scalino-build/
 /freeunit/
+.DS_Store

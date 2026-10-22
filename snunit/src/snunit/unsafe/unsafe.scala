@@ -49,13 +49,14 @@ opaque type remove_pid_t = CFuncPtr1[nxt_unit_request_info_t_*, Unit]
 opaque type shm_ack_handler_t = CFuncPtr1[nxt_unit_request_info_t_*, Unit]
 opaque type port_send_t = CFuncPtr1[nxt_unit_request_info_t_*, Unit]
 opaque type port_recv_t = CFuncPtr1[nxt_unit_request_info_t_*, Unit]
+opaque type ready_handler_t = CFuncPtr1[nxt_unit_ctx_t_*, Unit]
 // end TODO
 
 /*
  * Set of application-specific callbacks. Application may leave all optional
  * ctx: nxt_unit_ctx_t_* as NULL.
  */
-opaque type nxt_unit_callbacks_t = CStruct11[
+opaque type nxt_unit_callbacks_t = CStruct12[
   request_handler_t,
   data_handler_t,
   websocket_handler_t,
@@ -66,7 +67,8 @@ opaque type nxt_unit_callbacks_t = CStruct11[
   quit_t,
   shm_ack_handler_t,
   port_send_t,
-  port_recv_t
+  port_recv_t,
+  ready_handler_t
 ]
 opaque type nxt_unit_callbacks_t_* = Ptr[nxt_unit_callbacks_t]
 
@@ -582,3 +584,6 @@ extension (ptr: nxt_unit_websocket_frame_t_*) {
   @targetName("frame_content_length")
   @inline def content_length: CLongLong = ptr._6 // CUnsignedLongLong
 }
+
+@noinline
+def throwException(exception: Exception): Nothing = throw exception
