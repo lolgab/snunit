@@ -30,7 +30,17 @@ object SNUnitBuild {
   private val ReleaseBase = "https://github.com/lolgab/snunit/releases/download"
   private val FooterMagic = "SNUNITD1".getBytes("US-ASCII")
 
-  val platforms: Seq[String] = Seq("linux-aarch64", "linux-x86_64", "macos-aarch64", "macos-x86_64")
+  // linux-musl-*: a static unitd and a libunit.a for musl, for executables built with scalino's
+  // `--native-target-triple <arch>-unknown-linux-musl`: they run on any Linux, even in a `FROM scratch` image.
+  val platforms: Seq[String] =
+    Seq("linux-aarch64", "linux-x86_64", "linux-musl-aarch64", "linux-musl-x86_64", "macos-aarch64", "macos-x86_64")
+
+  /** The platform of a scalino `--native-target-triple`, if it is a Linux musl one. */
+  def platformOfTriple(triple: String): Option[String] = triple match {
+    case "x86_64-unknown-linux-musl"  => Some("linux-musl-x86_64")
+    case "aarch64-unknown-linux-musl" => Some("linux-musl-aarch64")
+    case _                            => None
+  }
 
   private def fail(message: String): Nothing = throw new SNUnitBuildException(message)
 

@@ -44,7 +44,9 @@ private val usage =
     |  SNUNIT_STACK_DIR      directory of the observability stack (default: ~/.cache/snunit/stack)
     |  SNUNIT_STACK_URL      mirror of the stack release to download from
     |
-    |<os-arch> is linux-x86_64, linux-aarch64, macos-x86_64 or macos-aarch64 (default: this machine).
+    |<os-arch> is linux-x86_64, linux-aarch64, linux-musl-x86_64, linux-musl-aarch64, macos-x86_64 or
+    |macos-aarch64 (default: this machine). For a static executable pass
+    |`--native-target-triple x86_64-unknown-linux-musl` (or aarch64) to `package`: it picks linux-musl-<arch>.
     |
     |`run`, `package` and `compile` need scalino: https://github.com/lolgab/scalino
     |`bundle` and `link-flags` don't. On macOS unitd can only be embedded while linking, so pass the
@@ -75,8 +77,12 @@ private def scalinoCheck(): Unit =
     die("scalino not found. Install it from https://github.com/lolgab/scalino")
 
 /** Extra scalino flags that turn a Scala program into an SNUnit executable. */
-private def buildFlags(): Seq[String] =
+private def buildFlags(platform: String): Seq[String] =
   guard(SNUnitBuild.linkOptions(platform)).flatMap(Seq("--native-linking", _))
+
+/** The platform to build for: the one of scalino's `--native-target-triple` when it is a musl one, else this machine. */
+private def targetPlatform(args: Seq[String]): String =
+  extractOption(args, "--native-target-triple")._2.flatMap(SNUnitBuild.platformOfTriple).getOrElse(platform)
 
 /** Splits `args` at the first `--`. */
 private def splitProgramArgs(args: Seq[String]): (Seq[String], Seq[String]) = {
@@ -101,8 +107,9 @@ private def extractOption(args: Seq[String], name: String): (Seq[String], Option
 /** Builds the executable at `output`. Returns the scalino exit code. */
 private def build(command: String, args: Seq[String], output: Path): Int = {
   scalinoCheck()
-  val code = spawn(Seq("scalino", command) ++ args ++ buildFlags() ++ Seq("-o", output.toString))
-  if (code == 0 && !isMac) guard(SNUnitBuild.bundle(output, output, platform))
+  val target = targetPlatform(args)
+  val code = spawn(Seq("scalino", command) ++ args ++ buildFlags(target) ++ Seq("-o", output.toString))
+  if (code == 0 && !isMac) guard(SNUnitBuild.bundle(output, output, target))
   code
 }
 
@@ -113,7 +120,7 @@ private def build(command: String, args: Seq[String], output: Path): Int = {
     sys.exit(build("package", scalinoArgs, Paths.get(output.getOrElse("app")).toAbsolutePath))
   case "compile" :: rest =>
     scalinoCheck()
-    sys.exit(spawn(Seq("scalino", "compile") ++ rest ++ buildFlags()))
+    sys.exit(spawn(Seq("scalino", "compile") ++ rest ++ buildFlags(targetPlatform(rest))))
   case "bundle" :: rest =>
     val (withoutOutput, output) = extractOutput(rest)
     val (positional, target) = extractOption(withoutOutput, "--platform")
