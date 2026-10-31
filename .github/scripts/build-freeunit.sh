@@ -6,7 +6,11 @@
 # The FreeUnit commit is pinned in .github/freeunit-ref (override with $FREEUNIT_REF).
 # Keep it in sync with snunit-build-core/SNUnitBuild.scala (checked in CI).
 #
-# Prerequisites (installed by the workflow): a C toolchain, make, pcre2, openssl.
+# On Alpine (musl) it links everything statically and names the archive linux-musl-<arch>: `unitd` and the
+# executables that embed it then run on any Linux, even in a FROM scratch image.
+#
+# Prerequisites (installed by the workflow): a C toolchain, make, pcre2, openssl, rust (OpenTelemetry).
+# On Alpine also the static libraries: pcre2-static (libpcre2-8.a) and openssl-libs-static.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,7 +18,7 @@ FREEUNIT_REF="${FREEUNIT_REF:-$(tr -d '[:space:]' < "$here/../freeunit-ref")}"
 OUT_DIR="${OUT_DIR:-$PWD/dist}"
 
 case "$(uname -s)" in
-  Linux) os=linux ;;
+  Linux) if [[ -f /etc/alpine-release ]]; then os=linux-musl; else os=linux; fi ;;
   Darwin) os=macos ;;
   *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
 esac
@@ -34,6 +38,12 @@ configure_args=(--openssl --otel)
 if [[ "$os" == macos ]]; then
   openssl_prefix="$(brew --prefix openssl@3)"
   configure_args+=("--cc-opt=-I${openssl_prefix}/include" "--ld-opt=-L${openssl_prefix}/lib")
+fi
+
+if [[ "$os" == linux-musl ]]; then
+  # Static unitd; the Rust OpenTelemetry library links the static OpenSSL.
+  configure_args+=("--ld-opt=-static")
+  export OPENSSL_STATIC=1
 fi
 
 (

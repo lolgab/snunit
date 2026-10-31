@@ -46,9 +46,37 @@ jobs:
           name: freeunit-${{ matrix.runner }}
           path: dist/*.tar.gz
 
+  # FreeUnit has to be built on musl to be linked statically: an Alpine container on the x86_64 and aarch64 runners.
+  build-musl:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-22.04, ubuntu-22.04-arm]
+    runs-on: ${{ matrix.runner }}
+    env:
+      FREEUNIT_REF: ${{ inputs.freeunit_ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build FreeUnit (musl)
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work -e FREEUNIT_REF alpine:3.23 sh -ec '
+            apk add --no-cache bash curl tar build-base linux-headers pkgconf rust cargo \
+              pcre2-dev pcre2-static openssl-dev openssl-libs-static
+            bash .github/scripts/build-freeunit.sh
+          '
+      - name: Check unitd is static
+        run: |
+          mkdir check && tar xzf dist/freeunit-*-linux-musl-*.tar.gz -C check
+          file check/*/unitd
+          file check/*/unitd | grep -q -E "statically linked|static-pie linked"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: freeunit-musl-${{ matrix.runner }}
+          path: dist/*.tar.gz
+
   release:
     if: startsWith(github.ref, 'refs/tags/freeunit-') || inputs.release_tag != ''
-    needs: build
+    needs: [build, build-musl]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
