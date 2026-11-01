@@ -118,7 +118,8 @@ Declare the client (a Scala.js project) and the sources shared by both sides in 
 ```
 
 `snunit run` builds the client and embeds it in the executable as the resource `/client/main.js`
-(`snunit package` links it in release mode), and `--watch` also rebuilds when the client or the
+(linked with fastLinkJS, or fullLinkJS when the server is built with a `release-*` `--native-mode`;
+`--js-mode` overrides), and `--watch` also rebuilds when the client or the
 shared sources change. Serve it from a handler with `getClass.getResourceAsStream("/client/main.js")`.
 To serve the client with FreeUnit's static files instead (a `share` route), add
 `//> using jsClientOut ../client-dist` and nothing is embedded. See scalino's
