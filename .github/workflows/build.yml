@@ -57,7 +57,7 @@ jobs:
       - name: Install scalino
         run: curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
         env:
-          SCALINO_VERSION: v0.0.23
+          SCALINO_VERSION: v0.0.27
           GITHUB_TOKEN: ${{ github.token }}
       - name: Install FreeUnit build dependencies (Linux)
         if: runner.os == 'Linux'

@@ -107,6 +107,24 @@ Program arguments go after `--`: `snunit run Hello.scala -- --my-flag`.
 `snunit` downloads the prebuilt FreeUnit for your platform (Linux and macOS, x86_64 and
 aarch64) the first time and caches it in `~/.cache/snunit`.
 
+### Scala.js client
+
+The server is a Scala Native program, so scalino's Scala.js support gives it a frontend without a JVM.
+Declare the client (a Scala.js project) and the sources shared by both sides in the server:
+
+```scala
+//> using jsClient ../client
+//> using shared ../shared
+```
+
+`snunit run` builds the client and embeds it in the executable as the resource `/client/main.js`
+(linked with fastLinkJS, or fullLinkJS when the server is built with a `release-*` `--native-mode`;
+`--js-mode` overrides), and `--watch` also rebuilds when the client or the
+shared sources change. Serve it from a handler with `getClass.getResourceAsStream("/client/main.js")`.
+To serve the client with FreeUnit's static files instead (a `share` route), add
+`//> using jsClientOut ../client-dist` and nothing is embedded. See scalino's
+[`examples/client-server`](https://github.com/lolgab/scalino/tree/main/examples/client-server).
+
 ### Configuration
 
 The running executable is configured in code with a `snunit.config.UnitConfig`. It covers
