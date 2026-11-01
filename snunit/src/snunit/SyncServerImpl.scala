@@ -25,6 +25,7 @@ class SyncServerImpl private[snunit] (private val ctx: nxt_unit_ctx_t_*) extends
     while (SyncServerImpl.online) SyncServerImpl.runOnce()
     nxt_unit_done(ctx)
   }
+
   /** Waits up to 20 milliseconds for a message and processes what libunit can read. */
   def runOnce(): Unit = SyncServerImpl.runOnce()
   def done(): Unit = {
@@ -38,9 +39,11 @@ private[snunit] object SyncServerImpl {
 
   // The ports of libunit and the poll descriptors are in native memory and `runOnce` doesn't allocate: it runs
   // 50 times a second, and every time it returns from `poll` the thread is `Unmanaged` until it is `Managed` again
-  private val contexts: Ptr[Ptr[Byte]] = stdlib.malloc(sizeof[Ptr[Byte]] * MaxPorts.toUSize).asInstanceOf[Ptr[Ptr[Byte]]]
+  private val contexts: Ptr[Ptr[Byte]] =
+    stdlib.malloc(sizeof[Ptr[Byte]] * MaxPorts.toUSize).asInstanceOf[Ptr[Ptr[Byte]]]
   private val ports: Ptr[Ptr[Byte]] = stdlib.malloc(sizeof[Ptr[Byte]] * MaxPorts.toUSize).asInstanceOf[Ptr[Ptr[Byte]]]
-  private val fds: Ptr[struct_pollfd] = stdlib.malloc(sizeof[struct_pollfd] * MaxPorts.toUSize).asInstanceOf[Ptr[struct_pollfd]]
+  private val fds: Ptr[struct_pollfd] =
+    stdlib.malloc(sizeof[struct_pollfd] * MaxPorts.toUSize).asInstanceOf[Ptr[struct_pollfd]]
   private var count = 0
 
   /** False when libunit asked to quit. */
