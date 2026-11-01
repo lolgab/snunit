@@ -74,5 +74,23 @@ object BaseTests extends TestSuite {
         assert(postResultResponse.statusCode() == 404)
       }
     }
+    test("gc-background-thread") {
+      withDeployedExample("gc-background-thread") {
+        // waitUntilReady already made requests
+        val first = request.get(baseUrl).text().trim.toInt
+        // The GC aborts after waiting 60 seconds for a thread that it considers running
+        Thread.sleep(75000)
+        // Not restarted: the request counter goes on
+        assert(request.get(baseUrl).text().trim.toInt == first + 1)
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(16)
+        val results =
+          try {
+            val calls = (1 to 200).map(_ => pool.submit(() => request.get(baseUrl).text().trim.toInt))
+            calls.map(_.get()).toList
+          } finally pool.shutdown()
+        assert(results.distinct.size == 200)
+        assert(results.min == first + 2)
+      }
+    }
   }
 }

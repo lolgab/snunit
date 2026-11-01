@@ -25,6 +25,9 @@ object SyncServerBuilder {
   }
   def build(): SyncServer = {
     ServerBuilder.setBaseHandlers(init)
+    init.callbacks.add_port = SyncServerImpl.add_port
+    init.callbacks.remove_port = SyncServerImpl.remove_port
+    init.callbacks.quit = SyncServerImpl.quit
     val ctx: nxt_unit_ctx_t_* = nxt_unit_init(init)
     if (ctx.isNull) {
       throw new Exception("Failed to create Unit object")

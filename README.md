@@ -350,6 +350,12 @@ You can also run other programs built with a FreeUnit language module next to th
 If you already run a stack, point `Observability.otlpEndpoint` to its OTLP/HTTP receiver, `Observability.logs` to a
 Loki-compatible server (`Logs(url = ...)`), and let your Prometheus scrape `Observability.prometheus`.
 
+### Background threads
+
+The server can run other threads (periodic workers, file watchers, long polling) next to `listen()`, they can allocate
+and run the garbage collector while the server waits for requests. `SyncServer` waits for FreeUnit in a way the
+Scala Native GC knows about.
+
 ### Shutdown
 
 On `SIGTERM`, `SIGINT` or `SIGHUP` the executable stops accepting connections and waits for the running requests
