@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix the Scala Native GC aborting an idle `SyncServer` after 60 seconds (`[ScalaNative GC|Error] FATAL: Timeout after 60.0s waiting for 1 thread(s)`) when other threads allocate: `listen()` waited in `nxt_unit_run`, an extern that is not `@blocking`, so the GC considered the thread running. Background threads (periodic workers, file watchers, long polling) are now safe. `listen()` waits for the ports of libunit with a `@blocking` `poll` and reads them with `nxt_unit_process_port_msg`, so the callbacks of libunit (the request handler...) run as managed code: Scala Native doesn't switch the thread back to `Managed` when foreign code calls a Scala callback, and there is no API for it. The externs of libunit that can wait for the router (`nxt_unit_response_send`, `nxt_unit_response_buf_alloc`, `nxt_unit_buf_send`...) are `@blocking`. `SyncServer.runOnce()` waits up to 20 milliseconds instead of until a message arrives. The public API is unchanged
+
 ## 0.13.0
 
 - Publish the `sbt-snunit` plugin (sbt 1.x and 2.x, Scala Native 0.5) to Maven Central with every release: `addSbtPlugin("com.github.lolgab" % "sbt-snunit" % "<version>")`. It links `libunit`, embeds `unitd` and adds `snunitBundle`, `snunitBundleReleaseFast` and `snunitBundleReleaseFull`. It works with sbt 1.9+

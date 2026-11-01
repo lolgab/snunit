@@ -116,6 +116,17 @@ opaque type nxt_websocket_header_t_* = Ptr[nxt_websocket_header_t]
 
 export externs.*
 
+/*
+ * Scala Native only tells the GC that a thread is in foreign code around the calls of the `@blocking` externs: a thread
+ * that waits in any other extern stalls the GC of every other thread, which aborts after 60 seconds. So the externs
+ * that can wait for the router (they wait for the acknowledgment of the shared memory, or send) are `@blocking`.
+ *
+ * Scala Native doesn't make the thread `Managed` again when foreign code calls a Scala callback, so an extern that
+ * calls the callbacks of unit must not be `@blocking`: the callbacks would run `Unmanaged` and allocate while the GC
+ * runs. That is why `nxt_unit_init`, `nxt_unit_process_port_msg`, `nxt_unit_done` and `nxt_unit_request_done` (that
+ * call them) are not, and why `nxt_unit_run` and `nxt_unit_run_once`, that wait for a message and call the request
+ * handler, shouldn't be used by a program with more threads: they wait `Managed`. See [[snunit.SyncServerImpl]].
+ */
 @link("unit")
 @extern
 object externs {
@@ -164,24 +175,24 @@ object externs {
       value_length: Int
   ): CInt = extern
 
-  def nxt_unit_response_add_content(req: nxt_unit_request_info_t_*, src: CString, size: Int): CInt = extern
+  @blocking def nxt_unit_response_add_content(req: nxt_unit_request_info_t_*, src: CString, size: Int): CInt = extern
 
-  def nxt_unit_response_send(req: nxt_unit_request_info_t_*): CInt = extern
+  @blocking def nxt_unit_response_send(req: nxt_unit_request_info_t_*): CInt = extern
 
-  def nxt_unit_response_buf_alloc(req: nxt_unit_request_info_t_*, size: CInt): nxt_unit_buf_t_* = extern
+  @blocking def nxt_unit_response_buf_alloc(req: nxt_unit_request_info_t_*, size: CInt): nxt_unit_buf_t_* = extern
 
   def nxt_unit_request_is_websocket_handshake(req: nxt_unit_request_info_t_*): CInt = extern
 
-  def nxt_unit_response_upgrade(req: nxt_unit_request_info_t_*): CInt = extern
+  @blocking def nxt_unit_response_upgrade(req: nxt_unit_request_info_t_*): CInt = extern
 
-  def nxt_unit_response_write_nb(
+  @blocking def nxt_unit_response_write_nb(
       req: nxt_unit_request_info_t_*,
       start: CString,
       size: CSize,
       min_size: CSize
   ): CSSize = extern
 
-  def nxt_unit_buf_send(buf: nxt_unit_buf_t_*): CInt = extern
+  @blocking def nxt_unit_buf_send(buf: nxt_unit_buf_t_*): CInt = extern
 
   def nxt_unit_request_read(req: nxt_unit_request_info_t_*, dst: CVoidPtr, size: CSize): CSSize = extern
 
@@ -189,7 +200,7 @@ object externs {
 
   def nxt_unit_websocket_read(ws: nxt_unit_websocket_frame_t_*, dest: CVoidPtr, size: CSize): CSSize = extern
 
-  def nxt_unit_websocket_send(
+  @blocking def nxt_unit_websocket_send(
       req: nxt_unit_request_info_t_*,
       opcode: Byte,
       last: Byte,

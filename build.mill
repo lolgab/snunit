@@ -320,6 +320,9 @@ object integration extends ScalaModule {
     object `multiple-handlers` extends Common.Native {
       def moduleDeps = Seq(snunit)
     }
+    object `gc-background-thread` extends Common.Native {
+      def moduleDeps = Seq(snunit)
+    }
     object `undertow-helloworld` extends CrossPlatform {
       object native extends CrossPlatformScalaModule with Common.Native {
         def moduleDeps = Seq(`snunit-undertow`)
