@@ -16,7 +16,7 @@ on:
       - "cli-v*"
 
 env:
-  SCALINO_VERSION: v0.0.23
+  SCALINO_VERSION: v0.0.26
 
 jobs:
   build:

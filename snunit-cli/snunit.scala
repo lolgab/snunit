@@ -188,17 +188,34 @@ private val watchFlags = Set("-w", "--watch", "--watching")
 /** Environment of the application: where the observability stack is when it was asked for with `--stack`. */
 @volatile private var applicationEnvironment = Map.empty[String, String]
 
-/** Latest modification time of all the `.scala` files and `scalino` directives reachable from `paths`. */
-private def lastModified(paths: Seq[String]): Long =
-  paths.iterator
-    .map(Paths.get(_))
+private val clientDirective = """^\s*//>\s*using\s+(?:jsClient|shared)\s+(\S+)""".r
+
+/** The `jsClient` and `shared` paths declared with `//> using` in `file`, relative to `file` or to the current directory. */
+private def clientPaths(file: Path): Seq[Path] =
+  try
+    Files.readAllLines(file).asScala.toSeq.flatMap(clientDirective.findFirstMatchIn(_)).map { m =>
+      val declared = file.toAbsolutePath.getParent.resolve(m.group(1).stripPrefix("\"").stripSuffix("\"")).normalize()
+      if (Files.exists(declared)) declared else Paths.get(m.group(1)).toAbsolutePath.normalize()
+    }
+  catch { case _: java.io.IOException => Nil }
+
+/** The `.scala` files in `paths`, and in the `jsClient` and `shared` directories they declare. */
+private def scalaFiles(paths: Seq[Path], seen: Set[Path] = Set.empty): Seq[Path] = {
+  val files = paths
     .filter(Files.exists(_))
     .flatMap { path =>
-      if (Files.isDirectory(path)) Files.walk(path).iterator().asScala.filter(_.toString.endsWith(".scala"))
-      else Iterator.single(path)
+      if (Files.isDirectory(path)) Files.walk(path).iterator().asScala.filter(_.toString.endsWith(".scala")).toSeq
+      else Seq(path)
     }
-    .map(Files.getLastModifiedTime(_).toMillis)
-    .foldLeft(0L)(math.max)
+    .map(_.toAbsolutePath.normalize())
+    .filterNot(seen)
+  if (files.isEmpty) Nil
+  else files ++ scalaFiles(files.flatMap(clientPaths), seen ++ files)
+}
+
+/** Latest modification time of all the `.scala` files reachable from `paths`, including those of a `jsClient`. */
+private def lastModified(paths: Seq[String]): Long =
+  scalaFiles(paths.map(Paths.get(_))).map(Files.getLastModifiedTime(_).toMillis).foldLeft(0L)(math.max)
 
 private def run(args: Seq[String]): Unit = {
   val (allScalinoArgs, programArgs) = splitProgramArgs(args)
