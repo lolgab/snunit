@@ -57,9 +57,21 @@ private def die(message: String): Nothing = {
   sys.exit(1)
 }
 
+@volatile private var childPid = 0
+
+/** SIGTERM sent to snunit is forwarded to the child, that stops the program it started. */
+private val forwardSignal = CFuncPtr1.fromScalaFunction[CInt, Unit] { sig =>
+  val pid = childPid
+  if (pid > 0) signal.kill(pid, sig)
+}
+
 private def spawn(command: Seq[String]): Int =
-  try new ProcessBuilder(command.asJava).inheritIO().start().waitFor()
-  catch {
+  try {
+    val process = new ProcessBuilder(command.asJava).inheritIO().start()
+    childPid = process.pid().toInt
+    signal.signal(signal.SIGTERM, forwardSignal)
+    process.waitFor()
+  } catch {
     case e: java.io.IOException => die(s"cannot run ${command.head}: ${e.getMessage}")
   }
 
@@ -104,20 +116,31 @@ private def extractOption(args: Seq[String], name: String): (Seq[String], Option
   else (args.take(index) ++ args.drop(index + 2), Some(args(index + 1)))
 }
 
-/** Builds the executable at `output`. Returns the scalino exit code. */
-private def build(command: String, args: Seq[String], output: Path): Int = {
-  scalinoCheck()
+/** The scalino flag that bundles unitd into the linked executable. macOS embeds it while linking, so it has none. */
+private def bundleFlags(platform: String): Seq[String] =
+  if (isMac) Nil
+  else {
+    Seq("--post-link", s"snunit bundle --platform $platform")
+  }
+
+/** The flags that turn a Scala program into an SNUnit executable: linking, and bundling unitd. */
+private def snunitFlags(args: Seq[String]): Seq[String] = {
   val target = targetPlatform(args)
-  val code = spawn(Seq("scalino", command) ++ args ++ buildFlags(target) ++ Seq("-o", output.toString))
-  if (code == 0 && !isMac) guard(SNUnitBuild.bundle(output, output, target))
-  code
+  buildFlags(target) ++ bundleFlags(target)
+}
+
+/** Runs `scalino <command>` with the SNUnit flags. Returns the scalino exit code. */
+private def scalino(command: String, args: Seq[String], extra: Seq[String] = Nil, programArgs: Seq[String] = Nil): Int = {
+  scalinoCheck()
+  spawn(Seq("scalino", command) ++ args ++ snunitFlags(args) ++ extra ++ (if (programArgs.isEmpty) Nil else "--" +: programArgs))
 }
 
 @main def snunit(args: String*): Unit = args.toList match {
   case Nil | ("-h" | "--help" | "help") :: _ => println(usage)
   case "package" :: rest =>
     val (scalinoArgs, output) = extractOutput(rest)
-    sys.exit(build("package", scalinoArgs, Paths.get(output.getOrElse("app")).toAbsolutePath))
+    val path = Paths.get(output.getOrElse("app")).toAbsolutePath
+    sys.exit(scalino("package", scalinoArgs, Seq("-o", path.toString)))
   case "compile" :: rest =>
     scalinoCheck()
     sys.exit(spawn(Seq("scalino", "compile") ++ rest ++ buildFlags(targetPlatform(rest))))
@@ -164,94 +187,16 @@ private def stack(args: List[String]): Unit = args match {
   case _ => die("usage: snunit stack install [--dir <dir>] [--platform <os-arch>] [component]... | snunit stack path")
 }
 
-@volatile private var childPid = 0
-@volatile private var terminating = false
-
-private val forwardSignal = CFuncPtr1.fromScalaFunction[CInt, Unit] { sig =>
-  terminating = true
-  val pid = childPid
-  if (pid > 0) signal.kill(pid, sig)
-}
-
-/** Starts the built application. SIGTERM sent to snunit is forwarded to it. */
-private def start(output: Path, programArgs: Seq[String]): Process = {
-  val builder = new ProcessBuilder((output.toString +: programArgs).asJava).inheritIO()
-  applicationEnvironment.foreach((k, v) => builder.environment().put(k, v))
-  val process = builder.start()
-  childPid = process.pid().toInt
-  signal.signal(signal.SIGTERM, forwardSignal)
-  process
-}
-
-private val watchFlags = Set("-w", "--watch", "--watching")
-
-/** Environment of the application: where the observability stack is when it was asked for with `--stack`. */
-@volatile private var applicationEnvironment = Map.empty[String, String]
-
-private val clientDirective = """^\s*//>\s*using\s+(?:jsClient|shared)\s+(\S+)""".r
-
-/** The `jsClient` and `shared` paths declared with `//> using` in `file`, relative to `file` or to the current directory. */
-private def clientPaths(file: Path): Seq[Path] =
-  try
-    Files.readAllLines(file).asScala.toSeq.flatMap(clientDirective.findFirstMatchIn(_)).map { m =>
-      val declared = file.toAbsolutePath.getParent.resolve(m.group(1).stripPrefix("\"").stripSuffix("\"")).normalize()
-      if (Files.exists(declared)) declared else Paths.get(m.group(1)).toAbsolutePath.normalize()
-    }
-  catch { case _: java.io.IOException => Nil }
-
-/** The `.scala` files in `paths`, and in the `jsClient` and `shared` directories they declare. */
-private def scalaFiles(paths: Seq[Path], seen: Set[Path] = Set.empty): Seq[Path] = {
-  val files = paths
-    .filter(Files.exists(_))
-    .flatMap { path =>
-      if (Files.isDirectory(path)) Files.walk(path).iterator().asScala.filter(_.toString.endsWith(".scala")).toSeq
-      else Seq(path)
-    }
-    .map(_.toAbsolutePath.normalize())
-    .filterNot(seen)
-  if (files.isEmpty) Nil
-  else files ++ scalaFiles(files.flatMap(clientPaths), seen ++ files)
-}
-
-/** Latest modification time of all the `.scala` files reachable from `paths`, including those of a `jsClient`. */
-private def lastModified(paths: Seq[String]): Long =
-  scalaFiles(paths.map(Paths.get(_))).map(Files.getLastModifiedTime(_).toMillis).foldLeft(0L)(math.max)
-
+/** Builds and runs the application with `scalino run`, that also rebuilds and restarts it with `-w`. */
 private def run(args: Seq[String]): Unit = {
   val (allScalinoArgs, programArgs) = splitProgramArgs(args)
-  val watch = allScalinoArgs.exists(watchFlags)
   val withStack = allScalinoArgs.contains("--stack")
-  val scalinoArgs = allScalinoArgs.filterNot(a => watchFlags(a) || a == "--stack")
-  if (withStack) {
-    guard(SNUnitBuild.installStack(SNUnitBuild.stackDir, platform, SNUnitBuild.StackComponents))
-    applicationEnvironment = Map("SNUNIT_STACK" -> "1", "SNUNIT_STACK_DIR" -> SNUnitBuild.stackDir.toString)
-  }
-  val output = Paths.get(".snunit-build", "app").toAbsolutePath
-  Files.createDirectories(output.getParent)
-
-  if (!watch) {
-    val code = build("package", scalinoArgs, output)
-    if (code != 0) sys.exit(code)
-    sys.exit(start(output, programArgs).waitFor())
-  } else {
-    // Sources are the arguments that exist on disk.
-    val sources = scalinoArgs.filter(a => !a.startsWith("-") && Files.exists(Paths.get(a)))
-    var seen = -1L
-    var running: Option[Process] = None
-    while (!terminating) {
-      val modified = lastModified(sources)
-      if (modified != seen) {
-        seen = modified
-        running.foreach { process =>
-          process.destroy()
-          process.waitFor()
-        }
-        running = None
-        if (build("package", scalinoArgs, output) == 0) running = Some(start(output, programArgs))
-        else System.err.println("snunit: build failed, waiting for changes")
-      }
-      Thread.sleep(500)
+  val scalinoArgs = allScalinoArgs.filterNot(_ == "--stack")
+  val stackEnv =
+    if (!withStack) Nil
+    else {
+      guard(SNUnitBuild.installStack(SNUnitBuild.stackDir, platform, SNUnitBuild.StackComponents))
+      Seq("SNUNIT_STACK=1", s"SNUNIT_STACK_DIR=${SNUnitBuild.stackDir}").flatMap(Seq("--run-env", _))
     }
-    running.foreach(_.waitFor())
-  }
+  sys.exit(scalino("run", scalinoArgs, stackEnv, programArgs))
 }
