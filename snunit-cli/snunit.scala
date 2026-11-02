@@ -120,7 +120,12 @@ private def extractOption(args: Seq[String], name: String): (Seq[String], Option
 private def bundleFlags(platform: String): Seq[String] =
   if (isMac) Nil
   else {
-    Seq("--post-link", s"snunit bundle --platform $platform")
+    // scalino splits the command on whitespace and groups quoted words. Bundling only happens on Linux, where
+    // /proc/self/exe is this executable: it works when snunit is not on the PATH.
+    val self =
+      try Files.readSymbolicLink(Paths.get("/proc/self/exe")).toString
+      catch { case _: java.io.IOException | _: UnsupportedOperationException => "snunit" }
+    Seq("--post-link", s"\"$self\" bundle --platform $platform")
   }
 
 /** The flags that turn a Scala program into an SNUnit executable: linking, and bundling unitd. */
