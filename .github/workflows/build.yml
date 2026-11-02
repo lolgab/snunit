@@ -50,7 +50,7 @@ jobs:
         runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
     steps:
       - uses: actions/checkout@v4
-      - name: Check the CLI's FreeUnit commit matches .github/freeunit-ref
+      - name: Check the CLI's FreeUnit version matches .github/freeunit-ref
         run: grep -q "\"$(tr -d '[:space:]' < .github/freeunit-ref)\"" snunit-build-core/SNUnitBuild.scala
       - name: Check the CLI's stack release matches .github/stack-release
         run: grep -q "\"$(tr -d '[:space:]' < .github/stack-release)\"" snunit-build-core/SNUnitBuild.scala

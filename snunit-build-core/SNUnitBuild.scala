@@ -14,10 +14,9 @@ import java.nio.file._
 final class SNUnitBuildException(message: String) extends RuntimeException(message)
 
 object SNUnitBuild {
-  // FreeUnit commit that `unitd` and `libunit.a` are built from. Keep in sync with .github/freeunit-ref
-  // (checked in CI). The prebuilt archives are published in the snunit release tagged `freeunit-<ref8>`.
-  val FreeUnitRef = "872bf04170756e919211799ec5574000d628d521"
-  val FreeUnitRef8: String = FreeUnitRef.take(8)
+  // FreeUnit version (release tag) that `unitd` and `libunit.a` are built from. Keep in sync with .github/freeunit-ref
+  // (checked in CI). The prebuilt archives are published in the snunit release tagged `freeunit-<version>`.
+  val FreeUnitRef = "1.37.1"
 
   // Release of the observability stack (Prometheus, Jaeger, VictoriaLogs and Perses built to run inside FreeUnit, see stack/).
   // Keep in sync with .github/stack-release (checked in CI). The archives are published in the snunit release with
@@ -94,7 +93,7 @@ object SNUnitBuild {
         fail(s"unknown platform: $target (expected one of ${platforms.mkString(", ")})")
       // Several projects of one build can ask for the same download at the same time.
       SNUnitBuild.synchronized {
-        val name = s"freeunit-$FreeUnitRef8-$target"
+        val name = s"freeunit-$FreeUnitRef-$target"
         val dir = cacheDir.resolve(name)
         if (!Files.exists(dir.resolve("unitd"))) download(name, dir)
         dir
@@ -173,7 +172,7 @@ object SNUnitBuild {
   }
 
   private def download(name: String, dir: Path): Unit = {
-    val url = s"$ReleaseBase/freeunit-$FreeUnitRef8/$name.tar.gz"
+    val url = s"$ReleaseBase/freeunit-$FreeUnitRef/$name.tar.gz"
     System.err.println(s"snunit: downloading $url")
     Files.createDirectories(cacheDir)
     val tarball = Files.createTempFile(cacheDir, "freeunit", ".tar.gz")

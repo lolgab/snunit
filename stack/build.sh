@@ -5,9 +5,9 @@
 #   stack/build.sh <prometheus|jaeger|victorialogs|perses> [output dir]
 #
 # Environment:
-#   FREEUNIT_SRC  FreeUnit source tree at the commit pinned in .github/freeunit-ref, configured (`./configure`) so that
+#   FREEUNIT_SRC  FreeUnit source tree at the version pinned in .github/freeunit-ref, configured (`./configure`) so that
 #                 build/include exists. Provides the Go module (go/) and the C headers it needs.
-#   LIBUNIT_DIR   directory containing the libunit.a built from that commit (the snunit `freeunit-<ref8>-<os>-<arch>`
+#   LIBUNIT_DIR   directory containing the libunit.a built from that version (the snunit `freeunit-<version>-<os>-<arch>`
 #                 release archive)
 #
 # Produces <output dir>/snunit-stack-<role>-<os>-<arch>.tar.gz, with a single top-level directory `<role>`, where the role is
