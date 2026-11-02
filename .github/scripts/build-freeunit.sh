@@ -3,7 +3,7 @@
 # freeunit-<ref>-<os>-<arch>.tar.gz inside $OUT_DIR (default: ./dist), where <ref>
 # is the first 8 characters of the git ref (commit or tag).
 #
-# The FreeUnit commit is pinned in .github/freeunit-ref (override with $FREEUNIT_REF).
+# The FreeUnit version is pinned in .github/freeunit-ref (override with $FREEUNIT_REF).
 # Keep it in sync with snunit-build-core/SNUnitBuild.scala (checked in CI).
 #
 # On Alpine (musl) it links everything statically and names the archive linux-musl-<arch>: `unitd` and the
@@ -52,7 +52,7 @@ fi
   make -j"$(getconf _NPROCESSORS_ONLN)" build/sbin/unitd build/lib/libunit.a
 )
 
-name="freeunit-${FREEUNIT_REF:0:8}-${os}-${arch}"
+name="freeunit-${FREEUNIT_REF}-${os}-${arch}"
 mkdir -p "$OUT_DIR/$name"
 cp "$tmpdir/build/sbin/unitd" "$tmpdir/build/lib/libunit.a" "$OUT_DIR/$name/"
 tar czf "$OUT_DIR/$name.tar.gz" -C "$OUT_DIR" "$name"

@@ -46,7 +46,7 @@ object unitd {
   val control = dest / "control.sock"
   private val pid = dest / "unit.pid"
 
-  /** Directory with the `unitd` and `libunit.a` of the prebuilt FreeUnit that the snunit CLI also downloads (the commit
+  /** Directory with the `unitd` and `libunit.a` of the prebuilt FreeUnit that the snunit CLI also downloads (the version
     * pinned in `.github/freeunit-ref`, cached in `~/.cache/snunit`), unless `unitd` is already on the PATH.
     * `SNUNIT_FREEUNIT_DIR` overrides both.
     */
@@ -54,16 +54,16 @@ object unitd {
     sys.env.get("SNUNIT_FREEUNIT_DIR").map(os.Path(_, mill.api.BuildCtx.workspaceRoot)).orElse {
       if (os.proc("which", "unitd").call(check = false).exitCode == 0) None
       else {
-        val ref8 = os.read(mill.api.BuildCtx.workspaceRoot / ".github" / "freeunit-ref").trim.take(8)
+        val ref = os.read(mill.api.BuildCtx.workspaceRoot / ".github" / "freeunit-ref").trim
         val osName = if (System.getProperty("os.name").toLowerCase.contains("mac")) "macos" else "linux"
         val arch = os.proc("uname", "-m").call().out.trim() match {
           case "arm64" | "aarch64" => "aarch64"
           case _                   => "x86_64"
         }
-        val name = s"freeunit-$ref8-$osName-$arch"
+        val name = s"freeunit-$ref-$osName-$arch"
         val dir = dest / name
         if (!os.exists(dir / "unitd")) {
-          val url = s"https://github.com/lolgab/snunit/releases/download/freeunit-$ref8/$name.tar.gz"
+          val url = s"https://github.com/lolgab/snunit/releases/download/freeunit-$ref/$name.tar.gz"
           System.err.println(s"Downloading $url")
           os.makeDir.all(dest)
           val tarball = dest / s"$name.tar.gz.tmp"

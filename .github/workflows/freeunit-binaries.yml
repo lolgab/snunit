@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       freeunit_ref:
-        description: "FreeUnit commit or tag to build. Empty uses the commit pinned in .github/freeunit-ref"
+        description: "FreeUnit tag or commit to build. Empty uses the version pinned in .github/freeunit-ref"
         required: false
       release_tag:
-        description: "Also attach the archives to this existing release (for example freeunit-872bf041), to add a platform to it"
+        description: "Also attach the archives to this existing release (for example freeunit-1.37.0), to add a platform to it"
         required: false
       release_files:
         description: "Which archives to attach with release_tag (default: all). For example dist/*macos-x86_64*.tar.gz"

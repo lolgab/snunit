@@ -11,7 +11,7 @@ authors of that software or by @TRADEMARK@. The names of the upstream project an
   `licenses/go-modules.txt`)
 - Licenses of the npm packages in the web UI embedded in the binary: `licenses/npm/` (when it has one)
 - Modules under weak copyleft licenses (MPL, LGPL), unmodified: `licenses/copyleft-notice.txt`
-- FreeUnit (Apache-2.0) is linked into the binary (`libunit`): `licenses/freeunit/`. FreeUnit commit `@FREEUNIT_REF@`
+- FreeUnit (Apache-2.0) is linked into the binary (`libunit`): `licenses/freeunit/`. FreeUnit version `@FREEUNIT_REF@`
 
 ## What was changed
 

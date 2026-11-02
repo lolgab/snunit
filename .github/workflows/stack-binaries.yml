@@ -33,12 +33,12 @@ jobs:
         run: brew install pcre2 openssl@3
       - name: Download libunit
         run: |
-          ref8="$(tr -d '[:space:]' < .github/freeunit-ref | cut -c1-8)"
+          ref="$(tr -d '[:space:]' < .github/freeunit-ref)"
           case "$(uname -s)" in Linux) os=linux ;; Darwin) os=macos ;; esac
           case "$(uname -m)" in x86_64) arch=x86_64 ;; *) arch=aarch64 ;; esac
-          name="freeunit-$ref8-$os-$arch"
+          name="freeunit-$ref-$os-$arch"
           mkdir -p "$RUNNER_TEMP/libunit"
-          curl -fsSL "https://github.com/lolgab/snunit/releases/download/freeunit-$ref8/$name.tar.gz" \
+          curl -fsSL "https://github.com/lolgab/snunit/releases/download/freeunit-$ref/$name.tar.gz" \
             | tar xz -C "$RUNNER_TEMP/libunit"
           echo "LIBUNIT_DIR=$RUNNER_TEMP/libunit/$name" >> "$GITHUB_ENV"
       - name: Get the FreeUnit sources (Go module and headers)
