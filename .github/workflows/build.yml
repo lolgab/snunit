@@ -47,7 +47,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-14]
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
     steps:
       - uses: actions/checkout@v4
       - name: Check the CLI's FreeUnit commit matches .github/freeunit-ref
@@ -57,7 +57,7 @@ jobs:
       - name: Install scalino
         run: curl -fsSL "https://raw.githubusercontent.com/lolgab/scalino/$SCALINO_VERSION/install.sh" | bash
         env:
-          SCALINO_VERSION: v0.0.23
+          SCALINO_VERSION: v0.0.27
           GITHUB_TOKEN: ${{ github.token }}
       - name: Install FreeUnit build dependencies (Linux)
         if: runner.os == 'Linux'
@@ -91,7 +91,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-14]
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
