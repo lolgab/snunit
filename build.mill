@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 object Versions {
   val scalaNative = "0.5.12"
   val upickle = "4.4.3"
-  val undertow = "2.3.18.Final"
+  val undertow = "2.4.1.Final"
   val scala212 = "2.12.19"
   val scala3 = "3.9.0"
   val tapir = "1.14.0"
