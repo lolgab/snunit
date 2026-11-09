@@ -16,7 +16,7 @@ final class SNUnitBuildException(message: String) extends RuntimeException(messa
 object SNUnitBuild {
   // FreeUnit version (release tag) that `unitd` and `libunit.a` are built from. Keep in sync with .github/freeunit-ref
   // (checked in CI). The prebuilt archives are published in the snunit release tagged `freeunit-<version>`.
-  val FreeUnitRef = "1.37.1"
+  val FreeUnitRef = "1.37.2"
 
   // Release of the observability stack (Prometheus, Jaeger, VictoriaLogs and Perses built to run inside FreeUnit, see stack/).
   // Keep in sync with .github/stack-release (checked in CI). The archives are published in the snunit release with
