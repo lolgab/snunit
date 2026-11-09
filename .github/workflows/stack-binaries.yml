@@ -18,7 +18,7 @@ jobs:
         component: [prometheus, jaeger, victorialogs, perses]
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v5
         with:
           go-version: stable
@@ -70,7 +70,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: The tag is the one the CLI downloads
         run: test "$GITHUB_REF_NAME" = "$(tr -d '[:space:]' < .github/stack-release)"
       - uses: actions/download-artifact@v4
