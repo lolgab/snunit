@@ -14,14 +14,14 @@ class SNUnitServerBuilder[F[_]: Async: LiftIO] private (
     serverEndpoints: List[ServerEndpoint[Fs2Streams[F] & WebSockets, F]],
     config: snunit.config.UnitConfig,
     interceptors: List[Interceptor[F]],
-    concurrencyLimit: Int
+    concurrencyLimit: Option[Int]
 ) {
 
   private def copy(
       serverEndpoints: List[ServerEndpoint[Fs2Streams[F] & WebSockets, F]] = this.serverEndpoints,
       config: snunit.config.UnitConfig = this.config,
       interceptors: List[Interceptor[F]] = this.interceptors,
-      concurrencyLimit: Int = this.concurrencyLimit
+      concurrencyLimit: Option[Int] = this.concurrencyLimit
   ) = new SNUnitServerBuilder(
     serverEndpoints = serverEndpoints,
     config = config,
@@ -33,13 +33,13 @@ class SNUnitServerBuilder[F[_]: Async: LiftIO] private (
   def withConfig(config: snunit.config.UnitConfig): SNUnitServerBuilder[F] = copy(config = config)
 
   /** Tapir interceptors applied to every request, for example the tracing of `snunit-otel4s`. */
-  /** Maximum number of requests that this process runs at the same time, 0 (the default) for no limit. At the limit the
-    * process stops taking requests from FreeUnit: they wait in the queue of the application, where another process can
-    * take them, until a request is done. A request that waits longer than the `timeout` of [[snunit.config.Limits]]
-    * gets 503. A websocket counts until it is closed. The first requests of a process can go over the limit, by at most
-    * one per thread of the router.
+  /** Maximum number of requests that this process runs at the same time, `None` (the default) for no limit. At the
+    * limit the process stops taking requests from FreeUnit: they wait in the queue of the application, where another
+    * process can take them, until a request is done. A request that waits longer than the `timeout` of
+    * [[snunit.config.Limits]] gets 503. A websocket counts until it is closed. The first requests of a process can go
+    * over the limit, by at most one per thread of the router.
     */
-  def withConcurrencyLimit(limit: Int): SNUnitServerBuilder[F] = copy(concurrencyLimit = limit)
+  def withConcurrencyLimit(limit: Option[Int]): SNUnitServerBuilder[F] = copy(concurrencyLimit = limit)
 
   def withInterceptors(interceptors: List[Interceptor[F]]): SNUnitServerBuilder[F] = copy(interceptors = interceptors)
 
@@ -78,7 +78,7 @@ object SNUnitServerBuilder {
       serverEndpoints = endpoint.out(statusCode(StatusCode.NotFound)).serverLogicSuccess(_ => Async[F].pure(())) :: Nil,
       config = snunit.config.UnitConfig(),
       interceptors = Nil,
-      concurrencyLimit = 0
+      concurrencyLimit = None
     )
   }
 }

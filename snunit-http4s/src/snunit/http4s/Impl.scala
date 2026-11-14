@@ -19,7 +19,7 @@ private[http4s] object Impl {
       httpApp: SNUnitWebSocketBuilder[F] => HttpApp[F],
       errorHandler: Throwable => F[http4s.Response[F]],
       config: snunit.config.UnitConfig,
-      concurrencyLimit: Int
+      concurrencyLimit: Option[Int]
   ): F[Unit] = {
     for
       webSocketBuilder <- SNUnitWebSocketSupport.newBuilder[F]

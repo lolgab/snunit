@@ -28,9 +28,10 @@ private[snunit] object ConcurrencyLimit {
 
   @volatile private var onResume: () => Unit = () => ()
 
-  def setLimit(limit: Int): Unit = {
-    require(limit >= 0, s"the concurrency limit must be 0 (no limit) or positive, got $limit")
-    this.limit = limit
+  /** `None` for no limit. */
+  def setLimit(limit: Option[Int]): Unit = {
+    require(limit.forall(_ > 0), s"the concurrency limit must be positive, got ${limit.get}")
+    this.limit = limit.getOrElse(0)
   }
 
   /** Called when the shared port can be read again: the event loop has to read it, its notifications were not read. */

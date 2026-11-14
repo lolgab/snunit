@@ -47,10 +47,10 @@ private[snunit] object CEAsyncServerBuilder {
     this
   }
 
-  /** Maximum number of requests that this process runs at the same time, 0 (the default) for no limit. See
+  /** Maximum number of requests that this process runs at the same time, `None` (the default) for no limit. See
     * [[snunit.SyncServerBuilder.setConcurrencyLimit]].
     */
-  def setConcurrencyLimit(limit: Int): this.type = {
+  def setConcurrencyLimit(limit: Option[Int]): this.type = {
     ConcurrencyLimit.setLimit(limit)
     this
   }
