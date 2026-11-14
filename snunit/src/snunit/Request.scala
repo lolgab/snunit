@@ -148,8 +148,9 @@ extension (req: Request) {
     sendBatchUnsafe(data, 0, data.length)
   }
 
-  inline def sendDone(): Unit = {
+  def sendDone(): Unit = {
     nxt_unit_request_done(req, NXT_UNIT_OK)
+    ConcurrencyLimit.release(req)
   }
   @targetName("send_array")
   def send(statusCode: StatusCode, content: Array[Byte], headers: Headers): Unit = {

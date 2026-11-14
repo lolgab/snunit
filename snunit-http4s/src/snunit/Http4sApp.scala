@@ -7,6 +7,7 @@ import cats.effect.ResourceIO
 import cats.syntax.all.*
 import org.http4s.HttpApp
 import snunit.http4s.SNUnitServerBuilder
+import scala.util.chaining.*
 
 trait Http4sApp extends IOApp.Simple {
   def routes: Resource[IO, HttpApp[IO]]
@@ -14,10 +15,16 @@ trait Http4sApp extends IOApp.Simple {
   /** Configures FreeUnit and the standalone executable. */
   def unitConfig: ResourceIO[snunit.config.UnitConfig] = Resource.pure(snunit.config.UnitConfig())
 
+  /** Maximum number of requests that a process runs at the same time, `None` for no limit. See `withConcurrencyLimit`
+    * of `SNUnitServerBuilder`.
+    */
+  def concurrencyLimit: Option[Int] = None
+
   override def run = (unitConfig, routes).tupled.use { case (config, r) =>
     SNUnitServerBuilder
       .default[IO]
       .withConfig(config)
+      .pipe(b => concurrencyLimit.fold(b.withoutConcurrencyLimit)(b.withConcurrencyLimit))
       .withHttpApp(r)
       .run
   }

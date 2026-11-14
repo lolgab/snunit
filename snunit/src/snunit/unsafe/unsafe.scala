@@ -43,8 +43,10 @@ inline def remove_port_t(
 opaque type quit_t = CFuncPtr1[nxt_unit_ctx_t_*, Unit]
 inline def quit_t(inline f: nxt_unit_ctx_t_* => Unit): quit_t = f
 
-// TODO Implement properly
 opaque type close_handler_t = CFuncPtr1[nxt_unit_request_info_t_*, Unit]
+inline def close_handler_t(inline f: nxt_unit_request_info_t_* => Unit): close_handler_t = f
+
+// TODO Implement properly
 opaque type remove_pid_t = CFuncPtr1[nxt_unit_request_info_t_*, Unit]
 opaque type shm_ack_handler_t = CFuncPtr1[nxt_unit_request_info_t_*, Unit]
 opaque type port_send_t = CFuncPtr1[nxt_unit_request_info_t_*, Unit]
@@ -216,6 +218,9 @@ object externs {
 final val NXT_UNIT_OK = 0
 final val NXT_UNIT_ERROR = 1
 final val NXT_UNIT_AGAIN = 2
+
+/** `id` of the port shared by the processes of the application, where the requests come from (0xFFFF). */
+final val NXT_UNIT_SHARED_PORT_ID: CShort = -1
 final val NXT_UNIT_CANCELLED = 3
 
 final val NXT_UNIT_LOG_ALERT = 0
@@ -491,6 +496,9 @@ extension (ptr: nxt_unit_callbacks_t_*) {
 
   @inline def websocket_handler: websocket_handler_t = ptr._3
   @inline def websocket_handler_=(v: websocket_handler_t): Unit = ptr._3 = v
+
+  @inline def close_handler: close_handler_t = ptr._4
+  @inline def close_handler_=(v: close_handler_t): Unit = ptr._4 = v
 
   @inline def add_port: add_port_t = ptr._5
   @inline def add_port_=(v: add_port_t): Unit = ptr._5 = v
