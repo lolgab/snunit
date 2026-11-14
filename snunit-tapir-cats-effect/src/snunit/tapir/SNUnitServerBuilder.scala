@@ -32,15 +32,21 @@ class SNUnitServerBuilder[F[_]: Async: LiftIO] private (
   /** Configures FreeUnit and the standalone executable. See [[snunit.config.UnitConfig]]. */
   def withConfig(config: snunit.config.UnitConfig): SNUnitServerBuilder[F] = copy(config = config)
 
-  /** Tapir interceptors applied to every request, for example the tracing of `snunit-otel4s`. */
-  /** Maximum number of requests that this process runs at the same time, `None` (the default) for no limit. At the
-    * limit the process stops taking requests from FreeUnit: they wait in the queue of the application, where another
-    * process can take them, until a request is done. A request that waits longer than the `timeout` of
-    * [[snunit.config.Limits]] gets 503. A websocket counts until it is closed. The first requests of a process can go
-    * over the limit, by at most one per thread of the router.
+  /** Maximum number of requests that this process runs at the same time, which must be positive. At the limit the
+    * process stops taking requests from FreeUnit: they wait in the queue of the application, where another process can
+    * take them, until a request is done. A request that waits longer than the `timeout` of [[snunit.config.Limits]]
+    * gets 503. A websocket counts until it is closed. The first requests of a process can go over the limit, by at most
+    * one per thread of the router.
     */
-  def withConcurrencyLimit(limit: Option[Int]): SNUnitServerBuilder[F] = copy(concurrencyLimit = limit)
+  def withConcurrencyLimit(limit: Int): SNUnitServerBuilder[F] = {
+    require(limit > 0, s"the concurrency limit must be positive, got $limit")
+    copy(concurrencyLimit = Some(limit))
+  }
 
+  /** Doesn't limit the requests that this process runs at the same time. This is the default. */
+  def withoutConcurrencyLimit: SNUnitServerBuilder[F] = copy(concurrencyLimit = None)
+
+  /** Tapir interceptors applied to every request, for example the tracing of `snunit-otel4s`. */
   def withInterceptors(interceptors: List[Interceptor[F]]): SNUnitServerBuilder[F] = copy(interceptors = interceptors)
 
   def withServerEndpoints(

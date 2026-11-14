@@ -25,7 +25,7 @@ object Http4sConcurrencyLimit extends IOApp.Simple {
     }
     _ <- SNUnitServerBuilder
       .default[IO]
-      .withConcurrencyLimit(Some(2))
+      .withConcurrencyLimit(2)
       .withHttpApp(routes.orNotFound)
       .run
   } yield ()

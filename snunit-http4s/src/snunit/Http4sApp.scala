@@ -7,6 +7,7 @@ import cats.effect.ResourceIO
 import cats.syntax.all.*
 import org.http4s.HttpApp
 import snunit.http4s.SNUnitServerBuilder
+import scala.util.chaining.*
 
 trait Http4sApp extends IOApp.Simple {
   def routes: Resource[IO, HttpApp[IO]]
@@ -23,7 +24,7 @@ trait Http4sApp extends IOApp.Simple {
     SNUnitServerBuilder
       .default[IO]
       .withConfig(config)
-      .withConcurrencyLimit(concurrencyLimit)
+      .pipe(b => concurrencyLimit.fold(b.withoutConcurrencyLimit)(b.withConcurrencyLimit))
       .withHttpApp(r)
       .run
   }

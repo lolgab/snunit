@@ -24,8 +24,8 @@ object SyncServerBuilder {
     this
   }
 
-  /** Maximum number of requests that this process runs at the same time, `None` (the default) for no limit, or a
-    * positive number.
+  /** Maximum number of requests that this process runs at the same time, which must be positive. There is no limit by
+    * default.
     *
     * At the limit the process stops taking requests from FreeUnit: they wait in the queue of the application, where
     * another process can take them, until a request is done. A request that waits longer than the `timeout` of
@@ -35,8 +35,14 @@ object SyncServerBuilder {
     * Useful when the handler answers later from other threads: a handler that answers before returning already runs one
     * request at a time.
     */
-  def setConcurrencyLimit(limit: Option[Int]): this.type = {
-    ConcurrencyLimit.setLimit(limit)
+  def setConcurrencyLimit(limit: Int): this.type = {
+    ConcurrencyLimit.setLimit(Some(limit))
+    this
+  }
+
+  /** Doesn't limit the requests that this process runs at the same time. This is the default. */
+  def unsetConcurrencyLimit(): this.type = {
+    ConcurrencyLimit.setLimit(None)
     this
   }
   def build(): SyncServer = {
