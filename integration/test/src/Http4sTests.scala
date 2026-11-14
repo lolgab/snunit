@@ -18,6 +18,25 @@ object Http4sTests extends TestSuite {
         assert(result == expectedResult)
       }
     }
+    test("http4s-concurrency-limit") {
+      withDeployedExample("http4s-concurrency-limit", readyUrl = uri"$baseUrl/max") {
+        def slowRequests(): List[String] = {
+          val pool = java.util.concurrent.Executors.newFixedThreadPool(8)
+          try {
+            val calls = (1 to 8).map(_ => pool.submit(() => request.get(uri"$baseUrl/slow").text()))
+            calls.map(_.get()).toList
+          } finally pool.shutdown()
+        }
+        // The first request from each thread of the router waits in libunit for the port of the reply, and it isn't
+        // counted until it runs, so the first requests of a process can go over the limit
+        val first = slowRequests()
+        request.get(uri"$baseUrl/reset").text()
+        val second = slowRequests()
+        // Every request waiting in the queue of FreeUnit ran when a running one was done
+        assert(first == List.fill(8)("done"), second == List.fill(8)("done"))
+        assert(request.get(uri"$baseUrl/max").text() == "2")
+      }
+    }
     test("http4s-otel4s") {
       withDeployedExample("http4s-otel4s", readyUrl = uri"$baseUrl/hello?name=Lorenzo") {
         otel4sTracingTest(uri"$baseUrl/hello?name=Lorenzo")

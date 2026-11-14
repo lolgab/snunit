@@ -31,10 +31,18 @@ private[snunit] object ServerBuilder {
     snunit.launcher.Launcher.runIfNeeded(config)
     init.callbacks.request_handler = request_handler
     init.callbacks.websocket_handler = websocket_handler
+    init.callbacks.close_handler = close_handler
   }
 
   protected[snunit] val request_handler: request_handler_t = request_handler_t { (req: nxt_unit_request_info_t_*) =>
+    ConcurrencyLimit.acquire(req)
     requestHandler.handleRequest(Request(req))
+  }
+
+  // What libunit does without a close handler, and the request doesn't count for the concurrency limit anymore
+  protected[snunit] val close_handler: close_handler_t = close_handler_t { (req: nxt_unit_request_info_t_*) =>
+    nxt_unit_request_done(req, NXT_UNIT_ERROR)
+    ConcurrencyLimit.release(req)
   }
 
   protected[snunit] val websocket_handler: websocket_handler_t = websocket_handler_t {

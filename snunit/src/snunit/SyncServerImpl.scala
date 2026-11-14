@@ -91,7 +91,9 @@ private[snunit] object SyncServerImpl {
     var i = 0
     while (i < n) {
       val pollfd = fds + i
-      pollfd.fd = ports(i).asInstanceOf[nxt_unit_port_t_*].in_fd
+      val port = ports(i).asInstanceOf[nxt_unit_port_t_*]
+      // At the concurrency limit the shared port is not read: it would stay readable and `poll` wouldn't wait
+      pollfd.fd = if (ConcurrencyLimit.canRead(port)) port.in_fd else -1
       pollfd.events = POLLIN.toShort
       pollfd.revents = 0
       i += 1
@@ -110,7 +112,7 @@ private[snunit] object SyncServerImpl {
       while (i < count) {
         val ctx = contexts(i).asInstanceOf[nxt_unit_ctx_t_*]
         val port = ports(i).asInstanceOf[nxt_unit_port_t_*]
-        if (nxt_unit_process_port_msg(ctx, port) == NXT_UNIT_OK) {
+        if (ConcurrencyLimit.canRead(port) && nxt_unit_process_port_msg(ctx, port) == NXT_UNIT_OK) {
           round = true
           progress = true
         }

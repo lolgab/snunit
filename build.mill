@@ -378,6 +378,12 @@ object integration extends ScalaModule {
         mvn"org.http4s::http4s-dsl::$http4sVersion"
       )
     }
+    object `http4s-concurrency-limit` extends Common.Native {
+      def moduleDeps = Seq(`snunit-http4s`(Versions.http4s023))
+      def mvnDeps = super.mvnDeps() ++ Seq(
+        mvn"org.http4s::http4s-dsl::${Versions.http4s023}"
+      )
+    }
     object `http4s-app` extends Common.Native {
       val http4sVersion = Versions.http4s023
       def moduleDeps = Seq(

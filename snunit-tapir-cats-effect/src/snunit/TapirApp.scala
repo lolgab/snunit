@@ -13,10 +13,16 @@ trait TapirApp extends IOApp.Simple {
   /** Configures FreeUnit and the standalone executable. */
   def unitConfig: ResourceIO[snunit.config.UnitConfig] = Resource.pure(snunit.config.UnitConfig())
 
+  /** Maximum number of requests that a process runs at the same time, 0 for no limit. See `withConcurrencyLimit` of
+    * `SNUnitServerBuilder`.
+    */
+  def concurrencyLimit: Int = 0
+
   override def run = (unitConfig, serverEndpoints).tupled.use { case (config, se) =>
     tapir.SNUnitServerBuilder
       .default[IO]
       .withConfig(config)
+      .withConcurrencyLimit(concurrencyLimit)
       .withServerEndpoints(se)
       .run
   }

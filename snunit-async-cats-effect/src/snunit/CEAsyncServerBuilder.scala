@@ -47,6 +47,14 @@ private[snunit] object CEAsyncServerBuilder {
     this
   }
 
+  /** Maximum number of requests that this process runs at the same time, 0 (the default) for no limit. See
+    * [[snunit.SyncServerBuilder.setConcurrencyLimit]].
+    */
+  def setConcurrencyLimit(limit: Int): this.type = {
+    ConcurrencyLimit.setLimit(limit)
+    this
+  }
+
   def setRequestHandler(requestHandler: RequestHandler): this.type = {
     ServerBuilder.setRequestHandler(requestHandler)
     this
@@ -60,6 +68,8 @@ private[snunit] object CEAsyncServerBuilder {
     init.callbacks.add_port = CEAsyncServerBuilder.add_port
     init.callbacks.remove_port = CEAsyncServerBuilder.remove_port
     init.callbacks.quit = CEAsyncServerBuilder.quit
+    // The fds are edge-triggered: the notifications that arrived while the shared port was not read are gone
+    ConcurrencyLimit.setOnResume(() => dispatcher.unsafeRunAndForget(IO(PortData.processAll())))
     nxt_unit_init(init)
   }.flatMap(ctx =>
     if (ctx.isNull) IO.raiseError(new Exception("Failed to create Unit object"))
@@ -149,7 +159,9 @@ private[snunit] object CEAsyncServerBuilder {
     // so all the ports are drained together, also periodically.
     def processAll(): Unit = synchronized {
       references.keySet.toArray.foreach { case pd: PortData =>
-        if (!pd.stopped) while (nxt_unit_process_port_msg(pd.ctx, pd.port) == NXT_UNIT_OK) {}
+        // The concurrency limit is checked before every message: the request handler runs inside the call
+        if (!pd.stopped)
+          while (ConcurrencyLimit.canRead(pd.port) && nxt_unit_process_port_msg(pd.ctx, pd.port) == NXT_UNIT_OK) {}
       }
     }
 

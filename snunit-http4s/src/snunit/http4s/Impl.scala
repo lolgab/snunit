@@ -18,7 +18,8 @@ private[http4s] object Impl {
   def buildServer[F[_]: Async: LiftIO](
       httpApp: SNUnitWebSocketBuilder[F] => HttpApp[F],
       errorHandler: Throwable => F[http4s.Response[F]],
-      config: snunit.config.UnitConfig
+      config: snunit.config.UnitConfig,
+      concurrencyLimit: Int
   ): F[Unit] = {
     for
       webSocketBuilder <- SNUnitWebSocketSupport.newBuilder[F]
@@ -30,6 +31,7 @@ private[http4s] object Impl {
           val app = httpApp(webSocketBuilder)
           snunit.CEAsyncServerBuilder
             .setConfig(config)
+            .setConcurrencyLimit(concurrencyLimit)
             .setDispatcher(dispatcher)
             .setWebsocketHandler(WebsocketConnections)
             .setFileDescriptorPoller(pollers.head.asInstanceOf)
