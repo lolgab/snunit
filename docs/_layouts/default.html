@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% if page.url == '/' %}SNUnit: {{ site.description }}{% else %}{{ page.title }} · SNUnit{% endif %}</title>
+  <meta name="description" content="{{ page.description | default: 'SNUnit is a Scala Native library to write HTTP server applications on top of FreeUnit, with its own API or with http4s, Tapir, Cask, Undertow and endpoints4s.' }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%23c93a1e'/><path d='M8 23V9l8 9V9M19 23l5-14' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+  <header class="top">
+    <a class="home" href="./">SN<span>Unit</span></a>
+    <ul>
+      <li class="menu"><a href="#nav">Menu</a></li>
+      <li><a href="https://github.com/lolgab/snunit/blob/main/CHANGELOG.md">Changelog</a></li>
+      <li><a href="https://github.com/lolgab/snunit">GitHub</a></li>
+    </ul>
+  </header>
+
+  <main>
+    <article class="content">
+      <h1>{{ page.title }}</h1>
+      {% if page.subtitle %}<p class="subtitle">{{ page.subtitle }}</p>{% endif %}
+
+      {{ content }}
+
+      {% assign nav = site.data.nav %}
+      {% for item in nav %}{% assign u = '/' | append: item.file %}{% if page.url == u %}{% assign here = forloop.index0 %}{% endif %}{% endfor %}
+      {% if here %}
+      {% assign before = here | minus: 1 %}{% assign after = here | plus: 1 %}
+      <nav class="pager" aria-label="Previous and next page">
+        {% if here > 0 %}<a href="{{ nav[before].file | default: './' }}">← {{ nav[before].title }}</a>{% else %}<span></span>{% endif %}
+        {% if nav[after] %}<a href="{{ nav[after].file }}">{{ nav[after].title }} →</a>{% endif %}
+      </nav>
+      {% endif %}
+
+      <footer>
+        SNUnit is distributed under the Apache 2.0 license.
+        <a href="https://github.com/lolgab/snunit/edit/main/docs/{{ page.path }}">Edit this page</a>
+      </footer>
+    </article>
+  </main>
+
+  <nav class="side" id="nav" aria-label="Documentation">
+    <ul>
+      {% assign group = '' %}
+      {% for item in site.data.nav %}
+      {% if item.group != group %}{% assign group = item.group %}{% if group %}
+    </ul>
+    <p>{{ group }}</p>
+    <ul>
+      {% endif %}{% endif %}
+      {% assign u = '/' | append: item.file %}
+      <li><a href="{{ item.file | default: './' }}"{% if page.url == u %} aria-current="page"{% endif %}>{{ item.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
+</body>
+</html>
