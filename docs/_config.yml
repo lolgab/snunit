@@ -1,0 +1,14 @@
+title: SNUnit
+description: Scala Native HTTP server based on FreeUnit
+# The version used in the examples. Bump it when releasing.
+snunit_version: 0.13.0
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default

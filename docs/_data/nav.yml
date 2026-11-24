@@ -1,0 +1,38 @@
+# Order of the pages in the navigation and in the previous/next links.
+# `file` is the built page, relative to the site root (empty for the home page).
+- title: Overview
+  file: ""
+- title: Getting started
+  file: getting-started.html
+- title: sbt and other build tools
+  file: build-tools.html
+- title: How it works
+  file: how-it-works.html
+- title: Configuration
+  file: configuration.html
+
+- title: http4s
+  file: http4s.html
+  group: Libraries
+- title: Tapir
+  file: tapir.html
+  group: Libraries
+- title: Cask
+  file: cask.html
+  group: Libraries
+- title: Undertow
+  file: undertow.html
+  group: Libraries
+- title: endpoints4s
+  file: endpoints4s.html
+  group: Libraries
+
+- title: Traces, metrics and logs
+  file: observability.html
+  group: Observability
+- title: The observability stack
+  file: stack.html
+  group: Observability
+- title: Tracing with otel4s
+  file: otel4s.html
+  group: Observability
