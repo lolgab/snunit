@@ -3,8 +3,10 @@ package snunit.cli
 import java.nio.file.*
 import _root_.snunit.build.*
 import scala.jdk.CollectionConverters.*
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.posix.signal
 import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
 
 // The `snunit` command line tool: a thin wrapper around `scalino` that builds
 // SNUnit applications into a single executable embedding `unitd`.
@@ -45,8 +47,8 @@ private val usage =
     |  SNUNIT_STACK_URL      mirror of the stack release to download from
     |
     |<os-arch> is linux-x86_64, linux-aarch64, linux-musl-x86_64, linux-musl-aarch64, macos-x86_64 or
-    |macos-aarch64 (default: this machine). For a static executable pass
-    |`--native-target-triple x86_64-unknown-linux-musl` (or aarch64) to `package`: it picks linux-musl-<arch>.
+    |macos-aarch64 (default: this machine). `package` cross-compiles with scalino's `--native-target-triple`
+    |and embeds the unitd of that target: `x86_64-unknown-linux-musl` (or aarch64) gives a static executable.
     |
     |`run`, `package` and `compile` need scalino: https://github.com/lolgab/scalino
     |`bundle` and `link-flags` don't. On macOS unitd can only be embedded while linking, so pass the
@@ -75,8 +77,6 @@ private def spawn(command: Seq[String]): Int =
     case e: java.io.IOException => die(s"cannot run ${command.head}: ${e.getMessage}")
   }
 
-private def isMac: Boolean = SNUnitBuild.isMac
-
 private def platform: String = guard(SNUnitBuild.hostPlatform)
 
 /** Runs `body`, turning build failures into a message and exit code. */
@@ -92,9 +92,22 @@ private def scalinoCheck(): Unit =
 private def buildFlags(platform: String): Seq[String] =
   guard(SNUnitBuild.linkOptions(platform)).flatMap(Seq("--native-linking", _))
 
-/** The platform to build for: the one of scalino's `--native-target-triple` when it is a musl one, else this machine. */
-private def targetPlatform(args: Seq[String]): String =
-  extractOption(args, "--native-target-triple")._2.flatMap(SNUnitBuild.platformOfTriple).getOrElse(platform)
+/**
+ * The platform to build for: the one of scalino's `--native-target-triple`, else this machine. The FreeUnit to link
+ * and embed is the one of the target, not of the machine running the build.
+ */
+private def targetPlatform(args: Seq[String]): String = {
+  val triples =
+    args.zip(args.drop(1)).collect { case ("--native-target-triple", value) => value.split(',').toSeq }.flatten.distinct
+  triples match {
+    case Seq() => platform
+    case Seq(triple) =>
+      SNUnitBuild.platformOfTriple(triple).getOrElse(die(s"there is no FreeUnit for the target $triple"))
+    case _ =>
+      // libunit is passed to the linker with --native-linking, that applies to every target of the run.
+      die(s"one --native-target-triple at a time, got ${triples.mkString(", ")}: each target links its own FreeUnit")
+  }
+}
 
 /** Splits `args` at the first `--`. */
 private def splitProgramArgs(args: Seq[String]): (Seq[String], Seq[String]) = {
@@ -116,17 +129,31 @@ private def extractOption(args: Seq[String], name: String): (Seq[String], Option
   else (args.take(index) ++ args.drop(index + 2), Some(args(index + 1)))
 }
 
-/** The scalino flag that bundles unitd into the linked executable. macOS embeds it while linking, so it has none. */
+@extern private object darwin {
+  def _NSGetExecutablePath(buf: CString, size: Ptr[CUnsignedInt]): CInt = extern
+}
+
+/** Path of this executable, or `snunit` (looked up in the PATH) when it can't be found. */
+private def selfExecutable: String =
+  try
+    if (LinktimeInfo.isMac) Zone {
+      val size = alloc[CUnsignedInt]()
+      !size = 4096.toUInt
+      val buf = alloc[CChar](4096)
+      if (darwin._NSGetExecutablePath(buf, size) != 0) "snunit"
+      else Paths.get(fromCString(buf)).toRealPath().toString
+    }
+    else Files.readSymbolicLink(Paths.get("/proc/self/exe")).toString
+  catch { case _: java.io.IOException | _: UnsupportedOperationException => "snunit" }
+
+/**
+ * The scalino flag that bundles unitd into the linked executable. It depends on the target, not on the machine
+ * running the build: a macOS target embeds it while linking, so it has none.
+ */
 private def bundleFlags(platform: String): Seq[String] =
-  if (isMac) Nil
-  else {
-    // scalino splits the command on whitespace and groups quoted words. Bundling only happens on Linux, where
-    // /proc/self/exe is this executable: it works when snunit is not on the PATH.
-    val self =
-      try Files.readSymbolicLink(Paths.get("/proc/self/exe")).toString
-      catch { case _: java.io.IOException | _: UnsupportedOperationException => "snunit" }
-    Seq("--post-link", s"\"$self\" bundle --platform $platform")
-  }
+  if (platform.startsWith("macos")) Nil
+  // scalino splits the command on whitespace and groups quoted words.
+  else Seq("--post-link", s"\"$selfExecutable\" bundle --platform $platform")
 
 /** The flags that turn a Scala program into an SNUnit executable: linking, and bundling unitd. */
 private def snunitFlags(args: Seq[String]): Seq[String] = {

@@ -34,10 +34,14 @@ object SNUnitBuild {
   val platforms: Seq[String] =
     Seq("linux-aarch64", "linux-x86_64", "linux-musl-aarch64", "linux-musl-x86_64", "macos-aarch64", "macos-x86_64")
 
-  /** The platform of a scalino `--native-target-triple`, if it is a Linux musl one. */
+  /** The platform of a scalino `--native-target-triple`, if there is a FreeUnit build for it. */
   def platformOfTriple(triple: String): Option[String] = triple match {
     case "x86_64-unknown-linux-musl"  => Some("linux-musl-x86_64")
     case "aarch64-unknown-linux-musl" => Some("linux-musl-aarch64")
+    case "x86_64-unknown-linux-gnu"   => Some("linux-x86_64")
+    case "aarch64-unknown-linux-gnu"  => Some("linux-aarch64")
+    case "x86_64-apple-darwin"        => Some("macos-x86_64")
+    case "aarch64-apple-darwin"       => Some("macos-aarch64")
     case _                            => None
   }
 

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix `snunit package --native-target-triple <triple>` linking and embedding the FreeUnit of the machine running the build instead of the one of the target: cross-compiling from macOS to Linux passed the macOS `libunit.a` and `unitd` to the linker (and a `linux-musl` target got no `unitd` at all), and a macOS target built on Linux got the Linux ones. Every Linux and macOS triple of scalino is supported, one per run
 - Add a concurrency limit: `setConcurrencyLimit` (`SyncServerBuilder`, `CEAsyncServerBuilder`), `withConcurrencyLimit` (`SNUnitServerBuilder` of http4s and Tapir) and `concurrencyLimit` (`Http4sApp`, `TapirApp`). At the limit a process stops taking requests from FreeUnit, which keeps them in the queue of the application until a running request is done (or the `timeout` of `Limits` answers 503), so an asynchronous application doesn't take more requests than it can run. A websocket counts until it is closed. The first requests of a process can go over the limit, by at most one per thread of the router
 - libunit calls a close handler of SNUnit when a websocket is closed by the client or the application quits, instead of finishing the request itself. The behavior is the same
 - Update FreeUnit to 1.37.2 (`unitd` and `libunit.a`). The public libunit API in `nxt_unit.h` is unchanged, so the bindings and their struct layouts stay the same
